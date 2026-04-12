@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
         hostname: "wifidjelfa.com",
       },
     ],
+    dangerouslyAllowSVG: true,
+    unoptimized: true,
   },
   experimental: {
     optimizePackageImports: ["lucide-react"],

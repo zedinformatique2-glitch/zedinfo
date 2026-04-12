@@ -16,6 +16,7 @@ import type * as orders from "../orders.js";
 import type * as prebuilts from "../prebuilts.js";
 import type * as products from "../products.js";
 import type * as seed from "../seed.js";
+import type * as seedReal from "../seedReal.js";
 
 import type {
   ApiFromModules,
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   prebuilts: typeof prebuilts;
   products: typeof products;
   seed: typeof seed;
+  seedReal: typeof seedReal;
 }>;
 
 /**
