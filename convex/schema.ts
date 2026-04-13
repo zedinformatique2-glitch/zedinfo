@@ -89,7 +89,7 @@ export default defineSchema({
       notes: v.optional(v.string()),
     }),
     paymentMethod: v.union(v.literal("cod"), v.literal("whatsapp")),
-    locale: v.union(v.literal("fr"), v.literal("ar")),
+    locale: v.union(v.literal("fr"), v.literal("ar"), v.literal("en")),
     trackingNumber: v.optional(v.string()),
     carrier: v.optional(v.string()),
     carrierTrackingUrl: v.optional(v.string()),

@@ -34,7 +34,7 @@ export const create = mutation({
       notes: v.optional(v.string()),
     }),
     paymentMethod: v.union(v.literal("cod"), v.literal("whatsapp")),
-    locale: v.union(v.literal("fr"), v.literal("ar")),
+    locale: v.union(v.literal("fr"), v.literal("ar"), v.literal("en")),
   },
   handler: async (ctx, args) => {
     const subtotal = args.items.reduce((s, i) => s + i.priceDzd * i.qty, 0);
