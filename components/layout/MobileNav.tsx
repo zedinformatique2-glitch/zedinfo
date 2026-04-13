@@ -42,6 +42,7 @@ export function MobileNav() {
     { href: "/shop", label: t("shop"), icon: "storefront" },
     { href: "/shop/laptops", label: t("laptops"), icon: "laptop_mac" },
     { href: "/configurator", label: t("configurator"), icon: "tune" },
+    { href: "/fps-estimator", label: t("fpsEstimator"), icon: "speed" },
     { href: "/support", label: t("support"), icon: "support_agent" },
     { href: "/about", label: t("about"), icon: "info" },
   ];

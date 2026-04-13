@@ -43,7 +43,8 @@
     "products": "Produits",
     "buildPc": "Monter un PC",
     "contact": "Contact",
-    "trackOrder": "Suivi de commande"
+    "trackOrder": "Suivi de commande",
+    "fpsEstimator": "Estimateur FPS"
   },
   "home": {
     "heroEyebrow": "ZED INFORMATIQUE",
@@ -231,6 +232,25 @@
     "apply": "Appliquer cette config",
     "send": "Envoyer",
     "error": "Désolé, une erreur est survenue. Réessayez."
+  },
+  "fpsEstimator": {
+    "badge": "Outil gratuit",
+    "title": "Estimez vos FPS",
+    "subtitle": "Entrez votre processeur et carte graphique — même du matériel que nous ne vendons pas — et obtenez une estimation IA des FPS pour vos jeux préférés.",
+    "cpuLabel": "Processeur",
+    "gpuLabel": "Carte graphique",
+    "ramLabel": "RAM (optionnel)",
+    "cpuPlaceholder": "Ex: i5-12400F, Ryzen 5 5600X",
+    "gpuPlaceholder": "Ex: RTX 3060, RX 6700 XT",
+    "ramPlaceholder": "Ex: 16 Go DDR4 3200",
+    "needCpuGpu": "Veuillez renseigner un processeur et une carte graphique",
+    "resolution": "Résolution",
+    "selectGame": "Choisissez un jeu",
+    "customGame": "Autre jeu...",
+    "estimate": "Estimer",
+    "estimating": "Estimation en cours...",
+    "fpsLabel": "FPS estimés",
+    "confidence": "Confiance"
   },
   "footer": {
     "tagline": "Solutions informatiques haute performance conçues pour la précision, la stabilité et la fiabilité extrême. Approuvées par les professionnels à travers l'Algérie.",
