@@ -175,12 +175,12 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container-zed py-12 lg:py-16">
-      <h1 className="text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-12">
+    <div className="container-zed py-6 px-4 sm:py-12 lg:py-16 sm:px-6">
+      <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-6 sm:mb-12">
         {t("title")}
       </h1>
-      <form onSubmit={handleSubmit(onSubmit)} className="grid lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="grid lg:grid-cols-3 gap-6 sm:gap-12">
+        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
           <section>
             <h2 className="text-[10px] uppercase tracking-widest font-bold mb-4 border-b border-outline-variant pb-2">
               {t("contactInfo")}
@@ -249,22 +249,22 @@ export default function CheckoutPage() {
               {t("paymentMethod")}
             </h2>
             <div className="space-y-3 mt-4">
-              <label className="flex items-center gap-3 p-4 rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
                 <input type="radio" value="cod" {...register("paymentMethod")} />
                 <Icon name="payments" className="text-primary" />
-                <span className="font-bold uppercase text-sm">{t("cod")}</span>
+                <span className="font-bold uppercase text-xs sm:text-sm">{t("cod")}</span>
               </label>
-              <label className="flex items-center gap-3 p-4 rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
                 <input type="radio" value="whatsapp" {...register("paymentMethod")} />
                 <Icon name="chat" className="text-primary" />
-                <span className="font-bold uppercase text-sm">{t("whatsapp")}</span>
+                <span className="font-bold uppercase text-xs sm:text-sm">{t("whatsapp")}</span>
               </label>
             </div>
           </section>
         </div>
 
         <div>
-          <div className="bg-white rounded-3xl shadow-card ring-1 ring-outline-variant/40 p-6 lg:p-8 sticky top-24 relative overflow-hidden">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-outline-variant/40 p-4 sm:p-6 lg:p-8 sticky top-24 relative overflow-hidden">
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-primary-container to-primary" />
             <h2 className="font-bold uppercase tracking-widest text-xs mb-6">
               {tc("total")}
