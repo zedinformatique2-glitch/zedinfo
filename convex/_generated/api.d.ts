@@ -19,6 +19,7 @@ import type * as carriers_zrExpress from "../carriers/zrExpress.js";
 import type * as categories from "../categories.js";
 import type * as configurator from "../configurator.js";
 import type * as delivery from "../delivery.js";
+import type * as fpsEstimate from "../fpsEstimate.js";
 import type * as migrateImages from "../migrateImages.js";
 import type * as orders from "../orders.js";
 import type * as prebuilts from "../prebuilts.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   configurator: typeof configurator;
   delivery: typeof delivery;
+  fpsEstimate: typeof fpsEstimate;
   migrateImages: typeof migrateImages;
   orders: typeof orders;
   prebuilts: typeof prebuilts;

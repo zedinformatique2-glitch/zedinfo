@@ -178,7 +178,19 @@
     "shareBuild": "مشاركة",
     "buildSummary": "ملخص التجميع",
     "selected": "مختارة",
-    "notSelected": "لم يتم اختيار قطعة"
+    "notSelected": "لم يتم اختيار قطعة",
+    "fps": {
+      "title": "تقدير الإطارات",
+      "subtitle": "قدّر أداء جهازك في ألعابك المفضلة",
+      "selectGame": "اختر لعبة",
+      "selectResolution": "الدقة",
+      "estimating": "جارٍ التقدير...",
+      "fpsLabel": "إطار/ثانية تقديري",
+      "confidence": "الثقة",
+      "needCpuGpu": "اختر معالجاً وبطاقة رسوميات لتقدير الإطارات",
+      "customGame": "لعبة أخرى...",
+      "estimate": "تقدير"
+    }
   },
   "support": {
     "title": "خدمة ما بعد البيع",

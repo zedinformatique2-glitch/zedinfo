@@ -15,7 +15,6 @@ export async function Header({ locale }: { locale: Locale }) {
     { href: "/shop", label: t("products") },
     { href: "/configurator", label: t("buildPc") },
     { href: "/support", label: t("services") },
-    { href: "/support", label: t("contact") },
     { href: "/track", label: t("trackOrder") },
   ];
 

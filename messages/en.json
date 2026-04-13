@@ -178,7 +178,19 @@
     "shareBuild": "Share",
     "buildSummary": "Summary",
     "selected": "selected",
-    "notSelected": "No part selected"
+    "notSelected": "No part selected",
+    "fps": {
+      "title": "FPS Estimator",
+      "subtitle": "Estimate your build's performance in your favorite games",
+      "selectGame": "Choose a game",
+      "selectResolution": "Resolution",
+      "estimating": "Estimating...",
+      "fpsLabel": "Estimated FPS",
+      "confidence": "Confidence",
+      "needCpuGpu": "Select a CPU and GPU to estimate FPS",
+      "customGame": "Other game...",
+      "estimate": "Estimate"
+    }
   },
   "support": {
     "title": "After-sales service",

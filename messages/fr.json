@@ -178,7 +178,19 @@
     "shareBuild": "Partager",
     "buildSummary": "Récapitulatif",
     "selected": "sélectionné",
-    "notSelected": "Aucune pièce sélectionnée"
+    "notSelected": "Aucune pièce sélectionnée",
+    "fps": {
+      "title": "Estimation FPS",
+      "subtitle": "Estimez les performances de votre config dans vos jeux",
+      "selectGame": "Choisissez un jeu",
+      "selectResolution": "Résolution",
+      "estimating": "Estimation en cours...",
+      "fpsLabel": "FPS estimés",
+      "confidence": "Confiance",
+      "needCpuGpu": "Sélectionnez un processeur et une carte graphique pour estimer les FPS",
+      "customGame": "Autre jeu...",
+      "estimate": "Estimer"
+    }
   },
   "support": {
     "title": "Service après-vente",

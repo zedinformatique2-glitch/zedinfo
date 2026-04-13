@@ -15,6 +15,7 @@ import {
   type ConfigComponent,
 } from "@/lib/configurator-engine";
 import { AiChat } from "@/components/configurator/AiChat";
+import { FpsEstimator } from "@/components/configurator/FpsEstimator";
 import type { Locale } from "@/lib/i18n/config";
 
 type SlotKey = (typeof CONFIG_SLOTS)[number]["key"];
@@ -231,7 +232,7 @@ export default function ConfiguratorPage() {
             </div>
           </div>
 
-          {/* Right — Slot cards */}
+          {/* Right — Slot cards + FPS estimator */}
           <div className="flex-1 order-1 lg:order-2 space-y-4">
             {CONFIG_SLOTS.map((slot) => {
               const current = slotComponent(slot.key);
@@ -324,6 +325,13 @@ export default function ConfiguratorPage() {
                 </div>
               );
             })}
+
+            {/* FPS Estimator */}
+            <FpsEstimator
+              cpuName={selection.cpu?.nameFr}
+              gpuName={selection.gpu?.nameFr}
+              ramInfo={selection.ram?.[0]?.nameFr}
+            />
           </div>
         </div>
       </div>
