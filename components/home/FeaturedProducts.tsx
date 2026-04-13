@@ -58,6 +58,17 @@ export function FeaturedProducts({
             />
           ))}
         </div>
+
+        {/* Mobile "View all" button */}
+        <div className="flex sm:hidden justify-center mt-8">
+          <Link
+            href="/shop"
+            className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-widest text-primary hover:text-primary/80 transition-colors"
+          >
+            {viewAllLabel}
+            <Icon name="arrow_forward" className="text-base" flip />
+          </Link>
+        </div>
       </div>
     </section>
   );
