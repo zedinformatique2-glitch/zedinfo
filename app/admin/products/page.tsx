@@ -12,17 +12,17 @@ export default function AdminProductsPage() {
   const remove = useMutation(api.products.remove);
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-black tracking-tighter">
+        <h1 className="text-2xl md:text-4xl font-black tracking-tighter">
           {ar.productsList.title}
         </h1>
         <Link href="/admin/products/new">
           <Button size="sm">{ar.productsList.newProduct}</Button>
         </Link>
       </div>
-      <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm min-w-[550px]">
           <thead className="bg-slate-950 text-white text-[10px] tracking-widest">
             <tr>
               <th className="text-start p-4">{ar.productsList.image}</th>

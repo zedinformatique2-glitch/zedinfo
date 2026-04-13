@@ -27,11 +27,11 @@ export default function AdminCategoriesPage() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-4xl font-black tracking-tighter mb-8">
+    <div className="p-4 md:p-8">
+      <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-4 md:mb-8">
         {ar.categoriesList.title}
       </h1>
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-4 md:gap-8">
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-950 text-white text-[10px] tracking-widest">

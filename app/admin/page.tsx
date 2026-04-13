@@ -21,19 +21,19 @@ export default function AdminDashboard() {
     : [];
 
   return (
-    <div className="p-8">
-      <h1 className="text-4xl font-black tracking-tighter mb-8">
+    <div className="p-4 md:p-8">
+      <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-6 md:mb-8">
         {ar.dashboard.title}
       </h1>
       {!stats ? (
         <div className="text-on-surface-variant">{ar.dashboard.loading}</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-10">
             {cards.map((c) => (
               <div
                 key={c.label}
-                className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 p-6 hover:shadow-card-hover hover:-translate-y-0.5 transition-all relative overflow-hidden"
+                className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 p-4 md:p-6 hover:shadow-card-hover hover:-translate-y-0.5 transition-all relative overflow-hidden"
               >
                 <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-l ${c.color}`} />
                 <div className="flex items-center justify-between">
@@ -41,7 +41,7 @@ export default function AdminDashboard() {
                     {c.icon}
                   </span>
                 </div>
-                <div className="mt-6 text-3xl font-black">{c.value}</div>
+                <div className="mt-3 md:mt-6 text-xl md:text-3xl font-black">{c.value}</div>
                 <div className="text-xs text-on-surface-variant mt-2 font-bold">
                   {c.label}
                 </div>
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Recent orders */}
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-2 gap-4 md:gap-8">
             <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 overflow-hidden relative">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-primary via-primary-container to-primary" />
               <div className="p-6 flex items-center justify-between">

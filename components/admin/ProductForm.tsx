@@ -133,8 +133,8 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="p-8 space-y-6 max-w-4xl">
-      <h1 className="text-4xl font-black tracking-tighter">
+    <form onSubmit={onSubmit} className="p-4 md:p-8 space-y-4 md:space-y-6 max-w-4xl">
+      <h1 className="text-2xl md:text-4xl font-black tracking-tighter">
         {initial ? ar.productForm.editProduct : ar.productForm.newProduct}
       </h1>
 

@@ -144,18 +144,18 @@ export default function AdminDeliveryPage() {
   };
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 md:p-8 max-w-5xl">
       <div className="mb-8">
         <div className="text-[10px] uppercase tracking-widest text-on-surface-variant">
           {ar.deliveryPage.settings}
         </div>
-        <h1 className="text-4xl font-black tracking-tighter">{ar.deliveryPage.title}</h1>
+        <h1 className="text-2xl md:text-4xl font-black tracking-tighter">{ar.deliveryPage.title}</h1>
         <p className="text-sm text-on-surface-variant mt-2">
           {ar.deliveryPage.subtitle}
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
         {carriers.map((carrier) => {
           const fields = CREDENTIAL_FIELDS[carrier.slug];
           const creds = editingCreds[carrier.slug] || {};
