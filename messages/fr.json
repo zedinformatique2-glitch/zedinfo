@@ -38,13 +38,12 @@
     "configurator": "Configurateur",
     "services": "Services",
     "support": "Support",
-    "about": "About Us",
-    "home": "Home",
-    "products": "Products",
-    "buildPc": "Build PC",
+    "about": "À propos",
+    "home": "Accueil",
+    "products": "Produits",
+    "buildPc": "Monter un PC",
     "contact": "Contact",
-    "trackOrder": "Track Order",
-    "services": "Services"
+    "trackOrder": "Suivi de commande"
   },
   "home": {
     "heroEyebrow": "ZED INFORMATIQUE",
@@ -165,9 +164,9 @@
     "saveBuild": "Enregistrer la configuration",
     "aiAssistant": "💬 Assistant IA",
     "shareBuild": "Partager",
-    "buildSummary": "Build Summary",
-    "selected": "selected",
-    "notSelected": "No part selected"
+    "buildSummary": "Récapitulatif",
+    "selected": "sélectionné",
+    "notSelected": "Aucune pièce sélectionnée"
   },
   "support": {
     "title": "Service après-vente",
@@ -214,6 +213,6 @@
     "ecosystem": "Écosystème matériel",
     "clientProtocol": "Protocole client",
     "location": "Laboratoire",
-    "rights": "© 2025 ZED INFORMATIQUE. PRÉCISION D'INGÉNIERIE."
+    "rights": "© 2025–2026 ZED INFORMATIQUE. PRÉCISION D'INGÉNIERIE."
   }
 }

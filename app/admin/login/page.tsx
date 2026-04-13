@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import crypto from "crypto";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
+
+function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 async function login(formData: FormData) {
   "use server";
@@ -15,8 +20,17 @@ async function login(formData: FormData) {
   if (username !== expectedUser || password !== expectedPass) {
     redirect("/admin/login?error=1");
   }
+  const token = crypto.randomUUID();
   const cookieStore = await cookies();
-  cookieStore.set("admin_session", "1", {
+  // Store the hashed token in a second cookie so middleware can validate
+  cookieStore.set("admin_session", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+    secure: process.env.NODE_ENV === "production",
+  });
+  cookieStore.set("admin_session_hash", hashToken(token), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

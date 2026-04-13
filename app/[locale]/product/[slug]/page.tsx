@@ -7,10 +7,40 @@ import { AddToCartBar } from "@/components/product/AddToCartBar";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
+import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { formatDzd, localizedDesc, localizedName } from "@/lib/format";
 
 export const revalidate = 300;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const loc = locale as Locale;
+  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+    return { title: "ZED INFORMATIQUE" };
+  }
+  try {
+    const product: any = await fetchQuery(api.products.bySlug, { slug });
+    if (!product) return { title: "ZED INFORMATIQUE" };
+    const name = localizedName(product, loc);
+    const desc = localizedDesc(product, loc);
+    return {
+      title: `${name} | ZED INFORMATIQUE`,
+      description: desc || `${name} — ${formatDzd(product.priceDzd, loc)}`,
+      openGraph: {
+        title: `${name} | ZED INFORMATIQUE`,
+        description: desc || `${name} — ${formatDzd(product.priceDzd, loc)}`,
+        images: product.images?.[0] ? [product.images[0]] : [],
+      },
+    };
+  } catch {
+    return { title: "ZED INFORMATIQUE" };
+  }
+}
 
 async function safeFetch<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) return fallback;

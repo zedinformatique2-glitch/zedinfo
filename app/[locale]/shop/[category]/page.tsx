@@ -3,10 +3,33 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
+import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { localizedName } from "@/lib/format";
 
 export const revalidate = 300;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; category: string }>;
+}): Promise<Metadata> {
+  const { locale, category } = await params;
+  const loc = locale as Locale;
+  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+    return { title: "ZED INFORMATIQUE" };
+  }
+  try {
+    const catDoc: any = await fetchQuery(api.categories.bySlug, { slug: category });
+    const name = catDoc ? localizedName(catDoc, loc) : category;
+    return {
+      title: `${name} | ZED INFORMATIQUE`,
+      description: `Achetez ${name} en Algérie — livraison dans les 58 wilayas.`,
+    };
+  } catch {
+    return { title: "ZED INFORMATIQUE" };
+  }
+}
 
 async function safeFetch<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) return fallback;
