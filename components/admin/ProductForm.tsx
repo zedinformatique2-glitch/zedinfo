@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -29,6 +29,8 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
   const categories = useQuery(api.categories.list, {});
   const create = useMutation(api.products.create);
   const update = useMutation(api.products.update);
+  const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
+  const getUrlFromId = useMutation(api.storage.getUrlFromId);
 
   const [form, setForm] = useState<InitialProduct>(
     initial ?? {
@@ -46,15 +48,55 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
       specs: { type: "other" },
     }
   );
-  const [imagesText, setImagesText] = useState(form.images.join("\n"));
+  const [uploadedImages, setUploadedImages] = useState<string[]>(form.images);
+  const [imagesText, setImagesText] = useState("");
   const [specsText, setSpecsText] = useState(JSON.stringify(form.specs, null, 2));
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function uploadFiles(files: FileList | File[]) {
+    setUploading(true);
+    const newUrls: string[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      try {
+        const uploadUrl = await generateUploadUrl();
+        const res = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        const { storageId } = await res.json();
+        const url = await getUrlFromId({ storageId });
+        if (url) newUrls.push(url);
+      } catch (e) {
+        console.error("Upload failed:", e);
+      }
+    }
+    setUploadedImages((prev) => [...prev, ...newUrls]);
+    setUploading(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files.length > 0) {
+      uploadFiles(e.dataTransfer.files);
+    }
+  }
+
+  function removeImage(idx: number) {
+    setUploadedImages((prev) => prev.filter((_, i) => i !== idx));
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      const images = imagesText.split("\n").map((s) => s.trim()).filter(Boolean);
+      const linkImages = imagesText.split("\n").map((s) => s.trim()).filter(Boolean);
+      const images = [...uploadedImages, ...linkImages];
       let specs: any = {};
       try {
         specs = JSON.parse(specsText);
@@ -212,29 +254,90 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
         </div>
       </div>
 
-      {/* Images & Specs */}
+      {/* Images */}
       <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 p-6 relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-primary via-primary-container to-primary" />
-        <div className="space-y-4">
-          <div>
-            <Label>{ar.productForm.images}</Label>
-            <Textarea
-              rows={4}
-              value={imagesText}
-              onChange={(e) => setImagesText(e.target.value)}
-              dir="ltr"
-            />
+        <Label>{ar.productForm.images}</Label>
+
+        {/* Upload area */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`mt-2 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+            dragOver
+              ? "border-primary bg-primary/5"
+              : "border-outline-variant hover:border-primary/40"
+          }`}
+        >
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2 block">
+            cloud_upload
+          </span>
+          <p className="text-sm text-on-surface-variant">
+            {uploading ? ar.productForm.uploading : ar.productForm.dragDrop}
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                uploadFiles(e.target.files);
+                e.target.value = "";
+              }
+            }}
+          />
+        </div>
+
+        {/* Uploaded image previews */}
+        {uploadedImages.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
+            {uploadedImages.map((url, idx) => (
+              <div key={idx} className="relative group">
+                <img
+                  src={url}
+                  alt=""
+                  className="w-full aspect-square object-cover rounded-xl ring-1 ring-outline-variant/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  className="absolute top-1 end-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
-          <div>
-            <Label>{ar.productForm.specs}</Label>
-            <Textarea
-              rows={8}
-              className="font-mono"
-              value={specsText}
-              onChange={(e) => setSpecsText(e.target.value)}
-              dir="ltr"
-            />
-          </div>
+        )}
+
+        {/* Optional manual links */}
+        <div className="mt-4">
+          <Label>{ar.productForm.orAddLinks}</Label>
+          <Textarea
+            rows={3}
+            value={imagesText}
+            onChange={(e) => setImagesText(e.target.value)}
+            dir="ltr"
+          />
+        </div>
+      </div>
+
+      {/* Specs */}
+      <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 p-6 relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-primary via-primary-container to-primary" />
+        <div>
+          <Label>{ar.productForm.specs}</Label>
+          <Textarea
+            rows={8}
+            className="font-mono"
+            value={specsText}
+            onChange={(e) => setSpecsText(e.target.value)}
+            dir="ltr"
+          />
         </div>
       </div>
 
