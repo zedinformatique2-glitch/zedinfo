@@ -12,7 +12,7 @@ export const chat = action({
         content: v.string(),
       })
     ),
-    locale: v.union(v.literal("fr"), v.literal("ar")),
+    locale: v.union(v.literal("fr"), v.literal("ar"), v.literal("en")),
   },
   handler: async (ctx, { messages, locale }) => {
     const products: any[] = await ctx.runQuery(api.products.list, {});
