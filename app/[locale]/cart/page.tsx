@@ -42,57 +42,59 @@ export default function CartPage() {
 
   return (
     <div className="container-zed py-12 lg:py-16">
-      <h1 className="text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-12">
+      <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-6 sm:mb-12">
         {t("title")}
       </h1>
-      <div className="grid lg:grid-cols-3 gap-12">
+      <div className="grid lg:grid-cols-3 gap-6 sm:gap-12">
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
             <div
               key={item.slug}
-              className="flex items-center gap-4 p-4 bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 hover:ring-primary/30 transition-all"
+              className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 hover:ring-primary/30 transition-all"
             >
-              <div className="w-24 h-24 bg-gradient-to-br from-white to-surface-container-low rounded-xl ring-1 ring-outline-variant/30 shrink-0 relative overflow-hidden">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-white to-surface-container-low rounded-xl ring-1 ring-outline-variant/30 shrink-0 relative overflow-hidden">
                 {item.image && (
                   <Image
                     src={item.image}
                     alt=""
                     fill
-                    sizes="96px"
+                    sizes="(max-width: 640px) 64px, 96px"
                     className="object-contain p-2"
                   />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold uppercase tracking-tight truncate">
+                <h3 className="font-bold uppercase tracking-tight truncate text-sm sm:text-base">
                   {localizedName(item, locale)}
                 </h3>
-                <div className="text-primary font-black text-lg mt-1">
+                <div className="text-primary font-black text-base sm:text-lg mt-1">
                   {formatDzd(item.priceDzd, locale)}
                 </div>
               </div>
-              <div className="flex items-center rounded-xl ring-1 ring-outline-variant/60 bg-white overflow-hidden">
+              <div className="flex items-center justify-between w-full sm:w-auto sm:gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-outline-variant/30">
+                <div className="flex items-center rounded-xl ring-1 ring-outline-variant/60 bg-white overflow-hidden">
+                  <button
+                    onClick={() => updateQty(item.slug, item.qty - 1)}
+                    className="w-10 h-10 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
+                  >
+                    <Icon name="remove" />
+                  </button>
+                  <span className="w-10 text-center font-bold">{item.qty}</span>
+                  <button
+                    onClick={() => updateQty(item.slug, item.qty + 1)}
+                    className="w-10 h-10 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
+                  >
+                    <Icon name="add" />
+                  </button>
+                </div>
                 <button
-                  onClick={() => updateQty(item.slug, item.qty - 1)}
-                  className="w-10 h-10 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
+                  onClick={() => remove(item.slug)}
+                  className="p-2 rounded-xl text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors"
+                  aria-label={t("remove")}
                 >
-                  <Icon name="remove" />
-                </button>
-                <span className="w-10 text-center font-bold">{item.qty}</span>
-                <button
-                  onClick={() => updateQty(item.slug, item.qty + 1)}
-                  className="w-10 h-10 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
-                >
-                  <Icon name="add" />
+                  <Icon name="delete" />
                 </button>
               </div>
-              <button
-                onClick={() => remove(item.slug)}
-                className="p-2 rounded-xl text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors"
-                aria-label={t("remove")}
-              >
-                <Icon name="delete" />
-              </button>
             </div>
           ))}
         </div>
