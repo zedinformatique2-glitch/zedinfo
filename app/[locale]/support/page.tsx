@@ -78,7 +78,7 @@ export default async function SupportPage({
                   locale === "ar"
                     ? "الجلفة 17000، الجزائر"
                     : "Djelfa 17000, Algérie",
-                href: "https://www.google.com/maps/search/?api=1&query=34.71769,3.328162",
+                href: "https://www.google.com/maps/search/?api=1&query=34.6711627,3.2515564",
                 external: true,
               },
             ].map((c) => {
@@ -113,6 +113,23 @@ export default async function SupportPage({
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-16 lg:pb-24">
+        <div className="container-zed">
+          <div className="bg-white rounded-3xl shadow-card ring-1 ring-outline-variant/40 overflow-hidden">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1600!2d3.2515564!3d34.6711627!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1289cf8e918470b3%3A0x86f20a6bf4a2f377!2z2KfZhNmF2KzZhNizINin2YTYtNi52KjZiiDYp9mE2YjZhNin2KbZiiDZhNmI2YTYp9mK2Kkg2KfZhNis2YTZgdip!5e0!3m2!1sfr!2sdz!4v1700000000000"
+              width="100%"
+              height="400"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="w-full"
+            />
           </div>
         </div>
       </section>
