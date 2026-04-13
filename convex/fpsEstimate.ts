@@ -10,8 +10,10 @@ export const estimateFps = action({
     ramInfo: v.optional(v.string()),
     game: v.string(),
     resolution: v.string(),
+    locale: v.optional(v.string()),
   },
-  handler: async (_ctx, { cpuName, gpuName, ramInfo, game, resolution }) => {
+  handler: async (_ctx, { cpuName, gpuName, ramInfo, game, resolution, locale }) => {
+    const lang = locale === "ar" ? "Arabic" : locale === "en" ? "English" : "French";
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
 
@@ -21,13 +23,13 @@ CPU: ${cpuName}
 GPU: ${gpuName}${ramInfo ? `\nRAM: ${ramInfo}` : ""}
 
 Reply with ONLY valid JSON, no extra text:
-{"fps": <number>, "quality": "<Low|Medium|High|Ultra>", "confidence": "<low|medium|high>", "tip": "<one short sentence recommendation in French>"}
+{"fps": <number>, "quality": "<Low|Medium|High|Ultra>", "confidence": "<low|medium|high>", "tip": "<one short sentence recommendation in ${lang}>"}
 
 Rules:
 - fps = estimated average FPS at the quality preset you recommend
 - quality = the preset that gives a good balance of visuals and performance for this hardware
 - confidence = how confident you are based on known benchmarks
-- tip = a short practical recommendation (in French)
+- tip = a short practical recommendation (in ${lang})
 - Be realistic based on real-world benchmarks you know`;
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAction } from "convex/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Image from "next/image";
 import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
@@ -49,6 +49,7 @@ interface Props {
 
 export function FpsEstimator({ cpuName, gpuName, ramInfo }: Props) {
   const t = useTranslations("configurator.fps");
+  const locale = useLocale();
   const estimate = useAction(api.fpsEstimate.estimateFps);
 
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export function FpsEstimator({ cpuName, gpuName, ramInfo }: Props) {
     setLoading(true);
     setResult(null);
     try {
-      const r = await estimate({ cpuName, gpuName, ramInfo, game, resolution });
+      const r = await estimate({ cpuName, gpuName, ramInfo, game, resolution, locale });
       setResult(r);
     } catch {
       setResult({ fps: 0, quality: "?", confidence: "low", tip: "Erreur lors de l'estimation." });
@@ -95,7 +96,7 @@ export function FpsEstimator({ cpuName, gpuName, ramInfo }: Props) {
     if (gameName) {
       setResult(null);
       setLoading(true);
-      estimate({ cpuName: cpuName!, gpuName: gpuName!, ramInfo, game: gameName, resolution: res })
+      estimate({ cpuName: cpuName!, gpuName: gpuName!, ramInfo, game: gameName, resolution: res, locale })
         .then(setResult)
         .catch(() => setResult({ fps: 0, quality: "?", confidence: "low", tip: "Erreur." }))
         .finally(() => setLoading(false));
