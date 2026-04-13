@@ -1,7 +1,7 @@
 import type { Locale } from "./i18n/config";
 
 export function formatDzd(amount: number, locale: Locale = "fr"): string {
-  const lang = locale === "ar" ? "ar-DZ" : "fr-DZ";
+  const lang = locale === "ar" ? "ar-DZ" : locale === "en" ? "en-DZ" : "fr-DZ";
   try {
     return new Intl.NumberFormat(lang, {
       style: "currency",
@@ -14,7 +14,7 @@ export function formatDzd(amount: number, locale: Locale = "fr"): string {
 }
 
 export function formatDate(ts: number, locale: Locale = "fr"): string {
-  const lang = locale === "ar" ? "ar-DZ" : "fr-DZ";
+  const lang = locale === "ar" ? "ar-DZ" : locale === "en" ? "en-DZ" : "fr-DZ";
   return new Intl.DateTimeFormat(lang, {
     year: "numeric",
     month: "short",
@@ -23,7 +23,7 @@ export function formatDate(ts: number, locale: Locale = "fr"): string {
 }
 
 export function formatDateTime(ts: number, locale: Locale = "fr"): string {
-  const lang = locale === "ar" ? "ar-DZ" : "fr-DZ";
+  const lang = locale === "ar" ? "ar-DZ" : locale === "en" ? "en-DZ" : "fr-DZ";
   return new Intl.DateTimeFormat(lang, {
     year: "numeric",
     month: "short",
@@ -37,7 +37,7 @@ export function localizedName<T extends { nameFr: string; nameAr: string }>(
   item: T,
   locale: Locale
 ): string {
-  return locale === "ar" ? item.nameAr : item.nameFr;
+  return locale === "ar" ? item.nameAr : item.nameFr; // en falls back to French
 }
 
 export function localizedDesc<T extends { descFr: string; descAr: string }>(
