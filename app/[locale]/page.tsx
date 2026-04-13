@@ -129,6 +129,7 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
         subtitle={t("featuredSubtitle")}
         inStockLabel={tc("inStock")}
         addLabel={tc("addToCart")}
+        viewAllLabel={tc("viewAll")}
       />
 
       {/* Promo Products */}
@@ -139,6 +140,7 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
         subtitle={t("promoSubtitle")}
         addLabel={tc("addToCart")}
         promoLabel={t("promoLabel")}
+        viewAllLabel={tc("viewAll")}
       />
 
     </>
