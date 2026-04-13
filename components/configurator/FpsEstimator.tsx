@@ -3,18 +3,19 @@
 import { useState } from "react";
 import { useAction } from "convex/react";
 import { useTranslations } from "next-intl";
+import Image from "next/image";
 import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
 
 const GAMES = [
-  { id: "cs2", name: "Counter-Strike 2", icon: "🎯" },
-  { id: "valorant", name: "Valorant", icon: "🔫" },
-  { id: "gtav", name: "GTA V", icon: "🚗" },
-  { id: "cyberpunk", name: "Cyberpunk 2077", icon: "🌃" },
-  { id: "fortnite", name: "Fortnite", icon: "🏗️" },
-  { id: "eldenring", name: "Elden Ring", icon: "⚔️" },
-  { id: "warzone", name: "COD Warzone", icon: "💣" },
-  { id: "minecraft", name: "Minecraft", icon: "⛏️" },
+  { id: "cs2", name: "Counter-Strike 2", img: "/games/cs2.jpg" },
+  { id: "valorant", name: "Valorant", img: "/games/valorant.jpg" },
+  { id: "gtav", name: "GTA V", img: "/games/gtav.jpg" },
+  { id: "cyberpunk", name: "Cyberpunk 2077", img: "/games/cyberpunk.jpg" },
+  { id: "fortnite", name: "Fortnite", img: "/games/fortnite.jpg" },
+  { id: "eldenring", name: "Elden Ring", img: "/games/eldenring.jpg" },
+  { id: "warzone", name: "COD Warzone", img: "/games/warzone.jpg" },
+  { id: "minecraft", name: "Minecraft", img: "/games/minecraft.jpg" },
 ];
 
 const RESOLUTIONS = ["1080p", "1440p", "4K"] as const;
@@ -150,14 +151,25 @@ export function FpsEstimator({ cpuName, gpuName, ramInfo }: Props) {
                 key={game.id}
                 onClick={() => onGameClick(game)}
                 disabled={loading}
-                className={`flex flex-col items-center gap-1 p-3 rounded-xl text-sm font-medium transition-all ${
+                className={`group relative overflow-hidden rounded-xl transition-all ${
                   selectedGame === game.id
-                    ? "bg-primary/10 ring-2 ring-primary text-primary"
-                    : "bg-slate-50 text-slate-700 hover:bg-slate-100 ring-1 ring-slate-200"
+                    ? "ring-2 ring-primary shadow-md"
+                    : "ring-1 ring-slate-200 hover:ring-primary/40 hover:shadow-sm"
                 } disabled:opacity-50`}
               >
-                <span className="text-xl">{game.icon}</span>
-                <span className="truncate w-full text-center text-xs">{game.name}</span>
+                <div className="relative aspect-[460/215]">
+                  <Image
+                    src={game.img}
+                    alt={game.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <span className="absolute bottom-1.5 inset-x-0 text-center text-xs font-bold text-white drop-shadow-lg px-1 truncate">
+                    {game.name}
+                  </span>
+                </div>
               </button>
             ))}
           </div>
