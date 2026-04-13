@@ -104,6 +104,10 @@ Proven workflow for scraping real products from Algerian PC retailers and import
 
 Key competitor sites: `wifidjelfa.com` (Djelfa), and others as discovered. Category URL patterns for wifidjelfa: `/product-category/99236150627014130/99236150627008520/` (CPUs), `...8523` (GPUs), `...8524` (Motherboards), `...8525` (RAM), `...8540` (SSDs), `...8526` (PSUs), `...8522` (Cases), `...8521` (Cooling).
 
+## Deployment rule
+
+When the user asks to **push** (git push), check if any files inside `convex/` (excluding `convex/_generated/`) were modified in the commits being pushed. If so, **also run `npx convex deploy --yes`** before or after the push so production Convex functions stay in sync. Forgetting this causes runtime errors on the live site.
+
 ## Gotchas
 
 - Port 3000 may be in use by another process; Next will fall back to 3001. Check the dev server output when smoke-testing URLs.
