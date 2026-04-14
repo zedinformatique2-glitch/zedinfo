@@ -25,7 +25,7 @@ export default async function ShopIndexPage({
     inStockOnly: tShop("inStockOnly"),
     minPrice: tShop("minPrice"),
     maxPrice: tShop("maxPrice"),
-    showing: tShop("showing"),
+    showing: tShop.raw("showing") as string,
     noResults: tShop("noResults"),
     sortByLabel: tShop("sortByLabel"),
     sortNewest: tShop("sortBy.newest"),
