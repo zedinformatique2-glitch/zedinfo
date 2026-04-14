@@ -121,6 +121,18 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_slug", ["slug"]),
 
+  promotions: defineTable({
+    productId: v.id("products"),
+    prompt: v.string(),
+    imageStorageId: v.id("_storage"),
+    imageUrl: v.string(),
+    aspectRatio: v.string(),
+    platform: v.optional(v.union(v.literal("facebook"), v.literal("instagram"), v.literal("both"))),
+    postedAt: v.optional(v.number()),
+    postId: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_product", ["productId"]).index("by_createdAt", ["createdAt"]),
+
   savedBuilds: defineTable({
     shareCode: v.string(),
     componentIds: v.array(v.id("products")),

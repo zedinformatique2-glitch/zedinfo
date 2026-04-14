@@ -7,6 +7,7 @@ export const ar = {
     categories: "الفئات",
     orders: "الطلبات",
     delivery: "التوصيل",
+    promotions: "العروض الترويجية",
     logout: "تسجيل الخروج",
   },
 
@@ -153,6 +154,27 @@ export const ar = {
     iconLabel: "الأيقونة (Material Symbols)",
     order: "الترتيب",
     add: "إضافة",
+  },
+
+  // Promotions
+  promotions: {
+    title: "العروض الترويجية",
+    subtitle: "إنشاء صور ترويجية بالذكاء الاصطناعي ونشرها على وسائل التواصل",
+    selectProduct: "اختر منتجاً",
+    prompt: "وصف الصورة",
+    aspectRatio: "نسبة العرض",
+    generate: "إنشاء صورة",
+    generating: "جاري الإنشاء...",
+    download: "تحميل",
+    postFacebook: "نشر على فيسبوك",
+    postInstagram: "نشر على إنستغرام",
+    postBoth: "نشر على الاثنين",
+    posting: "جاري النشر...",
+    posted: "تم النشر",
+    history: "السجل",
+    noPromotions: "لا توجد عروض ترويجية بعد",
+    delete: "حذف",
+    deleteConfirm: "هل أنت متأكد من الحذف؟",
   },
 
   // Delivery

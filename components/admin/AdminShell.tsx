@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/admin/categories", label: ar.nav.categories, icon: "category" },
   { href: "/admin/orders", label: ar.nav.orders, icon: "receipt_long" },
   { href: "/admin/delivery", label: ar.nav.delivery, icon: "local_shipping" },
+  { href: "/admin/promotions", label: ar.nav.promotions, icon: "auto_awesome" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
