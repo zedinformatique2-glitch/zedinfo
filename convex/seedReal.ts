@@ -304,7 +304,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 3,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/02/101775429664243812.jpg"],
     featured: true,
-    specs: { type: "motherboard", socket: "AM5", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 256 },
+    specs: { type: "motherboard", socket: "AM5", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 256, m2Slots: 5 },
   },
   {
     slug: "asus-x870-ayw-gaming-wifi",
@@ -318,7 +318,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 5,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/08/101480279780098244.jpg"],
     featured: false,
-    specs: { type: "motherboard", socket: "AM5", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 256 },
+    specs: { type: "motherboard", socket: "AM5", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 256, m2Slots: 4 },
   },
   {
     slug: "gigabyte-b650e-aorus-stealth-ice",
@@ -332,7 +332,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 4,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/01/101706070455484499.jpg"],
     featured: false,
-    specs: { type: "motherboard", socket: "AM5", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 192 },
+    specs: { type: "motherboard", socket: "AM5", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 192, m2Slots: 3 },
   },
   {
     slug: "asus-z890-ayw-gaming-wifi",
@@ -346,7 +346,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 6,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/02/101752165034360957.jpg"],
     featured: false,
-    specs: { type: "motherboard", socket: "LGA1851", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 256 },
+    specs: { type: "motherboard", socket: "LGA1851", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 256, m2Slots: 4 },
   },
   {
     slug: "asus-rog-strix-b760-f-gaming",
@@ -360,7 +360,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 5,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/02/101775429664243718.jpg"],
     featured: false,
-    specs: { type: "motherboard", socket: "LGA1700", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 192 },
+    specs: { type: "motherboard", socket: "LGA1700", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 192, m2Slots: 3 },
   },
   {
     slug: "gigabyte-b860-gaming-x-wifi",
@@ -374,7 +374,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 8,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/12/101669562914701483.jpg"],
     featured: false,
-    specs: { type: "motherboard", socket: "LGA1851", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 192 },
+    specs: { type: "motherboard", socket: "LGA1851", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 192, m2Slots: 3 },
   },
   {
     slug: "gigabyte-b860m-aorus-elite-wifi",
@@ -388,7 +388,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 7,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/12/101669562914701495.jpg"],
     featured: false,
-    specs: { type: "motherboard", socket: "LGA1851", formFactor: "mATX", ramType: "DDR5", ramSlots: 2, maxRam: 96 },
+    specs: { type: "motherboard", socket: "LGA1851", formFactor: "mATX", ramType: "DDR5", ramSlots: 2, maxRam: 96, m2Slots: 2 },
   },
   {
     slug: "asus-prime-b760-plus-ddr5",
@@ -402,7 +402,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 10,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/06/101436158822580244.jpg"],
     featured: false,
-    specs: { type: "motherboard", socket: "LGA1700", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 128 },
+    specs: { type: "motherboard", socket: "LGA1700", formFactor: "ATX", ramType: "DDR5", ramSlots: 4, maxRam: 128, m2Slots: 3 },
   },
 
   // ============ RAM ============

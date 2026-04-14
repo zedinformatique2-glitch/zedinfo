@@ -134,6 +134,9 @@
     "checkout": "Checkout",
     "estimatedShipping": "Estimated shipping"
   },
+  "directBuy": {
+    "title": "Direct Order"
+  },
   "checkout": {
     "title": "Complete your order",
     "contactInfo": "Contact information",

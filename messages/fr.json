@@ -134,6 +134,9 @@
     "checkout": "Passer la commande",
     "estimatedShipping": "Livraison estimée"
   },
+  "directBuy": {
+    "title": "Commande directe"
+  },
   "checkout": {
     "title": "Finaliser la commande",
     "contactInfo": "Informations de contact",

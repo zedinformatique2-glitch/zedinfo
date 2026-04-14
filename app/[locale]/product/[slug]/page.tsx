@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { AddToCartBar } from "@/components/product/AddToCartBar";
+import { DirectBuyForm } from "@/components/product/DirectBuyForm";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
@@ -163,6 +164,8 @@ export default async function ProductPage({
               addLabel={tc("addToCart")}
               qtyLabel={tc("quantity")}
             />
+
+            {inStock && <DirectBuyForm product={product} />}
 
             {/* Specs */}
             <div className="mt-12">

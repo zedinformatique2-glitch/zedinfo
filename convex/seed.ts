@@ -148,6 +148,7 @@ const PRODUCTS: ProductSeed[] = [
       ramType: "DDR5",
       ramSlots: 4,
       maxRam: 192,
+      m2Slots: 4,
     },
   },
   {
@@ -169,6 +170,7 @@ const PRODUCTS: ProductSeed[] = [
       ramType: "DDR5",
       ramSlots: 4,
       maxRam: 128,
+      m2Slots: 3,
     },
   },
   // RAM

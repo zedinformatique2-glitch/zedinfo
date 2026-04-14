@@ -134,6 +134,9 @@
     "checkout": "إتمام الطلب",
     "estimatedShipping": "الشحن المقدر"
   },
+  "directBuy": {
+    "title": "طلب مباشر"
+  },
   "checkout": {
     "title": "إتمام الطلب",
     "contactInfo": "معلومات الاتصال",

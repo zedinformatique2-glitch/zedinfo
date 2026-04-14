@@ -11,14 +11,15 @@ import { formatDzd, localizedName } from "@/lib/format";
 import {
   CONFIG_SLOTS,
   checkCompatibility,
+  filterCompatibleProducts,
   type ConfigSelection,
   type ConfigComponent,
+  type SlotKey,
 } from "@/lib/configurator-engine";
 import { AiChat } from "@/components/configurator/AiChat";
 import { FpsEstimator } from "@/components/configurator/FpsEstimator";
 import type { Locale } from "@/lib/i18n/config";
 
-type SlotKey = (typeof CONFIG_SLOTS)[number]["key"];
 
 const SLOT_ICONS: Record<string, string> = {
   cpu: "developer_board",
@@ -55,6 +56,15 @@ export default function ConfiguratorPage() {
   );
 
   const result = useMemo(() => checkCompatibility(selection), [selection]);
+
+  const filteredSlotProducts = useMemo(() => {
+    if (!slotProducts || !openSlot) return [];
+    const filtered = filterCompatibleProducts(slotProducts as any[], selection, openSlot);
+    return filtered.sort((a, b) => {
+      if (a.compatible === b.compatible) return 0;
+      return a.compatible ? -1 : 1;
+    });
+  }, [slotProducts, openSlot, selection]);
 
   function setSingle(key: SlotKey, comp: ConfigComponent) {
     setSelection((s) => ({ ...s, [key]: comp }));
@@ -289,34 +299,46 @@ export default function ConfiguratorPage() {
                           {tc("loading")}
                         </div>
                       )}
-                      {slotProducts?.map((p: any) => (
+                      {filteredSlotProducts.map(({ product: p, compatible, incompatibilityReason }) => (
                         <button
-                          key={p._id}
+                          key={(p as any)._id}
                           onClick={() => {
+                            if (!compatible) return;
                             const comp: ConfigComponent = {
-                              _id: p._id,
-                              slug: p.slug,
-                              nameFr: p.nameFr,
-                              nameAr: p.nameAr,
-                              priceDzd: p.priceDzd,
-                              specs: p.specs,
+                              _id: (p as any)._id,
+                              slug: (p as any).slug,
+                              nameFr: (p as any).nameFr,
+                              nameAr: (p as any).nameAr,
+                              priceDzd: (p as any).priceDzd,
+                              specs: (p as any).specs,
                             };
                             if (slot.key === "ram") setRam(comp);
                             else if (slot.key === "storage") setStorage(comp);
                             else setSingle(slot.key, comp);
                           }}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white ring-1 ring-slate-200 hover:ring-primary/40 hover:bg-primary/5 transition-all text-start"
+                          disabled={!compatible}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl ring-1 transition-all text-start ${
+                            compatible
+                              ? "bg-white ring-slate-200 hover:ring-primary/40 hover:bg-primary/5 cursor-pointer"
+                              : "bg-slate-50 ring-slate-100 opacity-50 cursor-not-allowed"
+                          }`}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm truncate text-slate-900">
-                              {localizedName(p, locale)}
+                            <div className={`font-semibold text-sm truncate ${compatible ? "text-slate-900" : "text-slate-400"}`}>
+                              {localizedName(p as any, locale)}
                             </div>
-                            {p.brand && (
-                              <div className="text-xs text-slate-400">{p.brand}</div>
+                            {(p as any).brand && (
+                              <div className="text-xs text-slate-400">{(p as any).brand}</div>
+                            )}
+                            {incompatibilityReason && (
+                              <div className="text-xs text-red-500 mt-0.5 flex items-center gap-1">
+                                <Icon name="error" className="text-[12px] shrink-0" />
+                                {incompatibilityReason}
+                              </div>
                             )}
                           </div>
-                          <div className="text-primary font-bold text-sm whitespace-nowrap">
-                            {formatDzd(p.priceDzd, locale)}
+                          <div className={`font-bold text-sm whitespace-nowrap ${compatible ? "text-primary" : "text-slate-300"}`}>
+                            {formatDzd((p as any).priceDzd, locale)}
                           </div>
                         </button>
                       ))}
