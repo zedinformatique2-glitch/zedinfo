@@ -65,27 +65,6 @@ export default async function LocaleLayout({
       <body className="min-h-screen flex flex-col">
         <NextIntlClientProvider locale={loc} messages={messages}>
           <ConvexClientProvider>
-            {/* Top info banner */}
-            <div className="bg-primary text-white text-xs sm:text-sm py-2 px-4">
-              <div className="flex items-center justify-center gap-4 sm:gap-8 flex-wrap">
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-base">verified</span>
-                  ضمان بنسبة 100%
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-base">support_agent</span>
-                  خدمة على مدار 24 ساعة
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-base">local_shipping</span>
-                  التوصيل 58 ولاية
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-base">payments</span>
-                  الدفع نقداً عند الاستلام
-                </span>
-              </div>
-            </div>
             <Header locale={loc} />
             <main className="flex-1 pt-20">{children}</main>
             <Footer locale={loc} />
