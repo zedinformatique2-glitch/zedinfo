@@ -48,8 +48,11 @@ export const generateImage = action({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-exp:free",
-        modalities: ["text", "image"],
+        model: "google/gemini-2.5-flash-image",
+        modalities: ["image", "text"],
+        image_config: {
+          aspect_ratio: aspectRatio,
+        },
         messages: [
           {
             role: "user",
@@ -71,32 +74,30 @@ export const generateImage = action({
     }
 
     const data = await response.json();
-    const choice = data.choices?.[0]?.message;
+    const message = data.choices?.[0]?.message;
 
-    // Extract image from response - Gemini returns inline_data in content parts
+    // Extract image from response - OpenRouter returns images in message.images[]
     let imageBase64: string | null = null;
     let mimeType = "image/png";
 
-    if (choice?.content && Array.isArray(choice.content)) {
-      for (const part of choice.content) {
-        if (part.type === "image_url" && part.image_url?.url) {
-          const dataUrl: string = part.image_url.url;
-          if (dataUrl.startsWith("data:")) {
-            const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-            if (match) {
-              mimeType = match[1];
-              imageBase64 = match[2];
-            }
+    if (message?.images && Array.isArray(message.images)) {
+      for (const img of message.images) {
+        const dataUrl: string = img.image_url?.url || "";
+        if (dataUrl.startsWith("data:")) {
+          const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            mimeType = match[1];
+            imageBase64 = match[2];
+            break;
           }
-        } else if (part.type === "inline_data") {
-          mimeType = part.mime_type || "image/png";
-          imageBase64 = part.data;
         }
       }
     }
 
     if (!imageBase64) {
-      throw new Error("No image returned from AI model. Response: " + JSON.stringify(data.choices?.[0]?.message).slice(0, 500));
+      // Truncate response for error message
+      const msgStr = JSON.stringify(message || {});
+      throw new Error("No image returned from AI model. Response: " + msgStr.slice(0, 500));
     }
 
     // Upload to Convex storage
