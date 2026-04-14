@@ -24,6 +24,13 @@ const PROMO_TYPES = [
   { value: "custom", label: "Personnalisé" },
 ];
 
+const IMAGE_STYLES = [
+  { value: "dark_neon", label: "Dark Neon Gaming", desc: "Fond sombre, néon violet/bleu, style gaming pro" },
+  { value: "dark_blue", label: "Dark Blue Tech", desc: "Fond bleu foncé, accents cyan, style tech" },
+  { value: "clean_white", label: "Clean White", desc: "Fond blanc, grille bleue, style e-commerce" },
+  { value: "gradient_dark", label: "Gradient Sombre", desc: "Dégradé noir-violet, éclairage dramatique" },
+];
+
 const PRICE_STYLES = [
   { value: "normal", label: "Prix normal" },
   { value: "discount_percent", label: "Réduction %" },
@@ -40,6 +47,7 @@ function buildPrompt({
   oldPrice,
   customPriceText,
   customText,
+  imageStyle,
 }: {
   product: any;
   promoType: string;
@@ -48,13 +56,14 @@ function buildPrompt({
   oldPrice: string;
   customPriceText: string;
   customText: string;
+  imageStyle: string;
 }) {
   if (!product) return "";
 
   const promoLabel: Record<string, string> = {
     promotion: "PROMOTION",
     special_offer: "OFFRE SPÉCIALE",
-    flash_sale: "VENTE FLASH ⚡",
+    flash_sale: "VENTE FLASH",
     new_arrival: "NOUVEAU",
     best_seller: "BEST SELLER",
     limited_stock: "STOCK LIMITÉ",
@@ -65,58 +74,166 @@ function buildPrompt({
   let priceSection = "";
   switch (priceStyle) {
     case "normal":
-      priceSection = `Display the price "${product.priceDzd} DZD" in large bold text.`;
+      priceSection = `Display the price as huge bold white text: "${product.priceDzd}" with "DA" in smaller superscript text next to it. The price should be one of the most prominent elements. Place it in a glowing neon-bordered box or badge at the bottom-right area.`;
       break;
     case "discount_percent":
-      priceSection = `Show a big "-${discountPercent || "20"}%" badge/circle in red or yellow. Display the new price "${product.priceDzd} DZD" in large bold text.`;
+      priceSection = `Show a big "-${discountPercent || "20"}%" badge in a glowing red/yellow neon circle or starburst. Display the new price "${product.priceDzd}" with "DA" as huge bold white text in a neon-bordered price box.`;
       break;
     case "old_new":
-      priceSection = `Show the old price "${oldPrice || product.priceDzd} DZD" crossed out with a strikethrough line, and the new price "${product.priceDzd} DZD" next to it in large bold text, highlighted in yellow or green to emphasize the savings.`;
+      priceSection = `Show the old price "${oldPrice || product.priceDzd} DA" crossed out with a red strikethrough line in smaller text, and the new price "${product.priceDzd}" with "DA" as huge bold white glowing text below it. Use a neon-bordered box for the price area.`;
       break;
     case "starting_from":
-      priceSection = `Display "À partir de ${product.priceDzd} DZD" in large bold text.`;
+      priceSection = `Display "PRICE" label above, then "${product.priceDzd}" with "DA" in huge bold white glowing text in a neon-bordered price box.`;
       break;
     case "custom":
-      priceSection = `Display this price text: "${customPriceText || product.priceDzd + " DZD"}" in large bold text.`;
+      priceSection = `Display this price text: "${customPriceText || product.priceDzd + " DA"}" as huge bold white glowing text in a neon-bordered price box.`;
       break;
   }
 
-  const extraText = customText && promoType !== "custom" ? `\n- Include this additional text: "${customText}"` : "";
+  // Extract key specs from product for feature badges
+  const specs = product.specs;
+  let specBadges = "";
+  if (specs) {
+    const specItems: string[] = [];
+    if (specs.type === "cpu") {
+      if (specs.cores) specItems.push(`${specs.cores} Cores / ${specs.threads || specs.cores * 2} Threads`);
+      if (specs.baseClock) specItems.push(`${specs.baseClock} GHz Base Clock`);
+      if (specs.boostClock) specItems.push(`${specs.boostClock} GHz Boost`);
+      if (specs.socket) specItems.push(`Socket ${specs.socket}`);
+      if (specs.tdp) specItems.push(`${specs.tdp}W TDP`);
+    } else if (specs.type === "gpu") {
+      if (specs.vram) specItems.push(`${specs.vram}GB VRAM`);
+      if (specs.boostClock) specItems.push(`${specs.boostClock} MHz Boost`);
+    } else if (specs.type === "motherboard") {
+      if (specs.socket) specItems.push(`Socket ${specs.socket}`);
+      if (specs.chipset) specItems.push(`${specs.chipset} Chipset`);
+      if (specs.ramType) specItems.push(`${specs.ramType} Support`);
+      if (specs.formFactor) specItems.push(`${specs.formFactor}`);
+    } else if (specs.type === "ram") {
+      if (specs.capacity) specItems.push(`${specs.capacity}GB`);
+      if (specs.speed) specItems.push(`${specs.speed} MHz`);
+      if (specs.ramType) specItems.push(`${specs.ramType}`);
+    } else if (specs.type === "storage") {
+      if (specs.capacity) specItems.push(`${specs.capacity}`);
+      if (specs.interface) specItems.push(`${specs.interface}`);
+      if (specs.readSpeed) specItems.push(`${specs.readSpeed} MB/s Read`);
+    } else if (specs.type === "psu") {
+      if (specs.wattage) specItems.push(`${specs.wattage}W`);
+      if (specs.efficiency) specItems.push(`${specs.efficiency}`);
+      if (specs.modular) specItems.push(`Modular`);
+    } else if (specs.type === "case") {
+      if (specs.formFactor) specItems.push(`${specs.formFactor}`);
+      if (specs.maxGpuLength) specItems.push(`GPU up to ${specs.maxGpuLength}mm`);
+    } else if (specs.type === "cooler") {
+      if (specs.type) specItems.push(specs.coolerType || "");
+      if (specs.tdp) specItems.push(`${specs.tdp}W TDP`);
+    }
+    if (specItems.length > 0) {
+      specBadges = `\n\nFEATURE SPEC BADGES (right side, stacked vertically):
+Each spec gets its own rounded rectangle badge with a dark semi-transparent background, a subtle neon purple/blue border glow, and a small icon on the left. Use bold white text for the spec title and lighter gray subtext:
+${specItems.map((s, i) => `${i + 1}. "${s}"`).join("\n")}`;
+    }
+  }
 
-  return `Create a professional promotional banner image with these STRICT requirements:
+  const extraText = customText && promoType !== "custom" ? `\nADDITIONAL TEXT: Include "${customText}" as a highlighted callout.` : "";
 
-BACKGROUND:
-- Clean WHITE background with a subtle blue grid/line pattern overlay at LOW OPACITY (around 10-15% opacity), creating a modern tech blueprint feel
-- The grid lines should be in blue (#0035d0) but very faint/transparent
+  const styleGuides: Record<string, string> = {
+    dark_neon: `BACKGROUND & ATMOSPHERE:
+- Deep BLACK/very dark background (#0a0a0f)
+- Large circular NEON GLOW RING behind the product — purple (#8b5cf6) and blue (#3b82f6) gradient, creating a dramatic halo/portal effect
+- Subtle purple and blue light particles/bokeh floating in the scene
+- A glossy, reflective dark surface beneath the product (like a dark glass table)
+- Faint purple/blue ambient lighting illuminating the edges of the product
 
-LOGO:
-- In the TOP LEFT corner, place the store logo as a CIRCLE badge — the logo is a blue circle with "ZED" text inside it
-- Below or next to the logo, write "ZED INFORMATIQUE" in clean navy blue (#0035d0) bold text
+LAYOUT (structured like a professional product spec sheet):
+- LEFT SIDE (40-50%): Product hero shot — the product shown at a slight angle with its retail box behind/beside it, dramatically lit by the neon glow
+- TOP RIGHT: Brand logo, then product model name in HUGE bold white text with subtle glow
+- RIGHT SIDE: Feature spec badges stacked vertically
+- BOTTOM RIGHT: Price in a glowing neon-bordered box
+- BOTTOM STRIP: Row of small circular icons with key specs underneath (like compatibility icons)
 
-PROMO BADGE:
-- Display "${promoLabel[promoType]}" as a large, eye-catching badge/banner — use bold typography, could be in a colored ribbon, sticker, or banner shape
-- Use red, yellow/gold, or brand blue for the promo badge depending on urgency
+COLOR PALETTE: Black, deep purple (#8b5cf6), electric blue (#3b82f6), white text, subtle cyan accents`,
+
+    dark_blue: `BACKGROUND & ATMOSPHERE:
+- Deep dark navy/blue-black gradient background (#0a1628 to #1a2744)
+- Geometric tech patterns and circuit-board style lines in very subtle cyan (#06b6d4) at low opacity
+- Clean, modern tech feel with subtle blue light rays from behind the product
+- Reflective dark surface beneath the product
+
+LAYOUT:
+- LEFT SIDE: Product hero shot at slight angle with retail packaging
+- TOP RIGHT: Brand + model name in large bold white text
+- RIGHT SIDE: Feature badges with dark backgrounds and cyan neon borders
+- BOTTOM: Price area and spec icon strip
+
+COLOR PALETTE: Dark navy, cyan (#06b6d4), white text, electric blue accents`,
+
+    clean_white: `BACKGROUND & ATMOSPHERE:
+- Clean WHITE background with a subtle blue grid/line pattern overlay at LOW OPACITY
+- Modern tech blueprint feel, professional and minimal
+- Soft shadows under the product
+
+LAYOUT:
+- CENTER: Product hero shot
+- TOP LEFT: Zed Informatique logo and branding in navy blue (#0035d0)
+- RIGHT SIDE: Feature badges with white backgrounds, blue borders
+- BOTTOM: Price in large bold navy text
+
+COLOR PALETTE: White, navy blue (#0035d0), gray accents, clean and corporate`,
+
+    gradient_dark: `BACKGROUND & ATMOSPHERE:
+- Rich gradient from black (#000) through deep purple (#2d1b69) to dark blue (#1e3a5f)
+- Dramatic volumetric lighting from behind the product
+- Subtle smoke/mist effects at the base
+- Glossy reflective surface
+
+LAYOUT:
+- LEFT SIDE: Product hero shot with dramatic lighting, showing the product and box
+- TOP RIGHT: Brand + large product name in white with subtle purple glow
+- RIGHT SIDE: Feature badges with frosted glass effect backgrounds
+- BOTTOM RIGHT: Price in glowing box
+
+COLOR PALETTE: Black, purple, blue, white text, gold accents for price`,
+  };
+
+  return `Generate a PROFESSIONAL PRODUCT PROMOTIONAL IMAGE. This must look like a high-end social media product advertisement for a tech/PC components store.
+
+STORE BRANDING:
+- Store name: "ZED INFORMATIQUE" — place it subtly in the top area
+- The brand of the product "${product.brand}" should be shown with its logo style in the top-left or top-right
 
 PRODUCT:
-- Product name: "${product.nameFr}" in bold dark text, clean modern font
-- Brand: "${product.brand}" shown clearly
-- The product photo should be LARGE and CENTERED, taking up significant space
+- Product: "${product.nameFr}"
+- Brand: "${product.brand}"
+- The product name "${product.nameFr}" must be displayed in VERY LARGE, BOLD, modern sans-serif white text (like Impact, Montserrat Black, or similar heavy font)
+- Show the product at a dramatic 3/4 angle view, hero shot style, with its retail box visible beside/behind it
+
+${styleGuides[imageStyle] || styleGuides.dark_neon}
+
+PROMO TYPE:
+- Display "${promoLabel[promoType]}" as a small badge/tag near the product name — subtle but visible, in a contrasting color (gold, red, or cyan depending on type)
 
 PRICE:
 - ${priceSection}
-- Price should be highly visible and prominent
+- The price numbers must be MASSIVE and BOLD — this is a key selling point${specBadges}
 
-TYPOGRAPHY:
-- Use clean, modern sans-serif fonts throughout
-- Strong hierarchy: promo badge > price > product name > brand
-- High contrast text — dark text on light areas, white text on dark badges
-- Professional kerning and spacing${extraText}
+BOTTOM STRIP:
+- Include a horizontal row of 4-5 small circular icons at the very bottom with key product highlights underneath each (like "Compatible Windows/Mac", brand features, etc.)
 
-STYLE:
-- Modern, clean, professional tech/e-commerce aesthetic
-- NOT cluttered — use whitespace effectively
-- Social media ready, eye-catching but tasteful
-- Sharp, high-quality rendering`;
+TYPOGRAPHY RULES:
+- ALL text must be perfectly sharp, readable, and properly spelled
+- Use modern, clean sans-serif fonts (Montserrat, Inter, or similar)
+- Strong visual hierarchy: Product name (largest) > Price (second largest) > Specs > Brand
+- White and light gray text on dark backgrounds
+- Bold headlines, regular weight for descriptions${extraText}
+
+CRITICAL QUALITY REQUIREMENTS:
+- This must look like it was designed by a professional graphic designer in Photoshop
+- Photorealistic product rendering — not cartoon or illustration
+- Clean, sharp edges on all text and badges
+- Professional lighting and shadows
+- Social media ready — high impact, eye-catching, premium feel
+- NO watermarks, NO placeholder text, NO lorem ipsum`;
 }
 
 export default function PromotionsPage() {
@@ -133,6 +250,7 @@ export default function PromotionsPage() {
   const [oldPrice, setOldPrice] = useState("");
   const [customPriceText, setCustomPriceText] = useState("");
   const [customText, setCustomText] = useState("");
+  const [imageStyle, setImageStyle] = useState("dark_neon");
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [prompt, setPrompt] = useState("");
   const [showPrompt, setShowPrompt] = useState(false);
@@ -149,7 +267,7 @@ export default function PromotionsPage() {
 
   const refreshPrompt = (overrides?: Partial<{
     product: any; promoType: string; priceStyle: string;
-    discountPercent: string; oldPrice: string; customPriceText: string; customText: string;
+    discountPercent: string; oldPrice: string; customPriceText: string; customText: string; imageStyle: string;
   }>) => {
     const p = overrides?.product ?? selectedProduct;
     if (!p) return;
@@ -161,6 +279,7 @@ export default function PromotionsPage() {
       oldPrice: overrides?.oldPrice ?? oldPrice,
       customPriceText: overrides?.customPriceText ?? customPriceText,
       customText: overrides?.customText ?? customText,
+      imageStyle: overrides?.imageStyle ?? imageStyle,
     }));
   };
 
@@ -275,7 +394,30 @@ export default function PromotionsPage() {
           </div>
         </div>
 
-        {/* Row 2: Price Style + related inputs */}
+        {/* Row 2: Image Style */}
+        <div>
+          <label className="block text-sm font-bold text-on-surface mb-2">
+            Style d&apos;image
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {IMAGE_STYLES.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => { setImageStyle(s.value); refreshPrompt({ imageStyle: s.value }); }}
+                className={`px-4 py-3 rounded-xl text-sm font-bold transition-all text-left ${
+                  imageStyle === s.value
+                    ? "bg-primary text-white shadow-md ring-2 ring-primary"
+                    : "bg-surface-variant text-on-surface-variant hover:bg-primary/10 ring-1 ring-outline-variant/40"
+                }`}
+              >
+                {s.label}
+                <span className="block text-xs font-normal opacity-70 mt-0.5">{s.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3: Price Style + related inputs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-bold text-on-surface mb-2">
