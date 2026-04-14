@@ -8,7 +8,9 @@ export default defineSchema({
     nameAr: v.string(),
     icon: v.string(),
     order: v.number(),
-  }).index("by_slug", ["slug"]),
+    parentId: v.optional(v.id("categories")),
+  }).index("by_slug", ["slug"])
+    .index("by_parentId", ["parentId"]),
 
   products: defineTable({
     slug: v.string(),

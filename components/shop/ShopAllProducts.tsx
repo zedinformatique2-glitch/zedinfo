@@ -55,6 +55,7 @@ export function ShopAllProducts({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const categories = useQuery(api.categories.list, {});
+  const hierarchy = useQuery(api.categories.listHierarchy, {});
 
   // When searching, use the search API; otherwise use paginated list
   const searchResults = useQuery(
@@ -111,31 +112,40 @@ export function ShopAllProducts({
 
   const filterContent = (
     <div className="space-y-6">
-      {/* Categories */}
+      {/* Categories (grouped by parent) */}
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface mb-3">
           {t.categories}
         </h3>
-        <div className="space-y-2">
-          {categories?.map((cat) => (
-            <label
-              key={cat._id}
-              className="flex items-center gap-2.5 cursor-pointer group"
-            >
-              <input
-                type="checkbox"
-                checked={selectedCategory === cat._id}
-                onChange={() =>
-                  setSelectedCategory(
-                    selectedCategory === cat._id ? undefined : cat._id
-                  )
-                }
-                className="h-4 w-4 rounded-md border-outline-variant text-primary focus:ring-primary/30"
-              />
-              <span className="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
-                {locale === "ar" ? cat.nameAr : cat.nameFr}
-              </span>
-            </label>
+        <div className="space-y-3">
+          {hierarchy?.map((parent) => (
+            <div key={parent._id}>
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant/70 mb-1.5 ps-1">
+                {locale === "ar" ? parent.nameAr : parent.nameFr}
+              </p>
+              <div className="space-y-1 ps-1">
+                {parent.children.map((cat: any) => (
+                  <label
+                    key={cat._id}
+                    className="flex items-center gap-2.5 cursor-pointer group"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategory === cat._id}
+                      onChange={() =>
+                        setSelectedCategory(
+                          selectedCategory === cat._id ? undefined : cat._id
+                        )
+                      }
+                      className="h-4 w-4 rounded-md border-outline-variant text-primary focus:ring-primary/30"
+                    />
+                    <span className="text-sm text-on-surface-variant group-hover:text-on-surface transition-colors">
+                      {locale === "ar" ? cat.nameAr : cat.nameFr}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

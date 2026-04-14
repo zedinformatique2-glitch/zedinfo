@@ -27,6 +27,7 @@ import type * as products from "../products.js";
 import type * as promotionActions from "../promotionActions.js";
 import type * as promotions from "../promotions.js";
 import type * as seed from "../seed.js";
+import type * as seedCategories from "../seedCategories.js";
 import type * as seedReal from "../seedReal.js";
 import type * as storage from "../storage.js";
 
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   promotionActions: typeof promotionActions;
   promotions: typeof promotions;
   seed: typeof seed;
+  seedCategories: typeof seedCategories;
   seedReal: typeof seedReal;
   storage: typeof storage;
 }>;

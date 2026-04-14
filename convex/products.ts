@@ -16,10 +16,31 @@ export const list = query({
         .withIndex("by_slug", (q) => q.eq("slug", categorySlug))
         .unique();
       if (!category) return [];
-      products = await ctx.db
-        .query("products")
-        .withIndex("by_category", (q) => q.eq("categoryId", category._id))
-        .collect();
+
+      // If this is a parent category (no parentId), fetch products from all children
+      if (category.parentId === undefined) {
+        const children = await ctx.db
+          .query("categories")
+          .withIndex("by_parentId", (q) => q.eq("parentId", category._id))
+          .collect();
+        const childIds = children.map((c) => c._id);
+
+        // Gather products from all child categories
+        const allProducts = [];
+        for (const childId of childIds) {
+          const childProducts = await ctx.db
+            .query("products")
+            .withIndex("by_category", (q) => q.eq("categoryId", childId))
+            .collect();
+          allProducts.push(...childProducts);
+        }
+        products = allProducts;
+      } else {
+        products = await ctx.db
+          .query("products")
+          .withIndex("by_category", (q) => q.eq("categoryId", category._id))
+          .collect();
+      }
     } else if (featured !== undefined) {
       products = await ctx.db
         .query("products")

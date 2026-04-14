@@ -1,37 +1,42 @@
-import Image from "next/image";
-import { Link } from "@/lib/i18n/routing";
+"use client";
 
-const categories = [
-  { label: "Laptops", slug: "laptops", image: "/categories/categories/cpu.jpg" },
-  { label: "GPU", slug: "graphics-cards", image: "/categories/categories/gpu.jpg" },
-  { label: "CPU", slug: "processors", image: "/categories/categories/cpu.jpg" },
-  { label: "Motherboard", slug: "motherboards", image: "/categories/categories/motherboard.jpg" },
-  { label: "RAM", slug: "ram", image: "/categories/categories/ram.jpg" },
-  { label: "Storage", slug: "storage", image: "/categories/categories/storage.jpg" },
-  { label: "PSU", slug: "power-supplies", image: "/categories/categories/psu.jpg" },
-  { label: "Cases", slug: "cases", image: "/categories/categories/case.jpg" },
-];
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Link } from "@/lib/i18n/routing";
+import { useLocale } from "next-intl";
+import { Icon } from "@/components/ui/Icon";
+import type { Locale } from "@/lib/i18n/config";
 
 export function CategoryGrid() {
+  const parents = useQuery(api.categories.listParents, {});
+  const locale = useLocale() as Locale;
+
+  if (!parents) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-2xl bg-surface-container animate-pulse aspect-square"
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-      {categories.map((cat) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      {parents.map((cat) => (
         <Link
-          key={cat.slug}
+          key={cat._id}
           href={`/shop/${cat.slug}`}
-          className="group rounded-2xl border border-outline-variant/30 overflow-hidden bg-surface-container transition-shadow hover:shadow-card-hover"
+          className="group flex flex-col items-center gap-3 rounded-2xl border border-outline-variant/30 bg-surface-container p-6 transition-all hover:shadow-card-hover hover:-translate-y-0.5"
         >
-          <div className="aspect-video overflow-hidden">
-            <Image
-              src={cat.image}
-              alt={cat.label}
-              width={400}
-              height={225}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
-          <p className="py-3 text-center text-sm font-semibold text-on-surface transition-colors group-hover:text-[#0ea5e9]">
-            {cat.label}
+          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+            <Icon name={cat.icon} className="text-[28px]" />
+          </span>
+          <p className="text-center text-sm font-semibold text-on-surface transition-colors group-hover:text-primary">
+            {locale === "ar" ? cat.nameAr : cat.nameFr}
           </p>
         </Link>
       ))}

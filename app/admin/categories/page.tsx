@@ -6,9 +6,11 @@ import { api } from "@/convex/_generated/api";
 import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ar } from "@/lib/admin-i18n";
+import type { Id } from "@/convex/_generated/dataModel";
 
 export default function AdminCategoriesPage() {
-  const categories = useQuery(api.categories.list, {});
+  const hierarchy = useQuery(api.categories.listHierarchy, {});
+  const parents = useQuery(api.categories.listParents, {});
   const create = useMutation(api.categories.create);
   const remove = useMutation(api.categories.remove);
 
@@ -18,12 +20,17 @@ export default function AdminCategoriesPage() {
     nameAr: "",
     icon: "category",
     order: 100,
+    parentId: "" as string,
   });
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
-    await create(form);
-    setForm({ slug: "", nameFr: "", nameAr: "", icon: "category", order: 100 });
+    const { parentId, ...rest } = form;
+    await create({
+      ...rest,
+      ...(parentId ? { parentId: parentId as Id<"categories"> } : {}),
+    });
+    setForm({ slug: "", nameFr: "", nameAr: "", icon: "category", order: 100, parentId: "" });
   }
 
   return (
@@ -43,26 +50,55 @@ export default function AdminCategoriesPage() {
               </tr>
             </thead>
             <tbody>
-              {categories?.map((c: any) => (
-                <tr key={c._id} className="border-b border-outline-variant">
-                  <td className="p-4 font-mono text-xs">{c.slug}</td>
-                  <td className="p-4 font-bold">{c.nameFr}</td>
-                  <td className="p-4">
-                    <span className="material-symbols-outlined text-primary">
-                      {c.icon}
-                    </span>
-                  </td>
-                  <td className="p-4 text-end">
-                    <button
-                      onClick={() => {
-                        if (confirm(ar.categoriesList.deleteConfirm)) remove({ id: c._id });
-                      }}
-                      className="text-error text-xs font-bold"
-                    >
-                      {ar.categoriesList.delete}
-                    </button>
-                  </td>
-                </tr>
+              {hierarchy?.map((parent: any) => (
+                <>
+                  {/* Parent row */}
+                  <tr key={parent._id} className="border-b border-outline-variant bg-slate-50">
+                    <td className="p-4 font-mono text-xs font-bold">{parent.slug}</td>
+                    <td className="p-4 font-black">{parent.nameFr}</td>
+                    <td className="p-4">
+                      <span className="material-symbols-outlined text-primary">
+                        {parent.icon}
+                      </span>
+                    </td>
+                    <td className="p-4 text-end">
+                      <button
+                        onClick={() => {
+                          if (confirm(ar.categoriesList.deleteConfirm)) remove({ id: parent._id });
+                        }}
+                        className="text-error text-xs font-bold"
+                      >
+                        {ar.categoriesList.delete}
+                      </button>
+                    </td>
+                  </tr>
+                  {/* Child rows */}
+                  {parent.children?.map((child: any) => (
+                    <tr key={child._id} className="border-b border-outline-variant/50">
+                      <td className="p-4 ps-8 font-mono text-xs text-on-surface-variant">
+                        ↳ {child.slug}
+                      </td>
+                      <td className="p-4 ps-8 font-semibold text-on-surface-variant">
+                        {child.nameFr}
+                      </td>
+                      <td className="p-4">
+                        <span className="material-symbols-outlined text-primary/60 text-[20px]">
+                          {child.icon}
+                        </span>
+                      </td>
+                      <td className="p-4 text-end">
+                        <button
+                          onClick={() => {
+                            if (confirm(ar.categoriesList.deleteConfirm)) remove({ id: child._id });
+                          }}
+                          className="text-error text-xs font-bold"
+                        >
+                          {ar.categoriesList.delete}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </>
               ))}
             </tbody>
           </table>
@@ -71,6 +107,25 @@ export default function AdminCategoriesPage() {
         <form onSubmit={onAdd} className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 p-6 space-y-4 relative overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-primary via-primary-container to-primary" />
           <h2 className="font-black tracking-tight">{ar.categoriesList.newCategory}</h2>
+
+          {/* Parent selector */}
+          <div>
+            <Label>Catégorie parente</Label>
+            <select
+              value={form.parentId}
+              onChange={(e) => setForm({ ...form, parentId: e.target.value })}
+              className="w-full rounded-xl border border-outline-variant/50 bg-surface-container-low px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              dir="ltr"
+            >
+              <option value="">— Aucune (catégorie parente) —</option>
+              {parents?.map((p: any) => (
+                <option key={p._id} value={p._id}>
+                  {p.nameFr}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <Label>{ar.categoriesList.slug}</Label>
             <Input

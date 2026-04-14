@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
 import { Icon } from "@/components/ui/Icon";
+import type { Locale } from "@/lib/i18n/config";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedParent, setExpandedParent] = useState<string | null>(null);
   const router = useRouter();
   const t = useTranslations("nav");
   const tc = useTranslations("common");
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
+
+  const hierarchy = useQuery(api.categories.listHierarchy, {});
 
   // Lock body scroll while drawer open
   useEffect(() => {
@@ -23,29 +29,16 @@ export function MobileNav() {
     };
   }, [open]);
 
-  const [componentsOpen, setComponentsOpen] = useState(false);
-
-  const componentCategories = [
-    { href: "/shop/graphics-cards", label: "Cartes graphiques", labelAr: "بطاقات الرسوميات", icon: "memory" },
-    { href: "/shop/processors", label: "Processeurs", labelAr: "المعالجات", icon: "developer_board" },
-    { href: "/shop/motherboards", label: "Cartes mères", labelAr: "اللوحات الأم", icon: "dashboard" },
-    { href: "/shop/ram", label: "Mémoire RAM", labelAr: "الذاكرة العشوائية", icon: "memory_alt" },
-    { href: "/shop/storage", label: "Stockage", labelAr: "التخزين", icon: "storage" },
-    { href: "/shop/power-supplies", label: "Alimentations", labelAr: "مزودات الطاقة", icon: "bolt" },
-    { href: "/shop/cases", label: "Boîtiers", labelAr: "الصناديق", icon: "view_in_ar" },
-    { href: "/shop/cooling", label: "Refroidissement", labelAr: "التبريد", icon: "ac_unit" },
-    { href: "/shop/monitors", label: "Moniteurs", labelAr: "الشاشات", icon: "monitor" },
-    { href: "/shop/accessories", label: "Accessoires", labelAr: "الملحقات", icon: "keyboard" },
-  ];
-
   const links: { href: string; label: string; icon: string }[] = [
     { href: "/shop", label: t("shop"), icon: "storefront" },
-    { href: "/shop/laptops", label: t("laptops"), icon: "laptop_mac" },
     { href: "/configurator", label: t("configurator"), icon: "tune" },
     { href: "/fps-estimator", label: t("fpsEstimator"), icon: "speed" },
     { href: "/support", label: t("support"), icon: "support_agent" },
     { href: "/about", label: t("about"), icon: "info" },
   ];
+
+  const getName = (item: { nameFr: string; nameAr: string }) =>
+    locale === "ar" ? item.nameAr : item.nameFr;
 
   return (
     <>
@@ -122,69 +115,89 @@ export function MobileNav() {
         {/* Links */}
         <nav className="flex-1 overflow-y-auto px-4 py-5">
           <div className="space-y-1">
-            {/* Shop & Laptops */}
-            {links.slice(0, 2).map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setOpen(false)}
-                className="group flex items-center gap-4 rounded-2xl px-4 py-3.5 text-sm font-bold uppercase tracking-tight text-on-surface hover:bg-primary/5 hover:text-primary transition-colors"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                  <Icon name={l.icon} className="text-[20px]" />
-                </span>
-                <span className="flex-1">{l.label}</span>
-                <Icon
-                  name="chevron_right"
-                  className="text-on-surface-variant group-hover:text-primary rtl:-scale-x-100 transition-transform group-hover:translate-x-0.5"
-                />
-              </Link>
-            ))}
-
-            {/* Composants PC — expandable dropdown */}
-            <button
-              onClick={() => setComponentsOpen(!componentsOpen)}
-              className="group flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-sm font-bold uppercase tracking-tight text-on-surface hover:bg-primary/5 hover:text-primary transition-colors"
+            {/* Shop link */}
+            <Link
+              href="/shop"
+              onClick={() => setOpen(false)}
+              className="group flex items-center gap-4 rounded-2xl px-4 py-3.5 text-sm font-bold uppercase tracking-tight text-on-surface hover:bg-primary/5 hover:text-primary transition-colors"
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                <Icon name="memory" className="text-[20px]" />
+                <Icon name="storefront" className="text-[20px]" />
               </span>
-              <span className="flex-1 text-start">{t("components")}</span>
+              <span className="flex-1">{t("shop")}</span>
               <Icon
-                name={componentsOpen ? "expand_less" : "expand_more"}
-                className="text-on-surface-variant group-hover:text-primary transition-transform"
+                name="chevron_right"
+                className="text-on-surface-variant group-hover:text-primary rtl:-scale-x-100 transition-transform group-hover:translate-x-0.5"
               />
-            </button>
+            </Link>
 
-            {/* Sub-categories */}
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                componentsOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-              }`}
-            >
-              <div className="ms-6 space-y-0.5 py-1">
-                {componentCategories.map((c) => (
-                  <Link
-                    key={c.href}
-                    href={c.href}
-                    onClick={() => setOpen(false)}
-                    className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-on-surface-variant hover:bg-primary/5 hover:text-primary transition-colors"
-                  >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/5 text-primary/70 group-hover:bg-primary group-hover:text-white transition-colors">
-                      <Icon name={c.icon} className="text-[16px]" />
-                    </span>
-                    <span className="flex-1">{locale === "ar" ? c.labelAr : c.label}</span>
-                    <Icon
-                      name="chevron_right"
-                      className="text-[16px] text-on-surface-variant/50 group-hover:text-primary rtl:-scale-x-100"
-                    />
-                  </Link>
-                ))}
+            {/* Dynamic category hierarchy */}
+            {hierarchy?.map((parent) => (
+              <div key={parent._id}>
+                <button
+                  onClick={() =>
+                    setExpandedParent(
+                      expandedParent === parent._id ? null : parent._id
+                    )
+                  }
+                  className="group flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-sm font-bold uppercase tracking-tight text-on-surface hover:bg-primary/5 hover:text-primary transition-colors"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                    <Icon name={parent.icon} className="text-[20px]" />
+                  </span>
+                  <span className="flex-1 text-start">{getName(parent)}</span>
+                  <Icon
+                    name={expandedParent === parent._id ? "expand_less" : "expand_more"}
+                    className="text-on-surface-variant group-hover:text-primary transition-transform"
+                  />
+                </button>
+
+                {/* Sub-categories */}
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                    expandedParent === parent._id
+                      ? "max-h-[800px] opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="ms-6 space-y-0.5 py-1">
+                    {/* "All" link for the parent */}
+                    <Link
+                      href={`/shop/${parent.slug}`}
+                      onClick={() => setOpen(false)}
+                      className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                        <Icon name="grid_view" className="text-[16px]" />
+                      </span>
+                      <span className="flex-1">
+                        {locale === "ar" ? "عرض الكل" : "Tout voir"}
+                      </span>
+                    </Link>
+                    {parent.children.map((child) => (
+                      <Link
+                        key={child._id}
+                        href={`/shop/${child.slug}`}
+                        onClick={() => setOpen(false)}
+                        className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-on-surface-variant hover:bg-primary/5 hover:text-primary transition-colors"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/5 text-primary/70 group-hover:bg-primary group-hover:text-white transition-colors">
+                          <Icon name={child.icon} className="text-[16px]" />
+                        </span>
+                        <span className="flex-1">{getName(child)}</span>
+                        <Icon
+                          name="chevron_right"
+                          className="text-[16px] text-on-surface-variant/50 group-hover:text-primary rtl:-scale-x-100"
+                        />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
 
-            {/* Remaining links: configurator, support, about */}
-            {links.slice(2).map((l) => (
+            {/* Remaining links: configurator, fps, support, about */}
+            {links.slice(1).map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

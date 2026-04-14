@@ -51,6 +51,7 @@ export default async function CategoryPage({
 
   const tc = await getTranslations({ locale, namespace: "common" });
   const ts = await getTranslations({ locale, namespace: "shop" });
+  const tn = await getTranslations({ locale, namespace: "nav" });
 
   const [catDoc, products] = await Promise.all([
     safeFetch(() => fetchQuery(api.categories.bySlug, { slug: category }), null),
@@ -59,16 +60,51 @@ export default async function CategoryPage({
 
   if (!catDoc && process.env.NEXT_PUBLIC_CONVEX_URL) notFound();
 
+  // If this is a parent category, also fetch its children for sub-nav
+  const isParent = catDoc && !catDoc.parentId;
+  const children = isParent
+    ? await safeFetch(
+        () => fetchQuery(api.categories.listChildren, { parentId: catDoc!._id }),
+        []
+      )
+    : [];
+
+  // If this is a child category, fetch the parent for breadcrumb
+  let parentDoc = null;
+  if (catDoc?.parentId) {
+    const allCats = await safeFetch(() => fetchQuery(api.categories.list, {}), []);
+    parentDoc = allCats.find((c: any) => c._id === catDoc.parentId) ?? null;
+  }
+
   return (
     <div>
       {/* Category hero */}
       <section className="bg-surface-container-low py-16 lg:py-20 border-b border-outline-variant">
         <div className="container-zed">
-          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-4">
-            <a href={`/${locale}/shop`}>{ts("sort")}</a> /{" "}
-            <span className="text-primary">
-              {catDoc ? localizedName(catDoc, loc) : category}
-            </span>
+          {/* Breadcrumb */}
+          <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-4 flex items-center gap-1.5 flex-wrap">
+            <a href={`/${locale}/shop`} className="hover:text-primary transition-colors">
+              {tn("shop")}
+            </a>
+            <span>/</span>
+            {parentDoc ? (
+              <>
+                <a
+                  href={`/${locale}/shop/${parentDoc.slug}`}
+                  className="hover:text-primary transition-colors"
+                >
+                  {localizedName(parentDoc, loc)}
+                </a>
+                <span>/</span>
+                <span className="text-primary">
+                  {catDoc ? localizedName(catDoc, loc) : category}
+                </span>
+              </>
+            ) : (
+              <span className="text-primary">
+                {catDoc ? localizedName(catDoc, loc) : category}
+              </span>
+            )}
           </div>
           <h1 className="text-4xl lg:text-6xl font-black tracking-tighter uppercase">
             {catDoc ? localizedName(catDoc, loc) : category}
@@ -76,6 +112,24 @@ export default async function CategoryPage({
           <p className="text-on-surface-variant mt-4">
             {ts("results", { count: products.length })}
           </p>
+
+          {/* Sub-category chips for parent categories */}
+          {isParent && children.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-6">
+              {children.map((child: any) => (
+                <a
+                  key={child._id}
+                  href={`/${locale}/shop/${child.slug}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-on-surface shadow-sm ring-1 ring-outline-variant/40 hover:bg-primary hover:text-white hover:ring-primary transition-all"
+                >
+                  <span className="material-symbols-outlined text-[14px]">
+                    {child.icon}
+                  </span>
+                  {localizedName(child, loc)}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
