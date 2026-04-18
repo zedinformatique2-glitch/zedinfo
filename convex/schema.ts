@@ -143,4 +143,31 @@ export default defineSchema({
     totalDzd: v.number(),
     createdAt: v.number(),
   }).index("by_shareCode", ["shareCode"]),
+
+  landingPages: defineTable({
+    slug: v.string(),
+    productId: v.id("products"),
+    headlineFr: v.string(),
+    headlineAr: v.string(),
+    subheadlineFr: v.string(),
+    subheadlineAr: v.string(),
+    bulletsFr: v.array(v.string()),
+    bulletsAr: v.array(v.string()),
+    heroImage: v.optional(v.string()),
+    priceOverrideDzd: v.optional(v.number()),
+    comparePriceDzd: v.optional(v.number()),
+    ctaFr: v.string(),
+    ctaAr: v.string(),
+    showCountdown: v.boolean(),
+    countdownEndsAt: v.optional(v.number()),
+    showStockUrgency: v.boolean(),
+    enabled: v.boolean(),
+    views: v.number(),
+    orders: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_product", ["productId"])
+    .index("by_createdAt", ["createdAt"]),
 });

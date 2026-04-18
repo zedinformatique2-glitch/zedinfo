@@ -39,8 +39,8 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip i18n for admin & api
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api")) {
+  // Skip i18n for admin, api, and landing pages
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api") || pathname.startsWith("/lp")) {
     return NextResponse.next();
   }
 

@@ -8,6 +8,7 @@ export const ar = {
     orders: "الطلبات",
     delivery: "التوصيل",
     promotions: "العروض الترويجية",
+    landingPages: "صفحات الهبوط",
     logout: "تسجيل الخروج",
   },
 
