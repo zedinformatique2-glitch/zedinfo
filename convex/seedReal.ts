@@ -1428,7 +1428,7 @@ const PRODUCTS: ProductSeed[] = [
   // ============ CONTROLLERS ============
   {
     slug: "aolion-al-k10-wireless-purple",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "AOLION",
     nameFr: "AOLION AL-K10 Manette Sans Fil Violet",
     nameAr: "AOLION AL-K10 يد تحكم لاسلكية بنفسجي",
@@ -1442,7 +1442,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "aolion-al-k10-wireless-white",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "AOLION",
     nameFr: "AOLION AL-K10 Manette Sans Fil Blanc",
     nameAr: "AOLION AL-K10 يد تحكم لاسلكية أبيض",
@@ -1456,7 +1456,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "gamesir-t7-xbox-wired-red",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "GameSir",
     nameFr: "GameSir T7 Manette Filaire Xbox Rouge",
     nameAr: "غيم سير T7 يد تحكم سلكية Xbox أحمر",
@@ -1470,7 +1470,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "easysmx-x05-black-hall-effect",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "EasySMX",
     nameFr: "EasySMX X05 Noir Hall Effect Multiplateforme",
     nameAr: "EasySMX X05 أسود Hall Effect متعدد المنصات",
@@ -1484,7 +1484,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "easysmx-x05-white-hall-effect",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "EasySMX",
     nameFr: "EasySMX X05 Blanc Hall Effect Multiplateforme",
     nameAr: "EasySMX X05 أبيض Hall Effect متعدد المنصات",
@@ -1498,7 +1498,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "spirit-of-gamer-predator-filaire",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "Spirit of Gamer",
     nameFr: "Spirit Of Gamer PREDATOR Filaire PC/PS3/PS4/Android/iOS",
     nameAr: "سبيريت أوف غيمر بريداتور سلكي PC/PS3/PS4",
@@ -1512,7 +1512,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "gaminja-p412-white",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "GAMINJA",
     nameFr: "GAMINJA P412 Manette Blanc",
     nameAr: "GAMINJA P412 يد تحكم أبيض",
@@ -1526,7 +1526,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "gaminja-p412-black",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "GAMINJA",
     nameFr: "GAMINJA P412 Manette Noir",
     nameAr: "GAMINJA P412 يد تحكم أسود",
@@ -1540,7 +1540,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "havit-g158bt-pro-wired-gamepad",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "HAVIT",
     nameFr: "HAVIT G158BT PRO Manette Filaire Haute Précision",
     nameAr: "HAVIT G158BT PRO يد تحكم سلكية عالية الدقة",
@@ -1998,7 +1998,7 @@ const PRODUCTS: ProductSeed[] = [
   // ============ CONTROLLERS (Unitech) ============
   {
     slug: "havit-g180bt-transparent",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "HAVIT",
     nameFr: "HAVIT G180BT Manette Transparente",
     nameAr: "هافيت G180BT يد تحكم شفافة",
@@ -2012,7 +2012,7 @@ const PRODUCTS: ProductSeed[] = [
   },
   {
     slug: "havit-g158bt-pro-transparent",
-    categorySlug: "controllers",
+    categorySlug: "game-controllers",
     brand: "HAVIT",
     nameFr: "HAVIT G158BT PRO Manette Transparente",
     nameAr: "هافيت G158BT PRO يد تحكم شفافة",
