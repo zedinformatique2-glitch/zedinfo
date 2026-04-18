@@ -13,6 +13,7 @@ import { Footer } from "@/components/layout/Footer";
 
 const FB_PIXEL_ID = "929394893194723";
 const GTM_ID = "GTM-P8R9ZP5B";
+const GA_ID = "G-QZ21CMPYMX";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -68,6 +69,18 @@ export default async function LocaleLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=block"
           rel="stylesheet"
         />
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_ID}');
+          `}
+        </Script>
         <Script id="gtm" strategy="afterInteractive">
           {`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
