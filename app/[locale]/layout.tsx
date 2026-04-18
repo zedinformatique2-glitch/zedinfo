@@ -31,6 +31,9 @@ export const metadata: Metadata = {
   title: "ZED INFORMATIQUE | Premium PC Hardware — Algeria",
   description:
     "Solutions informatiques haute performance en Algérie. PC gaming, composants, configurateur sur mesure.",
+  verification: {
+    google: "e0PKvsr1-hqlZipEM5Ja8i-YUOBOtRpyQz0iAJ7sqBU",
+  },
 };
 
 export function generateStaticParams() {
