@@ -33,6 +33,7 @@ function StatusSelect({ orderId, current }: { orderId: Id<"orders">; current: st
 
 function OrderRow({ o }: { o: any }) {
   const [expanded, setExpanded] = useState(false);
+  const remove = useMutation(api.orders.remove);
   const phone = o.customer?.phone;
   const cleanPhone = phone?.replace(/\s+/g, "");
 
@@ -86,6 +87,15 @@ function OrderRow({ o }: { o: any }) {
                 {expanded ? "expand_less" : "expand_more"}
               </span>
             </button>
+            <button
+              onClick={() => {
+                if (confirm(`حذف الطلب ${o.orderNumber}؟`)) remove({ id: o._id });
+              }}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-red-100 text-red-600 transition-colors"
+              title="حذف"
+            >
+              <span className="material-symbols-outlined text-lg">delete</span>
+            </button>
           </div>
         </td>
       </tr>
@@ -114,12 +124,50 @@ export default function AdminOrdersPage() {
     api.orders.listAdmin,
     filter === "all" ? {} : { status: filter }
   );
+  const clearByStatuses = useMutation(api.orders.clearByStatuses);
+  const [clearing, setClearing] = useState(false);
+
+  async function bulkClear(statuses: ("delivered" | "cancelled")[], label: string) {
+    if (!confirm(`حذف جميع الطلبات (${label})؟ لا يمكن التراجع.`)) return;
+    setClearing(true);
+    try {
+      const r = await clearByStatuses({ statuses });
+      alert(`تم حذف ${r.deleted} طلبًا`);
+    } finally {
+      setClearing(false);
+    }
+  }
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="text-2xl md:text-4xl font-black tracking-tighter mb-4 md:mb-8">
-        {ar.orders.title}
-      </h1>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-4 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-black tracking-tighter">
+          {ar.orders.title}
+        </h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => bulkClear(["delivered"], "تم التوصيل")}
+            disabled={clearing}
+            className="px-3 py-2 rounded-xl text-xs font-bold bg-green-50 text-green-800 ring-1 ring-green-200 hover:bg-green-100 disabled:opacity-50"
+          >
+            مسح "تم التوصيل"
+          </button>
+          <button
+            onClick={() => bulkClear(["cancelled"], "ملغى")}
+            disabled={clearing}
+            className="px-3 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-800 ring-1 ring-red-200 hover:bg-red-100 disabled:opacity-50"
+          >
+            مسح "ملغى"
+          </button>
+          <button
+            onClick={() => bulkClear(["delivered", "cancelled"], "تم التوصيل + ملغى")}
+            disabled={clearing}
+            className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-950 text-white hover:bg-slate-800 disabled:opacity-50"
+          >
+            مسح كل المنتهية
+          </button>
+        </div>
+      </div>
       <div className="flex gap-2 mb-6 flex-wrap">
         {(["all", ...STATUSES] as const).map((s) => (
           <button

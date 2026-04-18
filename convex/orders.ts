@@ -135,6 +135,42 @@ export const updateStatus = mutation({
   },
 });
 
+export const remove = mutation({
+  args: { id: v.id("orders") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+  },
+});
+
+export const clearByStatuses = mutation({
+  args: {
+    statuses: v.array(
+      v.union(
+        v.literal("pending"),
+        v.literal("confirmed"),
+        v.literal("preparing"),
+        v.literal("shipping"),
+        v.literal("delivered"),
+        v.literal("cancelled")
+      )
+    ),
+  },
+  handler: async (ctx, { statuses }) => {
+    let deleted = 0;
+    for (const status of statuses) {
+      const orders = await ctx.db
+        .query("orders")
+        .withIndex("by_status", (q) => q.eq("status", status))
+        .collect();
+      for (const o of orders) {
+        await ctx.db.delete(o._id);
+        deleted++;
+      }
+    }
+    return { deleted };
+  },
+});
+
 export const updateTracking = mutation({
   args: {
     id: v.id("orders"),
