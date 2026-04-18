@@ -11,3 +11,10 @@ dist
 .convex
 
 .vercel
+
+# build artifacts
+tsconfig.tsbuildinfo
+
+# stray local files
+SITE CATIGORIES.txt
+proposal-updated.html
