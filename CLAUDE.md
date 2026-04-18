@@ -108,6 +108,67 @@ Key competitor sites: `wifidjelfa.com` (Djelfa), and others as discovered. Categ
 
 When the user asks to **push** (git push), check if any files inside `convex/` (excluding `convex/_generated/`) were modified in the commits being pushed. If so, **also run `npx convex deploy --yes`** before or after the push so production Convex functions stay in sync. Forgetting this causes runtime errors on the live site.
 
+## Client deployment (this repo is the live production site)
+
+The repo points at a **client-owned** GitHub account. Code goes live via Vercel auto-deploy on `main`. Do not spin up new Convex projects or new Vercel projects unless explicitly asked — the live infrastructure already exists.
+
+### Live environment
+
+- **GitHub repo:** https://github.com/zedinformatique2-glitch/zedinfo (client's account, developer is collaborator)
+- **Convex prod deployment:** `first-rabbit-857` — https://first-rabbit-857.eu-west-1.convex.cloud
+- **Convex prod dashboard:** https://dashboard.convex.dev/d/first-rabbit-857
+- **Convex dev deployment:** `nautical-squid-800` (set in `.env.local`)
+- **Vercel project:** imported from the GitHub repo; auto-deploys on push to `main`; build command is `npx convex deploy --cmd "npm run build" --yes`
+- **Domain:** DNS on Hostinger, points to Vercel (`A @ → 76.76.21.21`, `CNAME www → cname.vercel-dns.com`)
+
+See `HANDOFF.md` at repo root for the full non-secret reference (analytics IDs, DNS records, admin URL, maintenance commands).
+
+### Standard update flow (code change → live)
+
+1. Edit files locally as usual.
+2. If anything under `convex/` (excluding `convex/_generated/`) changed, run `npx convex deploy --yes` **before** pushing — Vercel also runs it during build, but deploying first regenerates `convex/_generated/api.d.ts` so the typecheck on Vercel passes. **Commit the regenerated `api.d.ts`** along with the feature files or the Vercel build will fail with `Property 'X' does not exist on type ...`.
+3. `git add <feature files> convex/_generated/api.d.ts` → commit → push. Vercel auto-deploys within ~2 min.
+4. For icon/logo/asset-only changes: just push, no Convex step.
+
+### Git push over flaky network
+
+GitHub HTTPS/2 sometimes hangs on this machine's network (seen during initial handoff). If a push stalls, retry with HTTP/1.1:
+```bash
+git -c http.version=HTTP/1.1 push
+```
+Or persist it once: `git config --global http.version HTTP/1.1`.
+
+### Secrets — never commit, never paste in chat
+
+Live secrets live ONLY in the Convex env store and Vercel env store:
+- `OPENROUTER_API_KEY` (Convex, used by FPS estimator / AI chat / promo gen)
+- `ADMIN_PASSWORD` (both Convex and Vercel, kept in sync)
+- `CONVEX_DEPLOY_KEY` (Vercel only — used by the build command)
+
+If a secret shows up in a chat, commit, or log: **rotate it immediately** in the provider dashboard, then update both Convex (`npx convex env set --prod KEY "new"`) and Vercel (Project → Settings → Environment Variables).
+
+### Updating Convex env vars
+
+```bash
+npx convex env set --prod KEY "value"    # production
+npx convex env set KEY "value"           # dev
+```
+Takes effect immediately — no redeploy needed. Vercel env vars do need a redeploy to take effect (trigger one from the Vercel dashboard or push an empty commit).
+
+### Analytics / tracking already wired
+
+In `app/[locale]/layout.tsx` (public site only — admin pages do not track):
+- Meta Pixel `929394893194723` (also fires on `/lp/*` via `app/lp/layout.tsx`)
+- Google Tag Manager `GTM-P8R9ZP5B`
+- Google Analytics 4 `G-QZ21CMPYMX`
+- Google Search Console verified via `metadata.verification.google`
+
+Landing pages at `/lp/[slug]` additionally fire `ViewContent`, `InitiateCheckout`, and `Purchase` Meta events for ad optimization.
+
+### Landing page generator
+
+Admin UI at `/admin/landing-pages` creates conversion-style pages at `/lp/[slug]`. Each landing page references one product and overrides price, headline, bullets, CTA, countdown, stock urgency. Pages are `noindex`. Backend functions in `convex/landingPages.ts`; schema table `landingPages` with `views` / `orders` counters. The public route bypasses next-intl (see `middleware.ts`) and has its own `app/lp/layout.tsx` root.
+
 ## Gotchas
 
 - Port 3000 may be in use by another process; Next will fall back to 3001. Check the dev server output when smoke-testing URLs.
