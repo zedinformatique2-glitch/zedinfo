@@ -93,8 +93,37 @@ export default async function ProductPage({
     .filter((p: any) => p._id !== product._id)
     .slice(0, 4);
 
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+    "https://www.zed-informatique.com";
+  const productUrl = `${siteUrl}/${locale}/product/${product.slug}`;
+  const jsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    name,
+    description: desc || name,
+    image: product.images?.slice(0, 5) ?? [],
+    sku: product.slug,
+    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
+    category: product.category ? localizedName(product.category, loc) : undefined,
+    offers: {
+      "@type": "Offer",
+      url: productUrl,
+      priceCurrency: "DZD",
+      price: product.priceDzd,
+      availability: inStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  };
+
   return (
     <article className="bg-surface">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="container-zed py-8 lg:py-12">
         <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-8">
           {product.category && (
