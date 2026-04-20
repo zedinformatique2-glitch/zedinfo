@@ -157,7 +157,8 @@
     "specifications": "المواصفات",
     "reviews": "المراجعات",
     "related": "منتجات مشابهة",
-    "addedToCart": "تمت الإضافة إلى السلة"
+    "addedToCart": "تمت الإضافة إلى السلة",
+    "color": "اللون"
   },
   "cart": {
     "title": "سلة التسوق",

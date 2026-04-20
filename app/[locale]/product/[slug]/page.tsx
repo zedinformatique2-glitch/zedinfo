@@ -1,10 +1,8 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Badge } from "@/components/ui/Badge";
-import { Icon } from "@/components/ui/Icon";
 import { AddToCartBar } from "@/components/product/AddToCartBar";
 import { DirectBuyForm } from "@/components/product/DirectBuyForm";
+import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
@@ -112,39 +110,16 @@ export default async function ProductPage({
 
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Gallery */}
-          <div>
-            <div className="aspect-square bg-gradient-to-br from-white to-surface-container-low rounded-3xl shadow-card ring-1 ring-outline-variant/40 p-8 relative overflow-hidden">
-              {product.images[0] && (
-                <Image
-                  src={product.images[0]}
-                  alt={name}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-contain p-8"
-                />
-              )}
-              {inStock && <Badge className="absolute top-6 start-6">{tc("inStock")}</Badge>}
-            </div>
-            {product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-3 mt-4">
-                {product.images.slice(0, 4).map((img: string, i: number) => (
-                  <div
-                    key={i}
-                    className="aspect-square bg-white rounded-2xl ring-1 ring-outline-variant/40 shadow-card relative overflow-hidden hover:ring-primary/40 transition-all"
-                  >
-                    <Image
-                      src={img}
-                      alt=""
-                      fill
-                      sizes="120px"
-                      className="object-contain p-2"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductGallery
+            images={product.images}
+            name={name}
+            inStock={inStock}
+            inStockLabel={tc("inStock")}
+            colorVariants={product.colorVariants}
+            locale={loc}
+            colorLabel={tp("color")}
+          />
+
 
           {/* Info */}
           <div>

@@ -30,6 +30,7 @@ export default function EditProductPage() {
         images: product.images,
         featured: product.featured,
         specs: product.specs || {},
+        colorVariants: product.colorVariants,
       }}
     />
   );

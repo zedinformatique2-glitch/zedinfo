@@ -20,10 +20,22 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   const [productId, setProductId] = useState<string>(init?.productId ?? "");
   const [headlineFr, setHeadlineFr] = useState(init?.headlineFr ?? "");
   const [headlineAr, setHeadlineAr] = useState(init?.headlineAr ?? "");
+  const [headlineEn, setHeadlineEn] = useState(init?.headlineEn ?? "");
   const [subheadlineFr, setSubheadlineFr] = useState(init?.subheadlineFr ?? "");
   const [subheadlineAr, setSubheadlineAr] = useState(init?.subheadlineAr ?? "");
+  const [subheadlineEn, setSubheadlineEn] = useState(init?.subheadlineEn ?? "");
+
+  const [bulletTitlesFr, setBulletTitlesFr] = useState<string>((init?.bulletTitlesFr ?? []).join("\n"));
+  const [bulletTitlesAr, setBulletTitlesAr] = useState<string>((init?.bulletTitlesAr ?? []).join("\n"));
+  const [bulletTitlesEn, setBulletTitlesEn] = useState<string>((init?.bulletTitlesEn ?? []).join("\n"));
   const [bulletsFr, setBulletsFr] = useState<string>((init?.bulletsFr ?? []).join("\n"));
   const [bulletsAr, setBulletsAr] = useState<string>((init?.bulletsAr ?? []).join("\n"));
+  const [bulletsEn, setBulletsEn] = useState<string>((init?.bulletsEn ?? []).join("\n"));
+
+  const [descriptionFr, setDescriptionFr] = useState(init?.descriptionFr ?? "");
+  const [descriptionAr, setDescriptionAr] = useState(init?.descriptionAr ?? "");
+  const [descriptionEn, setDescriptionEn] = useState(init?.descriptionEn ?? "");
+
   const [heroImage, setHeroImage] = useState(init?.heroImage ?? "");
   const [priceOverrideDzd, setPriceOverrideDzd] = useState<string>(
     init?.priceOverrideDzd != null ? String(init.priceOverrideDzd) : ""
@@ -33,16 +45,41 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   );
   const [ctaFr, setCtaFr] = useState(init?.ctaFr ?? "Commander maintenant");
   const [ctaAr, setCtaAr] = useState(init?.ctaAr ?? "اطلب الآن");
+  const [ctaEn, setCtaEn] = useState(init?.ctaEn ?? "Order now");
+
+  const [urgencyTextFr, setUrgencyTextFr] = useState(init?.urgencyTextFr ?? "");
+  const [urgencyTextAr, setUrgencyTextAr] = useState(init?.urgencyTextAr ?? "");
+  const [urgencyTextEn, setUrgencyTextEn] = useState(init?.urgencyTextEn ?? "");
+
+  const [guaranteeTextFr, setGuaranteeTextFr] = useState(init?.guaranteeTextFr ?? "");
+  const [guaranteeTextAr, setGuaranteeTextAr] = useState(init?.guaranteeTextAr ?? "");
+  const [guaranteeTextEn, setGuaranteeTextEn] = useState(init?.guaranteeTextEn ?? "");
+
+  const [scarcityTextFr, setScarcityTextFr] = useState(init?.scarcityTextFr ?? "");
+  const [scarcityTextAr, setScarcityTextAr] = useState(init?.scarcityTextAr ?? "");
+  const [scarcityTextEn, setScarcityTextEn] = useState(init?.scarcityTextEn ?? "");
+
+  const [primaryColor, setPrimaryColor] = useState(init?.primaryColor ?? "#0035d0");
+  const [accentColor, setAccentColor] = useState(init?.accentColor ?? "#ef4444");
+  const [backgroundColor, setBackgroundColor] = useState(init?.backgroundColor ?? "#ffffff");
+  const [textColor, setTextColor] = useState(init?.textColor ?? "#0a0a0a");
+  const [defaultLang, setDefaultLang] = useState<string>(init?.defaultLang ?? "ar");
+
   const [showCountdown, setShowCountdown] = useState<boolean>(init?.showCountdown ?? false);
   const [countdownEndsAt, setCountdownEndsAt] = useState<string>(
-    init?.countdownEndsAt
-      ? new Date(init.countdownEndsAt).toISOString().slice(0, 16)
-      : ""
+    init?.countdownEndsAt ? new Date(init.countdownEndsAt).toISOString().slice(0, 16) : ""
   );
   const [showStockUrgency, setShowStockUrgency] = useState<boolean>(init?.showStockUrgency ?? true);
   const [enabled, setEnabled] = useState<boolean>(init?.enabled ?? true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const splitLines = (s: string) => s.split("\n").map((v) => v.trim()).filter(Boolean);
+  const optArr = (s: string) => {
+    const a = splitLines(s);
+    return a.length ? a : undefined;
+  };
+  const optStr = (s: string) => (s.trim() ? s : undefined);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,15 +95,39 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
         productId: productId as Id<"products">,
         headlineFr,
         headlineAr,
+        headlineEn: optStr(headlineEn),
         subheadlineFr,
         subheadlineAr,
-        bulletsFr: bulletsFr.split("\n").map((s) => s.trim()).filter(Boolean),
-        bulletsAr: bulletsAr.split("\n").map((s) => s.trim()).filter(Boolean),
+        subheadlineEn: optStr(subheadlineEn),
+        bulletsFr: splitLines(bulletsFr),
+        bulletsAr: splitLines(bulletsAr),
+        bulletsEn: optArr(bulletsEn),
+        bulletTitlesFr: optArr(bulletTitlesFr),
+        bulletTitlesAr: optArr(bulletTitlesAr),
+        bulletTitlesEn: optArr(bulletTitlesEn),
+        descriptionFr: optStr(descriptionFr),
+        descriptionAr: optStr(descriptionAr),
+        descriptionEn: optStr(descriptionEn),
         heroImage: heroImage.trim() || undefined,
         priceOverrideDzd: priceOverrideDzd ? Number(priceOverrideDzd) : undefined,
         comparePriceDzd: comparePriceDzd ? Number(comparePriceDzd) : undefined,
         ctaFr,
         ctaAr,
+        ctaEn: optStr(ctaEn),
+        urgencyTextFr: optStr(urgencyTextFr),
+        urgencyTextAr: optStr(urgencyTextAr),
+        urgencyTextEn: optStr(urgencyTextEn),
+        guaranteeTextFr: optStr(guaranteeTextFr),
+        guaranteeTextAr: optStr(guaranteeTextAr),
+        guaranteeTextEn: optStr(guaranteeTextEn),
+        scarcityTextFr: optStr(scarcityTextFr),
+        scarcityTextAr: optStr(scarcityTextAr),
+        scarcityTextEn: optStr(scarcityTextEn),
+        primaryColor: optStr(primaryColor),
+        accentColor: optStr(accentColor),
+        backgroundColor: optStr(backgroundColor),
+        textColor: optStr(textColor),
+        defaultLang: optStr(defaultLang),
         showCountdown,
         countdownEndsAt: showCountdown && countdownEndsAt ? new Date(countdownEndsAt).getTime() : undefined,
         showStockUrgency,
@@ -119,42 +180,76 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
           />
           <div className="text-xs text-on-surface-variant mt-1 ltr">→ /lp/{slug || "..."}</div>
         </Field>
+        <Field label="اللغة الافتراضية">
+          <select
+            value={defaultLang}
+            onChange={(e) => setDefaultLang(e.target.value)}
+            className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
+          >
+            <option value="ar">العربية</option>
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </Field>
       </Section>
 
-      <Section title="العناوين (FR / AR)">
-        <Field label="العنوان الرئيسي — فرنسي">
-          <input value={headlineFr} onChange={(e) => setHeadlineFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" required />
-        </Field>
+      <Section title="العناوين (FR / AR / EN)">
         <Field label="العنوان الرئيسي — عربي">
           <input value={headlineAr} onChange={(e) => setHeadlineAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" required />
         </Field>
-        <Field label="وصف قصير — فرنسي">
-          <input value={subheadlineFr} onChange={(e) => setSubheadlineFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" />
+        <Field label="العنوان الرئيسي — فرنسي">
+          <input value={headlineFr} onChange={(e) => setHeadlineFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" required />
+        </Field>
+        <Field label="Headline — English (اختياري)">
+          <input value={headlineEn} onChange={(e) => setHeadlineEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" />
         </Field>
         <Field label="وصف قصير — عربي">
           <input value={subheadlineAr} onChange={(e) => setSubheadlineAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
         </Field>
+        <Field label="وصف قصير — فرنسي">
+          <input value={subheadlineFr} onChange={(e) => setSubheadlineFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" />
+        </Field>
+        <Field label="Subheadline — English">
+          <input value={subheadlineEn} onChange={(e) => setSubheadlineEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" />
+        </Field>
       </Section>
 
-      <Section title="نقاط البيع (سطر لكل نقطة)">
-        <Field label="النقاط — فرنسي">
-          <textarea
-            rows={5}
-            value={bulletsFr}
-            onChange={(e) => setBulletsFr(e.target.value)}
-            className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            dir="ltr"
-            placeholder={"Livraison 48h partout en Algérie\nGarantie 2 ans\nPaiement à la livraison"}
-          />
+      <Section title="المزايا / Benefits (سطر لكل نقطة — عناوين ووصف متوازيان)">
+        <div className="grid md:grid-cols-2 gap-4">
+          <Field label="عناوين المزايا — عربي">
+            <textarea rows={5} value={bulletTitlesAr} onChange={(e) => setBulletTitlesAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" placeholder={"جودة أصلية\nتوصيل سريع\nضمان حقيقي"} />
+          </Field>
+          <Field label="وصف المزايا — عربي">
+            <textarea rows={5} value={bulletsAr} onChange={(e) => setBulletsAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" placeholder={"منتج أصلي 100% بضمان الشركة\nتوصيل خلال 48 ساعة لجميع الولايات\nضمان سنتين كاملتين"} />
+          </Field>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <Field label="Titres — Français">
+            <textarea rows={5} dir="ltr" value={bulletTitlesFr} onChange={(e) => setBulletTitlesFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+          <Field label="Descriptions — Français">
+            <textarea rows={5} dir="ltr" value={bulletsFr} onChange={(e) => setBulletsFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <Field label="Titles — English">
+            <textarea rows={5} dir="ltr" value={bulletTitlesEn} onChange={(e) => setBulletTitlesEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+          <Field label="Descriptions — English">
+            <textarea rows={5} dir="ltr" value={bulletsEn} onChange={(e) => setBulletsEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="وصف المنتج الكامل (فقرات، سطر فارغ لفصل الفقرات)">
+        <Field label="الوصف — عربي">
+          <textarea rows={6} value={descriptionAr} onChange={(e) => setDescriptionAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
         </Field>
-        <Field label="النقاط — عربي">
-          <textarea
-            rows={5}
-            value={bulletsAr}
-            onChange={(e) => setBulletsAr(e.target.value)}
-            className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            placeholder={"توصيل خلال 48 ساعة\nضمان سنتين\nالدفع عند الاستلام"}
-          />
+        <Field label="Description — Français">
+          <textarea rows={6} dir="ltr" value={descriptionFr} onChange={(e) => setDescriptionFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+        </Field>
+        <Field label="Description — English">
+          <textarea rows={6} dir="ltr" value={descriptionEn} onChange={(e) => setDescriptionEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
         </Field>
       </Section>
 
@@ -173,12 +268,60 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       </Section>
 
       <Section title="زر الدعوة للإجراء (CTA)">
-        <Field label="نص الزر — فرنسي">
-          <input value={ctaFr} onChange={(e) => setCtaFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" />
-        </Field>
         <Field label="نص الزر — عربي">
           <input value={ctaAr} onChange={(e) => setCtaAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
         </Field>
+        <Field label="نص الزر — فرنسي">
+          <input value={ctaFr} onChange={(e) => setCtaFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" />
+        </Field>
+        <Field label="CTA — English">
+          <input value={ctaEn} onChange={(e) => setCtaEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" dir="ltr" />
+        </Field>
+      </Section>
+
+      <Section title="نصوص الإلحاح والضمان والندرة">
+        <div className="grid md:grid-cols-3 gap-4">
+          <Field label="نص الإلحاح — عربي">
+            <input value={urgencyTextAr} onChange={(e) => setUrgencyTextAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" placeholder="عرض محدود" />
+          </Field>
+          <Field label="Urgence — FR">
+            <input dir="ltr" value={urgencyTextFr} onChange={(e) => setUrgencyTextFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" placeholder="Offre limitée" />
+          </Field>
+          <Field label="Urgency — EN">
+            <input dir="ltr" value={urgencyTextEn} onChange={(e) => setUrgencyTextEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" placeholder="Limited offer" />
+          </Field>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <Field label="ضمان — عربي">
+            <input value={guaranteeTextAr} onChange={(e) => setGuaranteeTextAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" placeholder="ضمان سنتين" />
+          </Field>
+          <Field label="Garantie — FR">
+            <input dir="ltr" value={guaranteeTextFr} onChange={(e) => setGuaranteeTextFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+          <Field label="Guarantee — EN">
+            <input dir="ltr" value={guaranteeTextEn} onChange={(e) => setGuaranteeTextEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <Field label="ندرة — عربي">
+            <input value={scarcityTextAr} onChange={(e) => setScarcityTextAr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+          <Field label="Rareté — FR">
+            <input dir="ltr" value={scarcityTextFr} onChange={(e) => setScarcityTextFr(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+          <Field label="Scarcity — EN">
+            <input dir="ltr" value={scarcityTextEn} onChange={(e) => setScarcityTextEn(e.target.value)} className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm" />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="الألوان / Design tokens">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <ColorField label="Primary" value={primaryColor} onChange={setPrimaryColor} />
+          <ColorField label="Accent" value={accentColor} onChange={setAccentColor} />
+          <ColorField label="Background" value={backgroundColor} onChange={setBackgroundColor} />
+          <ColorField label="Text" value={textColor} onChange={setTextColor} />
+        </div>
       </Section>
 
       <Section title="الإلحاح والحالة">
@@ -235,6 +378,28 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <label className="block">
       <div className="text-xs font-bold mb-1.5">{label}</div>
       {children}
+    </label>
+  );
+}
+
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block">
+      <div className="text-xs font-bold mb-1.5">{label}</div>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-10 w-12 rounded-lg border border-outline-variant cursor-pointer"
+        />
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          dir="ltr"
+          className="flex-1 rounded-xl border border-outline-variant px-3 py-2 text-xs font-mono"
+        />
+      </div>
     </label>
   );
 }

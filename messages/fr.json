@@ -157,7 +157,8 @@
     "specifications": "Spécifications",
     "reviews": "Avis",
     "related": "Produits similaires",
-    "addedToCart": "Ajouté au panier"
+    "addedToCart": "Ajouté au panier",
+    "color": "Couleur"
   },
   "cart": {
     "title": "Votre panier",

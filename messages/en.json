@@ -157,7 +157,8 @@
     "specifications": "Specifications",
     "reviews": "Reviews",
     "related": "Related products",
-    "addedToCart": "Added to cart"
+    "addedToCart": "Added to cart",
+    "color": "Color"
   },
   "cart": {
     "title": "Your cart",

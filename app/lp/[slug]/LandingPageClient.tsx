@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { formatDzd } from "@/lib/format";
 import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost } from "@/lib/wilayas";
 
 declare global {
@@ -14,20 +13,64 @@ declare global {
   }
 }
 
-type Lang = "fr" | "ar";
+type Lang = "ar" | "fr" | "en";
+
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace("#", "");
+  const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+  const num = parseInt(full || "000000", 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+function rgba(hex: string, a: number) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+function isLightColor(hex: string) {
+  const [r, g, b] = hexToRgb(hex);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5;
+}
+
+function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            setVisible(true);
+            io.unobserve(el);
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return { ref, visible };
+}
+
+function formatPrice(n: number, lang: Lang) {
+  const locale = lang === "ar" ? "ar-DZ" : lang === "fr" ? "fr-DZ" : "en-US";
+  return `${n.toLocaleString(locale)} DZD`;
+}
 
 export function LandingPageClient({ page }: { page: any }) {
-  const [lang, setLang] = useState<Lang>("fr");
+  const defaultLang = (page.defaultLang as Lang) || "ar";
+  const [lang, setLang] = useState<Lang>(defaultLang);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [error, setError] = useState("");
   const [qty, setQty] = useState(1);
-
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [wilaya, setWilaya] = useState("");
   const [commune, setCommune] = useState("");
+  const [address, setAddress] = useState("");
   const [activeImage, setActiveImage] = useState(0);
 
   const createOrder = useMutation(api.orders.create);
@@ -37,17 +80,88 @@ export function LandingPageClient({ page }: { page: any }) {
   const product = page.product;
   const price = page.priceOverrideDzd ?? product.priceDzd;
   const compare = page.comparePriceDzd ?? product.comparePriceDzd;
+
+  const primaryColor = page.primaryColor || "#0035d0";
+  const accentColor = page.accentColor || "#ef4444";
+  const backgroundColor = page.backgroundColor || "#ffffff";
+  const textColor = page.textColor || "#0a0a0a";
+  const isLight = isLightColor(backgroundColor);
+  const cardBg = isLight ? "#ffffff" : "#141414";
+  const borderColor = isLight ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.10)";
+  const mutedText = isLight ? "rgba(0,0,0,0.50)" : "rgba(255,255,255,0.50)";
+  const subtleText = isLight ? "rgba(0,0,0,0.28)" : "rgba(255,255,255,0.28)";
+  const sectionAlt = isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)";
+
   const heroImg = page.heroImage || product.images?.[0] || "";
-  const gallery: string[] = useMemo(
-    () => [heroImg, ...(product.images ?? []).filter((u: string) => u && u !== heroImg)].slice(0, 5),
-    [heroImg, product.images]
-  );
+  const gallery: string[] = useMemo(() => {
+    const imgs: string[] = [];
+    if (heroImg) imgs.push(heroImg);
+    (product.images ?? []).forEach((u: string) => {
+      if (u && !imgs.includes(u)) imgs.push(u);
+    });
+    return imgs;
+  }, [heroImg, product.images]);
   const currentImage = gallery[activeImage] || heroImg;
 
+  const isRTL = lang === "ar";
   const communes = useMemo(() => (wilaya ? getCommunesForWilaya(wilaya) : []), [wilaya]);
 
-  const isRtl = lang === "ar";
-  const t = (fr: string, ar: string) => (lang === "fr" ? fr : ar);
+  const pick = (fr?: string, ar?: string, en?: string) => {
+    const v = lang === "ar" ? ar : lang === "fr" ? fr : en;
+    return v || fr || ar || en || "";
+  };
+  const pickArr = (fr?: string[], ar?: string[], en?: string[]): string[] => {
+    const v = lang === "ar" ? ar : lang === "fr" ? fr : en;
+    return (v && v.length ? v : fr || ar || en || []) as string[];
+  };
+
+  const headline = pick(page.headlineFr, page.headlineAr, page.headlineEn);
+  const subheadline = pick(page.subheadlineFr, page.subheadlineAr, page.subheadlineEn);
+  const cta = pick(page.ctaFr, page.ctaAr, page.ctaEn);
+  const urgency = pick(page.urgencyTextFr, page.urgencyTextAr, page.urgencyTextEn);
+  const guarantee = pick(page.guaranteeTextFr, page.guaranteeTextAr, page.guaranteeTextEn);
+  const scarcity = pick(page.scarcityTextFr, page.scarcityTextAr, page.scarcityTextEn);
+  const description = pick(page.descriptionFr, page.descriptionAr, page.descriptionEn) || pick(product.descFr, product.descAr, product.descFr);
+  const bulletTitles = pickArr(page.bulletTitlesFr, page.bulletTitlesAr, page.bulletTitlesEn);
+  const bulletDescs = pickArr(page.bulletsFr, page.bulletsAr, page.bulletsEn);
+  const bullets = bulletDescs.map((d, i) => ({ title: bulletTitles[i] || "", description: d }));
+
+  // microcopy defaults
+  const tr = (ar: string, fr: string, en: string) => (lang === "ar" ? ar : lang === "fr" ? fr : en);
+  const mc = {
+    delivery: tr("التوصيل لجميع الولايات", "Livraison dans les 58 wilayas", "Delivery to all 58 wilayas"),
+    payment: tr("الدفع عند الاستلام", "Paiement à la livraison", "Cash on delivery"),
+    returns: tr("منتج أصلي 100%", "Produit 100% authentique", "100% authentic product"),
+    whyTitle: tr("لماذا تختار هذا المنتج", "Pourquoi choisir ce produit", "Why choose this product"),
+    detailsTitle: tr("تفاصيل المنتج", "Détails du produit", "Product details"),
+    orderTitle: tr("أكمل طلبك", "Finalisez votre commande", "Complete your order"),
+    orderSubtitle: tr("املأ الحقول بسرعة", "Remplissez rapidement le formulaire", "Fill in the quick form"),
+    name: tr("الاسم الكامل", "Nom complet", "Full name"),
+    phone: tr("رقم الهاتف", "Téléphone", "Phone"),
+    wilayaL: tr("الولاية", "Wilaya", "Wilaya"),
+    communeL: tr("البلدية", "Commune", "Commune"),
+    addressL: tr("العنوان (اختياري)", "Adresse (optionnel)", "Address (optional)"),
+    qty: tr("الكمية", "Quantité", "Quantity"),
+    total: tr("المجموع", "Total", "Total"),
+    shipping: tr("التوصيل", "Livraison", "Shipping"),
+    subtotal: tr("المجموع الفرعي", "Sous-total", "Subtotal"),
+    chooseWilaya: tr("— اختر الولاية —", "— Choisir la wilaya —", "— Choose wilaya —"),
+    none: tr("— بدون —", "— Aucune —", "— None —"),
+    save: tr("توفّر", "Vous économisez", "You save"),
+    confirmed: tr("تم تأكيد الطلب!", "Commande confirmée !", "Order confirmed!"),
+    confirmedMsg: tr(
+      "سنتصل بك قريبًا لتأكيد التوصيل.",
+      "Nous vous contacterons bientôt pour confirmer la livraison.",
+      "We will call you shortly to confirm delivery."
+    ),
+    orderNo: tr("رقم الطلب", "Numéro de commande", "Order number"),
+    secured: tr("طلب آمن", "Commande sécurisée", "Secure order"),
+    required: tr("يرجى ملء الحقول المطلوبة.", "Veuillez remplir les champs requis.", "Please fill in the required fields."),
+    errGeneric: tr("حدث خطأ", "Erreur lors de la commande", "An error occurred"),
+    footerRights: tr("جميع الحقوق محفوظة", "Tous droits réservés", "All rights reserved"),
+    footerCountry: tr("الجزائر", "Algérie", "Algeria"),
+    brandLine: tr("متجر إلكتروني", "Boutique en ligne", "Online store"),
+  };
 
   useEffect(() => {
     incView({ id: page._id as Id<"landingPages"> });
@@ -82,7 +196,6 @@ export function LandingPageClient({ page }: { page: any }) {
     return () => clearInterval(i);
   }, [page.showCountdown, page.countdownEndsAt]);
 
-  // Reset commune when wilaya changes
   useEffect(() => {
     setCommune("");
   }, [wilaya]);
@@ -90,12 +203,10 @@ export function LandingPageClient({ page }: { page: any }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
     if (!fullName.trim() || !phone.trim() || !wilaya) {
-      setError(t("Veuillez remplir les champs requis.", "يرجى ملء الحقول المطلوبة."));
+      setError(mc.required);
       return;
     }
-
     setSubmitting(true);
     try {
       if (typeof window !== "undefined" && window.fbq) {
@@ -105,7 +216,6 @@ export function LandingPageClient({ page }: { page: any }) {
           currency: "DZD",
         });
       }
-
       const shipping = getShippingCost(wilaya);
       const res = await createOrder({
         items: [
@@ -125,14 +235,12 @@ export function LandingPageClient({ page }: { page: any }) {
           phone: phone.trim(),
           wilaya,
           commune: commune || undefined,
-          address: commune || "—",
+          address: address.trim() || commune || "—",
         },
         paymentMethod: "cod",
-        locale: lang,
+        locale: lang === "en" ? "fr" : lang,
       });
-
       await incOrder({ id: page._id as Id<"landingPages"> });
-
       if (typeof window !== "undefined" && window.fbq) {
         window.fbq("track", "Purchase", {
           content_ids: [product.slug],
@@ -140,12 +248,11 @@ export function LandingPageClient({ page }: { page: any }) {
           currency: "DZD",
         });
       }
-
       setOrderNumber(res.orderNumber);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
-      setError(err.message || t("Erreur lors de la commande", "حدث خطأ"));
+      setError(err.message || mc.errGeneric);
     } finally {
       setSubmitting(false);
     }
@@ -157,80 +264,127 @@ export function LandingPageClient({ page }: { page: any }) {
   const savings = compare ? (compare - price) * qty : 0;
   const discountPct = compare && compare > price ? Math.round(((compare - price) / compare) * 100) : 0;
 
-  return (
-    <div dir={isRtl ? "rtl" : "ltr"} lang={lang} className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <div className="bg-slate-950 text-white text-xs font-bold tracking-wide">
-        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-base">verified</span>
-            <span>ZED INFORMATIQUE</span>
-          </div>
-          <button
-            onClick={() => setLang(lang === "fr" ? "ar" : "fr")}
-            className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-colors"
-          >
-            <span className="material-symbols-outlined text-sm">language</span>
-            {lang === "fr" ? "العربية" : "Français"}
-          </button>
-        </div>
-      </div>
+  const productName = pick(product.nameFr, product.nameAr, product.nameFr);
 
-      {/* Announcement / urgency strip */}
-      {(page.showCountdown && remaining) || discountPct > 0 ? (
-        <div className="bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-white py-2.5 text-center text-sm font-black">
-          <div className="max-w-6xl mx-auto px-4 flex items-center justify-center gap-3 flex-wrap">
-            {discountPct > 0 && (
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-base">local_fire_department</span>
-                {t(`PROMO -${discountPct}%`, `خصم -${discountPct}%`)}
-              </span>
-            )}
-            {page.showCountdown && remaining && (
-              <span className="flex items-center gap-1 font-mono">
-                <span className="material-symbols-outlined text-base">schedule</span>
-                {remaining}
-              </span>
-            )}
+  const ctaStyle: React.CSSProperties = {
+    backgroundColor: accentColor,
+    color: "#ffffff",
+    boxShadow: `0 8px 30px ${rgba(accentColor, 0.4)}`,
+  };
+
+  const reveals = {
+    hero: useReveal<HTMLDivElement>(),
+    benefits: useReveal<HTMLDivElement>(),
+    desc: useReveal<HTMLDivElement>(),
+    form: useReveal<HTMLDivElement>(),
+  };
+
+  return (
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      lang={lang}
+      style={{ backgroundColor, color: textColor, fontFamily: isRTL ? '"Cairo", "Inter", system-ui, sans-serif' : '"Plus Jakarta Sans", "Inter", system-ui, sans-serif' }}
+      className="min-h-screen pb-20 lg:pb-0"
+    >
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700;800;900&display=swap"
+        rel="stylesheet"
+      />
+
+      {/* Branded header */}
+      <header
+        className="border-b text-center"
+        style={{ backgroundColor: rgba(accentColor, isLight ? 0.06 : 0.1), borderColor }}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+          <div className="flex-1" />
+          <div className="flex flex-col items-center gap-1.5">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+              style={{ backgroundColor: primaryColor, color: "#ffffff" }}
+            >
+              Z
+            </div>
+            <div className="uppercase tracking-[0.3em] text-[10px] font-bold" style={{ color: mutedText }}>
+              ZED INFORMATIQUE
+            </div>
+          </div>
+          <div className="flex-1 flex justify-end">
+            <LangSwitcher lang={lang} setLang={setLang} mutedText={mutedText} borderColor={borderColor} />
           </div>
         </div>
-      ) : null}
+      </header>
 
       {submitted ? (
-        <SuccessCard orderNumber={orderNumber} t={t} />
+        <SuccessCard orderNumber={orderNumber} mc={mc} cardBg={cardBg} borderColor={borderColor} primaryColor={primaryColor} mutedText={mutedText} />
       ) : (
         <>
           {/* Hero */}
-          <section className="bg-white border-b border-slate-200">
-            <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-              {/* Gallery */}
-              <div className="order-1">
-                <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50 ring-1 ring-outline-variant/40 shadow-card">
+          <section className="relative overflow-hidden">
+            {/* Radial glow */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at 50% 40%, ${rgba(accentColor, 0.15)} 0%, transparent 70%)`,
+              }}
+            />
+            {/* Noise overlay */}
+            <svg aria-hidden className="pointer-events-none absolute inset-0 w-full h-full opacity-[0.025] mix-blend-overlay">
+              <filter id="noise-filter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+              </filter>
+              <rect width="100%" height="100%" filter="url(#noise-filter)" />
+            </svg>
+
+            <div
+              ref={reveals.hero.ref}
+              className={`relative max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24 grid lg:grid-cols-2 gap-10 lg:gap-14 items-center transition-all duration-700 ${
+                reveals.hero.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              }`}
+            >
+              {/* Image */}
+              <div className={`${isRTL ? "lg:order-2" : "lg:order-1"} relative`}>
+                <div
+                  className="relative aspect-square rounded-2xl overflow-hidden"
+                  style={{
+                    background: `linear-gradient(160deg, ${rgba(primaryColor, 0.08)} 0%, ${rgba(accentColor, 0.06)} 100%)`,
+                    filter: `drop-shadow(0 25px 50px ${rgba(primaryColor, 0.25)})`,
+                  }}
+                >
                   {currentImage && (
                     <Image
                       src={currentImage}
-                      alt={product.nameFr}
+                      alt={productName}
                       fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-contain p-8"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      className="object-contain p-6 sm:p-10"
                       priority
                     />
                   )}
                   {discountPct > 0 && (
-                    <div className="absolute top-4 start-4 bg-red-600 text-white font-black text-lg px-3 py-1.5 rounded-xl shadow-lg">
+                    <div
+                      className="absolute top-4 end-4 rounded-full px-4 py-2 text-sm font-black tracking-wide"
+                      style={{ backgroundColor: accentColor, color: "#ffffff", boxShadow: `0 8px 30px ${rgba(accentColor, 0.45)}` }}
+                    >
                       -{discountPct}%
                     </div>
                   )}
                 </div>
+
+                {/* Inline thumbnail strip (shows on hero on mobile too) */}
                 {gallery.length > 1 && (
-                  <div className="mt-3 grid grid-cols-5 gap-2">
-                    {gallery.map((img, i) => (
+                  <div className="mt-4 grid grid-cols-5 gap-2">
+                    {gallery.slice(0, 5).map((img, i) => (
                       <button
-                        key={i}
+                        key={`hero-thumb-${i}`}
+                        type="button"
                         onClick={() => setActiveImage(i)}
-                        className={`relative aspect-square rounded-xl overflow-hidden bg-white ring-2 transition-all ${
-                          activeImage === i ? "ring-primary shadow-md" : "ring-outline-variant/40 hover:ring-primary/40"
-                        }`}
+                        className="relative aspect-square rounded-xl overflow-hidden transition-all"
+                        style={{
+                          backgroundColor: cardBg,
+                          border: `2px solid ${activeImage === i ? accentColor : borderColor}`,
+                        }}
                       >
                         <Image src={img} alt="" fill sizes="80px" className="object-contain p-1.5" />
                       </button>
@@ -240,81 +394,160 @@ export function LandingPageClient({ page }: { page: any }) {
               </div>
 
               {/* Copy */}
-              <div className="order-2">
-                <div className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-3 py-1 rounded-lg text-xs font-black mb-3">
-                  <span className="material-symbols-outlined text-sm">verified</span>
-                  {product.brand || "ZED INFORMATIQUE"}
-                </div>
+              <div className={`${isRTL ? "lg:order-1" : "lg:order-2"}`}>
+                {urgency && (
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.15em] mb-5"
+                    style={{ backgroundColor: rgba(accentColor, 0.18), color: accentColor }}
+                  >
+                    <span className="material-symbols-outlined text-base">local_fire_department</span>
+                    {urgency}
+                  </div>
+                )}
 
-                <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.05]">
-                  {lang === "fr" ? page.headlineFr : page.headlineAr}
+                <h1
+                  className="font-black leading-[1.1]"
+                  style={{
+                    fontFamily: '"Outfit", "Cairo", "Plus Jakarta Sans", sans-serif',
+                    fontSize: "clamp(1.75rem, 5vw, 3rem)",
+                    letterSpacing: "-0.02em",
+                    color: textColor,
+                  }}
+                >
+                  {headline}
                 </h1>
 
-                {(page.subheadlineFr || page.subheadlineAr) && (
-                  <p className="mt-3 text-base md:text-lg text-slate-600 leading-relaxed">
-                    {lang === "fr" ? page.subheadlineFr : page.subheadlineAr}
+                <div
+                  className="mt-3 h-[2px] w-4"
+                  style={{ background: `linear-gradient(to ${isRTL ? "left" : "right"}, ${accentColor}, transparent)` }}
+                />
+
+                {subheadline && (
+                  <p className="mt-4 text-base sm:text-lg leading-relaxed" style={{ color: mutedText }}>
+                    {subheadline}
                   </p>
                 )}
 
+                {page.showCountdown && remaining && (
+                  <div
+                    className="mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 font-mono font-bold"
+                    style={{ backgroundColor: rgba(accentColor, 0.12), color: accentColor, border: `1px solid ${rgba(accentColor, 0.3)}` }}
+                  >
+                    <span className="material-symbols-outlined text-base">schedule</span>
+                    {remaining}
+                  </div>
+                )}
+
                 {/* Price block */}
-                <div className="mt-6 bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 ring-1 ring-outline-variant/40">
+                <div
+                  className="mt-6 rounded-xl p-5"
+                  style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}
+                >
                   <div className="flex items-baseline gap-3 flex-wrap">
-                    <div className="text-4xl md:text-5xl font-black text-primary tracking-tighter">
-                      {formatDzd(price, lang)}
+                    <div className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: primaryColor, letterSpacing: "-0.02em" }}>
+                      {formatPrice(price, lang)}
                     </div>
                     {compare && compare > price && (
-                      <div className="text-xl text-slate-400 line-through">{formatDzd(compare, lang)}</div>
+                      <div className="text-xl line-through" style={{ color: subtleText }}>
+                        {formatPrice(compare, lang)}
+                      </div>
                     )}
                   </div>
-                  {savings > 0 && (
-                    <div className="mt-1.5 text-sm font-bold text-green-700">
-                      {t(`Vous économisez ${formatDzd(compare - price)}`, `توفّر ${formatDzd(compare - price, "ar")}`)}
+                  {savings > 0 && compare && (
+                    <div
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold"
+                      style={{ backgroundColor: rgba(accentColor, 0.15), color: accentColor }}
+                    >
+                      <span className="material-symbols-outlined text-sm">savings</span>
+                      {mc.save} {formatPrice(compare - price, lang)}
                     </div>
                   )}
                 </div>
 
-                {/* Trust badges */}
-                <div className="mt-5 grid grid-cols-3 gap-2">
-                  <TrustBadge icon="local_shipping" label={t("Livraison 48h", "توصيل 48 ساعة")} />
-                  <TrustBadge icon="payments" label={t("Paiement livraison", "الدفع عند الاستلام")} />
-                  <TrustBadge icon="verified_user" label={t("Garantie", "ضمان")} />
-                </div>
-
                 {page.showStockUrgency && product.stock > 0 && product.stock < 20 && (
-                  <div className="mt-4 bg-amber-50 ring-1 ring-amber-200 text-amber-900 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                  <div
+                    className="mt-4 rounded-xl px-4 py-3 text-sm font-bold flex items-center gap-2"
+                    style={{ backgroundColor: rgba(accentColor, 0.1), color: accentColor, border: `1px solid ${rgba(accentColor, 0.25)}` }}
+                  >
                     <span className="material-symbols-outlined text-base">local_fire_department</span>
-                    {t(`Plus que ${product.stock} en stock !`, `تبقى ${product.stock} قطعة فقط!`)}
+                    {scarcity || tr(`تبقى ${product.stock} قطعة فقط!`, `Plus que ${product.stock} en stock !`, `Only ${product.stock} left in stock!`)}
                   </div>
                 )}
 
                 <a
                   href="#order-form"
-                  className="mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-white font-black px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-lg"
+                  className="mt-6 inline-flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-bold text-lg tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  style={ctaStyle}
                 >
                   <span className="material-symbols-outlined">shopping_cart</span>
-                  {lang === "fr" ? page.ctaFr : page.ctaAr}
+                  {cta}
                 </a>
+
+                {guarantee && (
+                  <div className="mt-4 text-xs font-medium flex items-center gap-1.5" style={{ color: mutedText }}>
+                    <span className="material-symbols-outlined text-sm" style={{ color: accentColor }}>verified_user</span>
+                    {guarantee}
+                  </div>
+                )}
               </div>
             </div>
           </section>
 
-          {/* Bullets */}
-          {((lang === "fr" ? page.bulletsFr : page.bulletsAr)?.length ?? 0) > 0 && (
-            <section className="py-10 md:py-14 bg-slate-50">
-              <div className="max-w-5xl mx-auto px-4">
-                <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-center mb-8">
-                  {t("Pourquoi choisir ce produit", "لماذا تختار هذا المنتج")}
+          {/* Trust bar */}
+          <section
+            className="w-full"
+            style={{
+              backgroundColor: isLight ? primaryColor : rgba(accentColor, 0.1),
+              color: isLight ? "#ffffff" : textColor,
+              borderTop: `1px solid ${borderColor}`,
+              borderBottom: `1px solid ${borderColor}`,
+            }}
+          >
+            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+              <TrustBadge label={mc.payment} />
+              <TrustBadge label={mc.delivery} />
+              <TrustBadge label={mc.returns} />
+            </div>
+          </section>
+
+          {/* Benefits grid */}
+          {bullets.length > 0 && (
+            <section className="py-16 sm:py-24">
+              <div
+                ref={reveals.benefits.ref}
+                className={`max-w-6xl mx-auto px-4 sm:px-8 transition-all duration-700 ${
+                  reveals.benefits.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                }`}
+              >
+                <h2
+                  className="font-black text-center mb-10"
+                  style={{ fontFamily: '"Outfit", "Cairo", sans-serif', fontSize: "clamp(1.5rem, 4vw, 2.25rem)", letterSpacing: "-0.02em" }}
+                >
+                  {mc.whyTitle}
                 </h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {(lang === "fr" ? page.bulletsFr : page.bulletsAr).map((b: string, i: number) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {bullets.map((b, i) => (
                     <div
                       key={i}
-                      className="flex items-start gap-3 p-5 rounded-2xl bg-white ring-1 ring-outline-variant/40 shadow-sm hover:shadow-card transition-shadow"
+                      className={`rounded-2xl p-6 transition-all duration-700 ${
+                        reveals.benefits.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                      }`}
+                      style={{
+                        backgroundColor: cardBg,
+                        border: `1px solid ${borderColor}`,
+                        transitionDelay: `${i * 100}ms`,
+                      }}
                     >
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-primary">check</span>
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-sm mb-4"
+                        style={{ backgroundColor: accentColor }}
+                      >
+                        {i + 1}
                       </div>
-                      <div className="font-bold text-sm leading-relaxed">{b}</div>
+                      {b.title && <div className="font-bold text-base mb-1" style={{ color: textColor }}>{b.title}</div>}
+                      <div className="text-sm leading-relaxed" style={{ color: mutedText }}>
+                        {b.description}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -322,41 +555,127 @@ export function LandingPageClient({ page }: { page: any }) {
             </section>
           )}
 
-          {/* Order form */}
-          <section id="order-form" className="py-12 md:py-16 bg-gradient-to-b from-slate-50 to-white">
-            <div className="max-w-lg mx-auto px-4">
-              <div className="bg-white rounded-3xl shadow-xl ring-1 ring-outline-variant/40 overflow-hidden">
-                {/* Form header */}
-                <div className="bg-gradient-to-br from-primary to-primary/80 text-white p-6 md:p-7">
-                  <div className="flex items-center gap-2 text-xs font-bold opacity-90 mb-1">
-                    <span className="material-symbols-outlined text-base">lock</span>
-                    {t("Commande sécurisée", "طلب آمن")}
+          {/* Gallery + description */}
+          <section style={{ backgroundColor: sectionAlt, borderTop: `1px solid ${borderColor}`, borderBottom: `1px solid ${borderColor}` }}>
+            <div
+              ref={reveals.desc.ref}
+              className={`max-w-6xl mx-auto px-4 sm:px-8 py-16 sm:py-24 grid lg:grid-cols-2 gap-10 items-start transition-all duration-700 ${
+                reveals.desc.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              }`}
+            >
+              {/* Full gallery — ALL images */}
+              <div className={`${isRTL ? "lg:order-2" : "lg:order-1"}`}>
+                <div
+                  className="relative aspect-square rounded-2xl overflow-hidden mb-3"
+                  style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}
+                >
+                  {currentImage && (
+                    <Image src={currentImage} alt={productName} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-6" />
+                  )}
+                </div>
+                {gallery.length > 1 && (
+                  <div className="grid grid-cols-4 gap-3">
+                    {gallery.map((img, i) => (
+                      <button
+                        key={`gal-${i}`}
+                        type="button"
+                        onClick={() => setActiveImage(i)}
+                        className="relative aspect-square rounded-xl overflow-hidden transition-all"
+                        style={{
+                          backgroundColor: cardBg,
+                          border: `2px solid ${activeImage === i ? accentColor : borderColor}`,
+                        }}
+                      >
+                        <Image src={img} alt="" fill sizes="120px" className="object-contain p-2" />
+                      </button>
+                    ))}
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-black tracking-tighter">
-                    {t("Finalisez votre commande", "أكمل طلبك")}
+                )}
+              </div>
+
+              {/* Description */}
+              <div className={`${isRTL ? "lg:order-1" : "lg:order-2"}`}>
+                <h2
+                  className="font-black mb-3"
+                  style={{ fontFamily: '"Outfit", "Cairo", sans-serif', fontSize: "clamp(1.5rem, 4vw, 2.25rem)", letterSpacing: "-0.02em" }}
+                >
+                  {productName}
+                </h2>
+                <div
+                  className="h-[2px] w-16 mb-5"
+                  style={{ background: `linear-gradient(to ${isRTL ? "left" : "right"}, ${accentColor}, transparent)` }}
+                />
+                {description && (
+                  <div className="whitespace-pre-line text-base leading-relaxed" style={{ color: mutedText }}>
+                    {description}
+                  </div>
+                )}
+                <a
+                  href="#order-form"
+                  className="mt-8 inline-flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-bold text-lg tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  style={ctaStyle}
+                >
+                  <span className="material-symbols-outlined">shopping_cart</span>
+                  {cta}
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* Order form */}
+          <section id="order-form" className="relative py-16 sm:py-24 overflow-hidden">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at 50% 30%, ${rgba(accentColor, 0.12)} 0%, transparent 70%)`,
+              }}
+            />
+            <div
+              ref={reveals.form.ref}
+              className={`relative max-w-lg mx-auto px-4 sm:px-8 transition-all duration-700 ${
+                reveals.form.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              }`}
+            >
+              <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}`, boxShadow: `0 25px 60px ${rgba(primaryColor, 0.18)}` }}>
+                <div className="p-6 sm:p-7" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${rgba(primaryColor, 0.85)})`, color: "#ffffff" }}>
+                  <div className="flex items-center gap-2 text-xs font-bold opacity-90 mb-1.5">
+                    <span className="material-symbols-outlined text-base">lock</span>
+                    {mc.secured}
+                  </div>
+                  <h2
+                    className="font-black"
+                    style={{ fontFamily: '"Outfit", "Cairo", sans-serif', fontSize: "clamp(1.5rem, 4vw, 2rem)", letterSpacing: "-0.02em" }}
+                  >
+                    {mc.orderTitle}
                   </h2>
-                  <p className="text-xs opacity-90 mt-1">
-                    {t("3 champs — 30 secondes", "3 حقول — 30 ثانية")}
-                  </p>
+                  <p className="text-xs opacity-90 mt-1">{mc.orderSubtitle}</p>
                 </div>
 
-                <form onSubmit={onSubmit} className="p-6 md:p-7 space-y-4">
+                <form onSubmit={onSubmit} className="p-6 sm:p-7 space-y-4">
                   {error && (
-                    <div className="bg-red-50 ring-1 ring-red-200 text-red-700 p-3 rounded-xl text-sm font-bold">
+                    <div
+                      className="p-3 rounded-xl text-sm font-bold"
+                      style={{ backgroundColor: rgba(accentColor, 0.12), color: accentColor, border: `1px solid ${rgba(accentColor, 0.3)}` }}
+                    >
                       {error}
                     </div>
                   )}
 
                   <LabeledInput
-                    label={t("Nom complet", "الاسم الكامل")}
+                    label={mc.name}
                     icon="person"
                     value={fullName}
                     onChange={setFullName}
                     required
+                    primaryColor={primaryColor}
+                    borderColor={borderColor}
+                    isLight={isLight}
+                    textColor={textColor}
                   />
 
                   <LabeledInput
-                    label={t("Téléphone", "رقم الهاتف")}
+                    label={mc.phone}
                     icon="call"
                     value={phone}
                     onChange={setPhone}
@@ -364,62 +683,73 @@ export function LandingPageClient({ page }: { page: any }) {
                     type="tel"
                     dir="ltr"
                     placeholder="0555 12 34 56"
+                    primaryColor={primaryColor}
+                    borderColor={borderColor}
+                    isLight={isLight}
+                    textColor={textColor}
+                  />
+
+                  <LabeledSelect
+                    label={mc.wilayaL}
+                    icon="location_on"
+                    value={wilaya}
+                    onChange={setWilaya}
+                    required
+                    primaryColor={primaryColor}
+                    borderColor={borderColor}
+                    isLight={isLight}
+                    textColor={textColor}
+                  >
+                    <option value="">{mc.chooseWilaya}</option>
+                    {WILAYAS_BILINGUAL.map((w, i) => (
+                      <option key={w.fr} value={w.fr}>
+                        {String(i + 1).padStart(2, "0")} — {lang === "ar" ? w.ar : w.fr}
+                      </option>
+                    ))}
+                  </LabeledSelect>
+
+                  {communes.length > 0 && (
+                    <LabeledSelect
+                      label={mc.communeL}
+                      icon="pin_drop"
+                      value={commune}
+                      onChange={setCommune}
+                      primaryColor={primaryColor}
+                      borderColor={borderColor}
+                      isLight={isLight}
+                      textColor={textColor}
+                    >
+                      <option value="">{mc.none}</option>
+                      {communes.map((c) => (
+                        <option key={c.fr} value={c.fr}>
+                          {lang === "ar" ? c.ar : c.fr}
+                        </option>
+                      ))}
+                    </LabeledSelect>
+                  )}
+
+                  <LabeledInput
+                    label={mc.addressL}
+                    icon="home"
+                    value={address}
+                    onChange={setAddress}
+                    primaryColor={primaryColor}
+                    borderColor={borderColor}
+                    isLight={isLight}
+                    textColor={textColor}
                   />
 
                   <div>
-                    <label className="block">
-                      <div className="text-xs font-black mb-1.5 flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm text-primary">location_on</span>
-                        {t("Wilaya", "الولاية")}
-                        <span className="text-red-600">*</span>
-                      </div>
-                      <select
-                        value={wilaya}
-                        onChange={(e) => setWilaya(e.target.value)}
-                        required
-                        className="w-full rounded-xl border border-outline-variant/70 px-4 py-3.5 text-sm font-medium bg-slate-50 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                      >
-                        <option value="">{t("— Choisir la wilaya —", "— اختر الولاية —")}</option>
-                        {WILAYAS_BILINGUAL.map((w, i) => (
-                          <option key={w.fr} value={w.fr}>
-                            {String(i + 1).padStart(2, "0")} — {lang === "fr" ? w.fr : w.ar}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  {communes.length > 0 && (
-                    <div>
-                      <label className="block">
-                        <div className="text-xs font-black mb-1.5 flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-sm text-primary">pin_drop</span>
-                          {t("Commune (optionnel)", "البلدية (اختياري)")}
-                        </div>
-                        <select
-                          value={commune}
-                          onChange={(e) => setCommune(e.target.value)}
-                          className="w-full rounded-xl border border-outline-variant/70 px-4 py-3.5 text-sm font-medium bg-slate-50 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                        >
-                          <option value="">{t("— Aucune —", "— بدون —")}</option>
-                          {communes.map((c) => (
-                            <option key={c.fr} value={c.fr}>
-                              {lang === "fr" ? c.fr : c.ar}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  )}
-
-                  {/* Quantity */}
-                  <div>
-                    <div className="text-xs font-black mb-1.5">{t("Quantité", "الكمية")}</div>
-                    <div className="inline-flex items-center bg-slate-100 rounded-xl p-1">
+                    <div className="text-xs font-black mb-1.5">{mc.qty}</div>
+                    <div
+                      className="inline-flex items-center rounded-xl p-1"
+                      style={{ backgroundColor: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)" }}
+                    >
                       <button
                         type="button"
                         onClick={() => setQty(Math.max(1, qty - 1))}
-                        className="w-11 h-11 rounded-lg bg-white font-black text-lg shadow-sm hover:shadow-md transition-shadow"
+                        className="w-11 h-11 rounded-lg font-black text-lg transition-all"
+                        style={{ backgroundColor: cardBg, color: textColor, border: `1px solid ${borderColor}` }}
                       >
                         −
                       </button>
@@ -427,56 +757,59 @@ export function LandingPageClient({ page }: { page: any }) {
                       <button
                         type="button"
                         onClick={() => setQty(qty + 1)}
-                        className="w-11 h-11 rounded-lg bg-white font-black text-lg shadow-sm hover:shadow-md transition-shadow"
+                        className="w-11 h-11 rounded-lg font-black text-lg transition-all"
+                        style={{ backgroundColor: cardBg, color: textColor, border: `1px solid ${borderColor}` }}
                       >
                         +
                       </button>
                     </div>
                   </div>
 
-                  {/* Summary */}
-                  <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-white ring-1 ring-outline-variant/40 p-4 space-y-1.5 text-sm">
-                    <Row label={t("Sous-total", "المجموع الفرعي")} value={formatDzd(subtotal, lang)} />
+                  <div
+                    className="rounded-2xl p-4 space-y-1.5 text-sm"
+                    style={{ backgroundColor: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.03)", border: `1px solid ${borderColor}` }}
+                  >
+                    <Row label={mc.subtotal} value={formatPrice(subtotal, lang)} mutedText={mutedText} />
                     <Row
-                      label={t("Livraison", "التوصيل")}
-                      value={wilaya ? formatDzd(shipping, lang) : t("Choisir wilaya", "اختر الولاية")}
+                      label={mc.shipping}
+                      value={wilaya ? formatPrice(shipping, lang) : mc.chooseWilaya}
+                      mutedText={mutedText}
                     />
                     {savings > 0 && (
-                      <Row
-                        label={t("Économies", "توفير")}
-                        value={`- ${formatDzd(savings, lang)}`}
-                        highlight="text-green-700"
-                      />
+                      <Row label={mc.save} value={`- ${formatPrice(savings, lang)}`} mutedText={mutedText} highlight={accentColor} />
                     )}
-                    <div className="pt-2 mt-2 border-t border-outline-variant/60 flex items-center justify-between">
-                      <div className="font-black">{t("Total", "المجموع")}</div>
-                      <div className="font-black text-xl text-primary tracking-tighter">{formatDzd(total, lang)}</div>
+                    <div className="pt-2 mt-2 flex items-center justify-between" style={{ borderTop: `1px solid ${borderColor}` }}>
+                      <div className="font-black">{mc.total}</div>
+                      <div className="font-black text-xl tracking-tight" style={{ color: primaryColor }}>
+                        {formatPrice(total, lang)}
+                      </div>
                     </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full flex items-center justify-center gap-2 bg-primary text-white font-black py-4 rounded-2xl text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
+                    className="w-full flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-bold text-lg tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                    style={ctaStyle}
                   >
                     {submitting ? (
                       <span className="material-symbols-outlined animate-spin">progress_activity</span>
                     ) : (
                       <>
                         <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                        {lang === "fr" ? page.ctaFr : page.ctaAr}
+                        {cta}
                       </>
                     )}
                   </button>
 
-                  <div className="flex items-center justify-center gap-4 text-xs text-slate-500 pt-1">
+                  <div className="flex items-center justify-center gap-4 text-xs pt-1" style={{ color: mutedText }}>
                     <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-green-600">verified</span>
-                      {t("Paiement livraison", "الدفع عند الاستلام")}
+                      <span className="material-symbols-outlined text-sm" style={{ color: accentColor }}>verified</span>
+                      {mc.payment}
                     </span>
                     <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm text-green-600">lock</span>
-                      {t("Données sécurisées", "بيانات آمنة")}
+                      <span className="material-symbols-outlined text-sm" style={{ color: accentColor }}>lock</span>
+                      {mc.secured}
                     </span>
                   </div>
                 </form>
@@ -484,25 +817,84 @@ export function LandingPageClient({ page }: { page: any }) {
             </div>
           </section>
 
+          {/* Footer */}
+          <footer style={{ borderTop: `1px solid ${borderColor}` }}>
+            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 flex flex-wrap items-center justify-center gap-3 text-[10px] tracking-[0.2em] uppercase" style={{ color: mutedText }}>
+              <span>© ZED INFORMATIQUE — {mc.footerRights}</span>
+              <span className="hidden sm:inline">•</span>
+              <span>{mc.delivery}</span>
+              <span className="inline-block w-1 h-1 rounded-full" style={{ backgroundColor: accentColor }} />
+              <span>{mc.footerCountry}</span>
+            </div>
+          </footer>
+
           {/* Sticky mobile CTA */}
-          <div className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] p-3 z-40">
+          <div
+            className="lg:hidden fixed bottom-0 inset-x-0 z-40 p-3"
+            style={{ backgroundColor: cardBg, borderTop: `1px solid ${borderColor}`, boxShadow: `0 -8px 30px ${rgba(primaryColor, 0.1)}` }}
+          >
             <a
               href="#order-form"
-              className="w-full flex items-center justify-between bg-primary text-white font-black px-5 py-3.5 rounded-2xl shadow-md"
+              className="w-full flex items-center justify-between gap-3 px-5 py-3.5 rounded-xl font-bold text-base"
+              style={ctaStyle}
             >
               <span className="flex items-center gap-2">
                 <span className="material-symbols-outlined">shopping_cart</span>
-                {lang === "fr" ? page.ctaFr : page.ctaAr}
+                {cta}
               </span>
-              <span className="tracking-tighter">{formatDzd(price, lang)}</span>
+              <span className="tracking-tight">{formatPrice(price, lang)}</span>
             </a>
           </div>
-
-          <footer className="py-8 md:pb-8 pb-24 text-center text-xs text-slate-500">
-            © ZED INFORMATIQUE — {t("Tous droits réservés", "جميع الحقوق محفوظة")}
-          </footer>
         </>
       )}
+    </div>
+  );
+}
+
+function LangSwitcher({
+  lang,
+  setLang,
+  mutedText,
+  borderColor,
+}: {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  mutedText: string;
+  borderColor: string;
+}) {
+  const langs: { code: Lang; label: string }[] = [
+    { code: "ar", label: "AR" },
+    { code: "fr", label: "FR" },
+    { code: "en", label: "EN" },
+  ];
+  return (
+    <div className="inline-flex items-center rounded-full p-0.5 text-xs font-bold" style={{ border: `1px solid ${borderColor}` }}>
+      {langs.map((l) => (
+        <button
+          key={l.code}
+          type="button"
+          onClick={() => setLang(l.code)}
+          className="px-2.5 py-1 rounded-full transition-colors"
+          style={
+            lang === l.code
+              ? { backgroundColor: "currentColor", color: "#ffffff" }
+              : { color: mutedText }
+          }
+        >
+          {l.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TrustBadge({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 text-sm font-medium tracking-wide">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="shrink-0">
+        <path d="M16.5 5.5L8 14L3.5 9.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span>{label}</span>
     </div>
   );
 }
@@ -516,6 +908,10 @@ function LabeledInput({
   icon,
   dir,
   placeholder,
+  primaryColor,
+  borderColor,
+  isLight,
+  textColor,
 }: {
   label: string;
   value: string;
@@ -525,13 +921,21 @@ function LabeledInput({
   icon?: string;
   dir?: string;
   placeholder?: string;
+  primaryColor: string;
+  borderColor: string;
+  isLight: boolean;
+  textColor: string;
 }) {
   return (
     <label className="block">
       <div className="text-xs font-black mb-1.5 flex items-center gap-1.5">
-        {icon && <span className="material-symbols-outlined text-sm text-primary">{icon}</span>}
+        {icon && (
+          <span className="material-symbols-outlined text-sm" style={{ color: primaryColor }}>
+            {icon}
+          </span>
+        )}
         {label}
-        {required && <span className="text-red-600">*</span>}
+        {required && <span style={{ color: primaryColor }}>*</span>}
       </div>
       <input
         value={value}
@@ -540,47 +944,129 @@ function LabeledInput({
         type={type}
         dir={dir}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-outline-variant/70 px-4 py-3.5 text-sm font-medium bg-slate-50 focus:bg-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+        className="w-full rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none transition-all"
+        style={{
+          backgroundColor: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)",
+          border: `1px solid ${borderColor}`,
+          color: textColor,
+        }}
       />
     </label>
   );
 }
 
-function TrustBadge({ icon, label }: { icon: string; label: string }) {
+function LabeledSelect({
+  label,
+  value,
+  onChange,
+  required,
+  icon,
+  children,
+  primaryColor,
+  borderColor,
+  isLight,
+  textColor,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  icon?: string;
+  children: React.ReactNode;
+  primaryColor: string;
+  borderColor: string;
+  isLight: boolean;
+  textColor: string;
+}) {
   return (
-    <div className="flex flex-col items-center gap-1 p-2.5 rounded-xl bg-slate-50 ring-1 ring-outline-variant/40">
-      <span className="material-symbols-outlined text-primary">{icon}</span>
-      <div className="text-[10px] font-black text-center leading-tight">{label}</div>
-    </div>
+    <label className="block">
+      <div className="text-xs font-black mb-1.5 flex items-center gap-1.5">
+        {icon && (
+          <span className="material-symbols-outlined text-sm" style={{ color: primaryColor }}>
+            {icon}
+          </span>
+        )}
+        {label}
+        {required && <span style={{ color: primaryColor }}>*</span>}
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        className="w-full rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none transition-all"
+        style={{
+          backgroundColor: isLight ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)",
+          border: `1px solid ${borderColor}`,
+          color: textColor,
+        }}
+      >
+        {children}
+      </select>
+    </label>
   );
 }
 
-function Row({ label, value, highlight }: { label: string; value: string; highlight?: string }) {
+function Row({
+  label,
+  value,
+  mutedText,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  mutedText: string;
+  highlight?: string;
+}) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-slate-600">{label}</span>
-      <span className={`font-bold ${highlight ?? ""}`}>{value}</span>
+      <span style={{ color: mutedText }}>{label}</span>
+      <span className="font-bold" style={highlight ? { color: highlight } : undefined}>
+        {value}
+      </span>
     </div>
   );
 }
 
-function SuccessCard({ orderNumber, t }: { orderNumber: string; t: (fr: string, ar: string) => string }) {
+function SuccessCard({
+  orderNumber,
+  mc,
+  cardBg,
+  borderColor,
+  primaryColor,
+  mutedText,
+}: {
+  orderNumber: string;
+  mc: any;
+  cardBg: string;
+  borderColor: string;
+  primaryColor: string;
+  mutedText: string;
+}) {
   return (
     <div className="min-h-[75vh] flex items-center justify-center p-6">
-      <div className="max-w-lg w-full bg-white rounded-3xl shadow-xl ring-1 ring-outline-variant/40 p-8 md:p-10 text-center">
-        <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-green-50 ring-4 ring-green-100 flex items-center justify-center mb-5">
-          <span className="material-symbols-outlined text-5xl text-green-600">check_circle</span>
+      <div
+        className="max-w-lg w-full rounded-2xl p-8 sm:p-10 text-center"
+        style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}`, boxShadow: `0 25px 60px rgba(0,0,0,0.08)` }}
+      >
+        <div
+          className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-5"
+          style={{ backgroundColor: "rgba(34, 197, 94, 0.12)", border: `4px solid rgba(34, 197, 94, 0.18)` }}
+        >
+          <span className="material-symbols-outlined text-5xl" style={{ color: "#16a34a" }}>check_circle</span>
         </div>
-        <h2 className="text-3xl font-black tracking-tighter mb-2">{t("Commande confirmée !", "تم تأكيد الطلب!")}</h2>
-        <p className="text-slate-600 text-sm mb-5 leading-relaxed">
-          {t(
-            "Nous vous contacterons bientôt pour confirmer votre livraison.",
-            "سنتصل بك قريبًا لتأكيد التوصيل."
-          )}
+        <h2 className="text-3xl font-black tracking-tight mb-2" style={{ letterSpacing: "-0.02em" }}>
+          {mc.confirmed}
+        </h2>
+        <p className="text-sm mb-5 leading-relaxed" style={{ color: mutedText }}>
+          {mc.confirmedMsg}
         </p>
-        <div className="bg-gradient-to-br from-slate-50 to-white ring-1 ring-outline-variant/40 rounded-2xl p-4">
-          <div className="text-xs font-bold text-slate-500 mb-1">{t("Numéro de commande", "رقم الطلب")}</div>
-          <div className="font-mono font-black text-primary text-lg">{orderNumber}</div>
+        <div className="rounded-xl p-4" style={{ backgroundColor: "rgba(0,0,0,0.03)", border: `1px solid ${borderColor}` }}>
+          <div className="text-xs font-bold mb-1" style={{ color: mutedText }}>
+            {mc.orderNo}
+          </div>
+          <div className="font-mono font-black text-lg" style={{ color: primaryColor }}>
+            {orderNumber}
+          </div>
         </div>
       </div>
     </div>

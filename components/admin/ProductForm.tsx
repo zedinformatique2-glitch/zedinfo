@@ -8,6 +8,13 @@ import { Input, Textarea, Select, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ar } from "@/lib/admin-i18n";
 
+type ColorVariant = {
+  hex: string;
+  nameFr?: string;
+  nameAr?: string;
+  image: string;
+};
+
 type InitialProduct = {
   _id?: string;
   slug: string;
@@ -22,6 +29,7 @@ type InitialProduct = {
   images: string[];
   featured: boolean;
   specs: Record<string, any>;
+  colorVariants?: ColorVariant[];
 };
 
 export function ProductForm({ initial }: { initial?: InitialProduct }) {
@@ -51,10 +59,44 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
   const [uploadedImages, setUploadedImages] = useState<string[]>(form.images);
   const [imagesText, setImagesText] = useState("");
   const [specsText, setSpecsText] = useState(JSON.stringify(form.specs, null, 2));
+  const [variants, setVariants] = useState<ColorVariant[]>(initial?.colorVariants ?? []);
+  const [variantUploadingIdx, setVariantUploadingIdx] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function uploadSingleFile(file: File): Promise<string | null> {
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const { storageId } = await res.json();
+      const url = await getUrlFromId({ storageId });
+      return url || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function addVariant() {
+    setVariants((v) => [...v, { hex: "#000000", nameFr: "", nameAr: "", image: "" }]);
+  }
+  function updateVariant(idx: number, patch: Partial<ColorVariant>) {
+    setVariants((v) => v.map((x, i) => (i === idx ? { ...x, ...patch } : x)));
+  }
+  function removeVariant(idx: number) {
+    setVariants((v) => v.filter((_, i) => i !== idx));
+  }
+  async function uploadVariantImage(idx: number, file: File) {
+    setVariantUploadingIdx(idx);
+    const url = await uploadSingleFile(file);
+    if (url) updateVariant(idx, { image: url });
+    setVariantUploadingIdx(null);
+  }
 
   async function uploadFiles(files: FileList | File[]) {
     setUploading(true);
@@ -105,10 +147,19 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
         setSaving(false);
         return;
       }
+      const cleanVariants = variants
+        .filter((v) => v.hex && v.image)
+        .map((v) => ({
+          hex: v.hex,
+          image: v.image,
+          nameFr: v.nameFr?.trim() || undefined,
+          nameAr: v.nameAr?.trim() || undefined,
+        }));
+      const colorVariants = cleanVariants.length > 0 ? cleanVariants : [];
       if (initial?._id) {
         await update({
           id: initial._id as any,
-          patch: { ...form, images, specs },
+          patch: { ...form, images, specs, colorVariants },
         });
       } else {
         await create({
@@ -124,6 +175,7 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
           images,
           featured: form.featured,
           specs,
+          colorVariants: cleanVariants.length > 0 ? cleanVariants : undefined,
         });
       }
       router.push("/admin/products");
@@ -324,6 +376,93 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
             dir="ltr"
           />
         </div>
+      </div>
+
+      {/* Color variants */}
+      <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 p-6 relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-primary via-primary-container to-primary" />
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <Label>الألوان المتاحة (اختياري)</Label>
+            <p className="text-xs text-on-surface-variant mt-1">
+              أضف لونًا واحدًا على الأقل لتفعيل زر تبديل الألوان في صفحة المنتج. اتركه فارغًا لإخفاء الزر.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addVariant}
+            className="px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs hover:shadow-md"
+          >
+            + إضافة لون
+          </button>
+        </div>
+
+        {variants.length > 0 && (
+          <div className="space-y-3 mt-4">
+            {variants.map((v, idx) => (
+              <div
+                key={idx}
+                className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_auto_auto] gap-3 items-center p-3 rounded-xl ring-1 ring-outline-variant/40 bg-surface-container-low"
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={v.hex}
+                    onChange={(e) => updateVariant(idx, { hex: e.target.value })}
+                    className="h-10 w-10 rounded-lg border border-outline-variant cursor-pointer"
+                  />
+                  <input
+                    value={v.hex}
+                    onChange={(e) => updateVariant(idx, { hex: e.target.value })}
+                    dir="ltr"
+                    className="w-24 rounded-lg border border-outline-variant px-2 py-1.5 text-xs font-mono"
+                  />
+                </div>
+                <Input
+                  placeholder="Nom (FR)"
+                  dir="ltr"
+                  value={v.nameFr ?? ""}
+                  onChange={(e) => updateVariant(idx, { nameFr: e.target.value })}
+                />
+                <Input
+                  placeholder="الاسم (عربي)"
+                  value={v.nameAr ?? ""}
+                  onChange={(e) => updateVariant(idx, { nameAr: e.target.value })}
+                />
+                <div className="flex items-center gap-2">
+                  {v.image ? (
+                    <img src={v.image} alt="" className="w-12 h-12 object-contain rounded-lg bg-white ring-1 ring-outline-variant/40" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-white ring-1 ring-outline-variant/40 flex items-center justify-center text-xs text-on-surface-variant">
+                      —
+                    </div>
+                  )}
+                  <label className="px-3 py-2 rounded-lg bg-white ring-1 ring-outline-variant/40 text-xs font-bold cursor-pointer hover:ring-primary/40">
+                    {variantUploadingIdx === idx ? "..." : v.image ? "استبدال" : "رفع صورة"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadVariantImage(idx, f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeVariant(idx)}
+                  className="w-9 h-9 rounded-lg bg-red-50 text-red-600 font-bold hover:bg-red-100"
+                  aria-label="حذف"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Specs */}

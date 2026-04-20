@@ -126,6 +126,16 @@ export const create = mutation({
     images: v.array(v.string()),
     featured: v.boolean(),
     specs: v.any(),
+    colorVariants: v.optional(
+      v.array(
+        v.object({
+          hex: v.string(),
+          nameFr: v.optional(v.string()),
+          nameAr: v.optional(v.string()),
+          image: v.string(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("products", {
