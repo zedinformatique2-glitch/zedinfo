@@ -15,11 +15,15 @@ import { Icon } from "@/components/ui/Icon";
 import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost, getWilayaNumber } from "@/lib/wilayas";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { formatDzd } from "@/lib/format";
+import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
 import type { Locale } from "@/lib/i18n/config";
 
 const schema = z.object({
   fullName: z.string().min(2),
-  phone: z.string().min(8),
+  phone: z
+    .string()
+    .transform((v) => normalizeDzPhone(v))
+    .refine(isValidDzMobile, { message: "DZ_PHONE" }),
   wilaya: z.string().min(1),
   commune: z.string().optional(),
   address: z.string().optional(),
@@ -195,9 +199,18 @@ export default function CheckoutPage() {
               </div>
               <div>
                 <Label>{t("phone")}</Label>
-                <Input {...register("phone")} type="tel" />
+                <Input
+                  {...register("phone")}
+                  type="tel"
+                  inputMode="tel"
+                  dir="ltr"
+                  placeholder="0555 12 34 56"
+                  maxLength={14}
+                />
                 {errors.phone && (
-                  <p className="text-error text-xs mt-1">{errors.phone.message}</p>
+                  <p className="text-error text-xs mt-1">
+                    {DZ_PHONE_ERROR[(locale as "fr" | "ar" | "en")] ?? DZ_PHONE_ERROR.fr}
+                  </p>
                 )}
               </div>
             </div>

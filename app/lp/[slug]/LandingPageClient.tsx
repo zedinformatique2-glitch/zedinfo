@@ -6,6 +6,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost } from "@/lib/wilayas";
+import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
 
 declare global {
   interface Window {
@@ -207,6 +208,11 @@ export function LandingPageClient({ page }: { page: any }) {
       setError(mc.required);
       return;
     }
+    if (!isValidDzMobile(phone)) {
+      setError(DZ_PHONE_ERROR[lang] ?? DZ_PHONE_ERROR.fr);
+      return;
+    }
+    const normalizedPhone = normalizeDzPhone(phone);
     setSubmitting(true);
     try {
       if (typeof window !== "undefined" && window.fbq) {
@@ -232,7 +238,7 @@ export function LandingPageClient({ page }: { page: any }) {
         shippingDzd: shipping,
         customer: {
           fullName: fullName.trim(),
-          phone: phone.trim(),
+          phone: normalizedPhone,
           wilaya,
           commune: commune || undefined,
           address: address.trim() || commune || "—",
