@@ -95,7 +95,7 @@ export function AiChat({ onApplyBuild, allProducts, locale, open, onClose }: Pro
   if (!open) return null;
 
   return (
-        <div className="fixed bottom-6 end-6 z-50 w-[min(400px,calc(100vw-2rem))] h-[min(520px,calc(100vh-6rem))] bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 flex flex-col overflow-hidden">
+        <div className="fixed bottom-24 end-6 z-50 w-[min(400px,calc(100vw-2rem))] h-[min(520px,calc(100vh-10rem))] bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-t-2xl">
             <Icon name="smart_toy" className="text-[22px]" />
