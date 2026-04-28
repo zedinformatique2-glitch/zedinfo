@@ -3,6 +3,52 @@
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
+import {
+  checkCompatibility,
+  type ConfigComponent,
+  type ConfigSelection,
+} from "../lib/configurator-engine";
+
+type BuildTag = Record<string, string | string[]>;
+
+function resolveBuild(build: BuildTag, products: any[]): ConfigSelection {
+  const bySlug = new Map(products.map((p) => [p.slug, p]));
+  const toComp = (slug: string): ConfigComponent | undefined => {
+    const p = bySlug.get(slug);
+    if (!p) return undefined;
+    return {
+      _id: p._id,
+      slug: p.slug,
+      nameFr: p.nameFr,
+      nameAr: p.nameAr,
+      priceDzd: p.priceDzd,
+      specs: p.specs,
+    };
+  };
+  const sel: ConfigSelection = {};
+  const single = (k: "cpu" | "motherboard" | "gpu" | "psu" | "case" | "cooler") => {
+    const s = build[k];
+    if (typeof s === "string") {
+      const c = toComp(s);
+      if (c) (sel as any)[k] = c;
+    }
+  };
+  const multi = (k: "ram" | "storage") => {
+    const s = build[k];
+    const slugs = Array.isArray(s) ? s : typeof s === "string" ? [s] : [];
+    const comps = slugs.map(toComp).filter((c): c is ConfigComponent => !!c);
+    if (comps.length) (sel as any)[k] = comps;
+  };
+  single("cpu");
+  single("motherboard");
+  single("gpu");
+  single("psu");
+  single("case");
+  single("cooler");
+  multi("ram");
+  multi("storage");
+  return sel;
+}
 
 export const chat = action({
   args: {
@@ -73,38 +119,57 @@ ${catalog}`;
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "anthropic/claude-haiku-4-5",
-        max_tokens: 1024,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-        ],
-      }),
-    });
+    const callLlm = async (msgs: { role: "system" | "user" | "assistant"; content: string }[]) => {
+      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-haiku-4-5",
+          max_tokens: 1024,
+          messages: msgs,
+        }),
+      });
+      if (!r.ok) throw new Error(`OpenRouter error ${r.status}: ${await r.text()}`);
+      const j = await r.json();
+      return (j.choices?.[0]?.message?.content ?? "") as string;
+    };
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(`OpenRouter error ${response.status}: ${err}`);
-    }
+    const conversation: { role: "system" | "user" | "assistant"; content: string }[] = [
+      { role: "system", content: systemPrompt },
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+    ];
 
-    const data = await response.json();
-    const text: string = data.choices?.[0]?.message?.content ?? "";
+    let text = await callLlm(conversation);
 
-    // Extract build from hidden tag
-    let build: Record<string, string | string[]> | null = null;
-    const buildMatch = text.match(/<!--BUILD:(.*?)-->/);
-    if (buildMatch) {
+    const parseBuild = (s: string): BuildTag | null => {
+      const m = s.match(/<!--BUILD:(.*?)-->/);
+      if (!m) return null;
       try {
-        build = JSON.parse(buildMatch[1]);
+        return JSON.parse(m[1]);
       } catch {
-        // ignore parse errors
+        return null;
+      }
+    };
+
+    let build = parseBuild(text);
+
+    // Server-side compatibility validation with one retry
+    if (build) {
+      const sel = resolveBuild(build, inStock);
+      const result = checkCompatibility(sel);
+      if (result.errors.length > 0) {
+        conversation.push({ role: "assistant", content: text });
+        conversation.push({
+          role: "user",
+          content: `Your build has compatibility errors. Fix them and re-emit the full build tag:\n${result.errors
+            .map((e) => `- ${e}`)
+            .join("\n")}\n\nDouble-check rule 3 (sockets, RAM type, form factor, GPU/cooler clearance, PSU wattage) before answering.`,
+        });
+        text = await callLlm(conversation);
+        build = parseBuild(text);
       }
     }
 
