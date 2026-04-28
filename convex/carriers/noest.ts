@@ -2,23 +2,17 @@ import { CarrierAdapter, CarrierCredentials, Desk, ShipmentData } from "./types"
 
 const BASE = "https://app.noest-dz.com/api/public";
 
-function auth(creds: CarrierCredentials) {
+function authHeaders(creds: CarrierCredentials) {
   return {
-    api_token: creds.apiToken ?? "",
-    user_guid: creds.userGuid ?? "",
+    Authorization: `Bearer ${creds.apiToken ?? ""}`,
+    Accept: "application/json",
   };
 }
 
-async function postForm(url: string, body: Record<string, any>) {
-  const params = new URLSearchParams();
-  for (const [k, val] of Object.entries(body)) {
-    if (val === undefined || val === null) continue;
-    params.append(k, String(val));
-  }
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: params.toString(),
+async function getJson(path: string, creds: CarrierCredentials) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "GET",
+    headers: authHeaders(creds),
   });
   const text = await res.text();
   let data: any;
@@ -30,21 +24,19 @@ async function postForm(url: string, body: Record<string, any>) {
   return data;
 }
 
-async function getJson(url: string, params: Record<string, any>) {
-  const qs = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null) continue;
-    qs.append(k, String(v));
-  }
-  const res = await fetch(`${url}?${qs.toString()}`, {
-    method: "GET",
-    headers: { Accept: "application/json" },
+async function postJson(path: string, creds: CarrierCredentials, body: Record<string, any>) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { ...authHeaders(creds), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
   const text = await res.text();
   let data: any;
   try { data = JSON.parse(text); } catch { data = text; }
   if (!res.ok) {
-    const msg = typeof data === "object" ? data?.message ?? JSON.stringify(data) : String(data);
+    const msg = typeof data === "object"
+      ? (data?.message ?? JSON.stringify(data))
+      : String(data);
     throw new Error(`Noest ${res.status}: ${msg}`);
   }
   return data;
@@ -52,16 +44,20 @@ async function getJson(url: string, params: Record<string, any>) {
 
 function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
-  // Noest expects 9-10 digits; Algerian mobile usually 10 (e.g. 0555123456) or 9 without leading 0
   if (digits.length > 10) return digits.slice(-10);
   return digits;
+}
+
+function ensureReference(orderNumber: string): string {
+  // Noest requires reference >= 5 chars; our format ZED-YYMMDD-#### is always >= 13.
+  return orderNumber.length >= 5 ? orderNumber : `${orderNumber}-${Date.now()}`.slice(0, 30);
 }
 
 export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
   return {
     async testConnection() {
       try {
-        await getJson(`${BASE}/desks`, auth(creds));
+        await getJson("/desks", creds);
         return true;
       } catch {
         return false;
@@ -69,7 +65,7 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
     },
 
     async getFees(_fromWilaya, toWilaya, opts) {
-      const data = await getJson(`${BASE}/fees`, auth(creds));
+      const data = await getJson("/fees", creds);
       const tarif = data?.tarifs?.delivery?.[String(toWilaya)];
       if (!tarif) return 0;
       const raw = opts?.stopDesk ? tarif.tarif_stopdesk : tarif.tarif;
@@ -77,10 +73,10 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
     },
 
     async getDesks(): Promise<Desk[]> {
-      const data = await getJson(`${BASE}/desks`, auth(creds));
+      const data = await getJson("/desks", creds);
       const out: Desk[] = [];
       for (const [key, info] of Object.entries<any>(data ?? {})) {
-        // key is padded e.g. "01A" → wilaya 1, "16A" → 16
+        // key like "01A", "16E", "19RE" — first 2 chars are wilaya number
         const wilayaId = parseInt(key.slice(0, 2), 10);
         out.push({
           code: info.code ?? key,
@@ -93,29 +89,37 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
     },
 
     async createShipment(order: ShipmentData) {
+      if (!creds.userGuid) throw new Error("Noest: user_guid manquant dans les identifiants");
       const wilayaNum = parseInt(order.wilaya, 10) || 0;
       const stopDesk = order.deliveryType === "stopdesk" ? 1 : 0;
+
       const payload: Record<string, any> = {
-        ...auth(creds),
-        reference: order.orderNumber,
+        user_guid: creds.userGuid,
+        reference: ensureReference(order.orderNumber),
         client: order.customerName,
         phone: normalizePhone(order.phone),
-        adresse: order.address || "—",
+        adresse: (order.address && order.address.length > 0) ? order.address.slice(0, 255) : "—",
         wilaya_id: wilayaNum,
-        commune: order.commune || "—",
         montant: order.isCod ? order.totalAmount : 0,
-        produit: order.productSummary || order.orderNumber,
-        type_id: 1, // 1 = livraison standard
-        poids: Math.max(1, Math.round(order.weight ?? 1)),
+        produit: (order.productSummary || order.orderNumber).slice(0, 240),
+        type_id: 1,
         stop_desk: stopDesk,
-        can_open: 0,
       };
-      if (stopDesk === 1 && order.stationCode) {
+
+      if (order.weight && order.weight > 0) payload.poids = order.weight;
+      if (stopDesk === 1) {
+        if (!order.stationCode) throw new Error("Noest: station_code requis pour le stop desk");
         payload.station_code = order.stationCode;
+      } else {
+        // commune is required when stop_desk is 0 and zip_code is not provided
+        payload.commune = (order.commune && order.commune.length > 0) ? order.commune : "—";
       }
-      const data = await postForm(`${BASE}/create/order`, payload);
+
+      const data = await postJson("/create/order", creds, payload);
       const tracking = data?.tracking ?? "";
-      if (!tracking) throw new Error(`Noest: no tracking returned (${JSON.stringify(data)})`);
+      if (!tracking) {
+        throw new Error(`Noest: tracking absent (${JSON.stringify(data)})`);
+      }
       return { tracking };
     },
 
