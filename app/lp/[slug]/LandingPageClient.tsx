@@ -94,15 +94,21 @@ export function LandingPageClient({ page }: { page: any }) {
   const sectionAlt = isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)";
 
   const heroImg = page.heroImage || product.images?.[0] || "";
+  const colorVariants: { hex: string; nameFr?: string; nameAr?: string; image: string }[] =
+    product.colorVariants ?? [];
   const gallery: string[] = useMemo(() => {
     const imgs: string[] = [];
     if (heroImg) imgs.push(heroImg);
     (product.images ?? []).forEach((u: string) => {
       if (u && !imgs.includes(u)) imgs.push(u);
     });
+    colorVariants.forEach((v) => {
+      if (v.image && !imgs.includes(v.image)) imgs.push(v.image);
+    });
     return imgs;
-  }, [heroImg, product.images]);
+  }, [heroImg, product.images, colorVariants]);
   const currentImage = gallery[activeImage] || heroImg;
+  const activeColorIndex = colorVariants.findIndex((v) => v.image === currentImage);
 
   const isRTL = lang === "ar";
   const communes = useMemo(() => (wilaya ? getCommunesForWilaya(wilaya) : []), [wilaya]);
@@ -463,6 +469,40 @@ export function LandingPageClient({ page }: { page: any }) {
                     </div>
                   )}
                 </div>
+
+                {colorVariants.length > 0 && (
+                  <div className="mt-5">
+                    <div className="text-xs font-bold uppercase tracking-[0.15em] mb-2.5" style={{ color: mutedText }}>
+                      {tr("اللون", "Couleur", "Color")}
+                      {activeColorIndex >= 0 && (
+                        <span className="ms-2 normal-case tracking-normal" style={{ color: textColor }}>
+                          — {pick(colorVariants[activeColorIndex].nameFr, colorVariants[activeColorIndex].nameAr)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {colorVariants.map((v, i) => {
+                        const idx = gallery.indexOf(v.image);
+                        const isActive = idx === activeImage;
+                        return (
+                          <button
+                            key={`color-${i}`}
+                            type="button"
+                            onClick={() => idx >= 0 && setActiveImage(idx)}
+                            title={pick(v.nameFr, v.nameAr) || v.hex}
+                            className="w-9 h-9 rounded-full transition-all"
+                            style={{
+                              backgroundColor: v.hex,
+                              boxShadow: isActive
+                                ? `0 0 0 2px ${backgroundColor}, 0 0 0 4px ${accentColor}`
+                                : `0 0 0 1px ${borderColor}`,
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {page.showStockUrgency && product.stock > 0 && product.stock < 20 && (
                   <div
