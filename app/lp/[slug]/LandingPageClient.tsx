@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost } from "@/lib/wilayas";
+import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost, getWilayaNumber } from "@/lib/wilayas";
 import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
 
 declare global {
@@ -73,10 +73,17 @@ export function LandingPageClient({ page }: { page: any }) {
   const [commune, setCommune] = useState("");
   const [address, setAddress] = useState("");
   const [activeImage, setActiveImage] = useState(0);
+  const [deliveryType, setDeliveryType] = useState<"home" | "stopdesk">("home");
+  const [stationCode, setStationCode] = useState("");
+  const [desks, setDesks] = useState<{ code: string; name: string; address?: string; wilayaId?: number }[]>([]);
+  const [dynamicShipping, setDynamicShipping] = useState<number | null>(null);
 
   const createOrder = useMutation(api.orders.create);
   const incView = useMutation(api.landingPages.incrementView);
   const incOrder = useMutation(api.landingPages.incrementOrder);
+  const enabledCarriers = useQuery(api.delivery.getEnabledCarriers);
+  const getCarrierFees = useAction(api.delivery.getFees);
+  const getCarrierDesks = useAction(api.delivery.getDesks);
 
   const product = page.product;
   const price = page.priceOverrideDzd ?? product.priceDzd;
@@ -168,7 +175,51 @@ export function LandingPageClient({ page }: { page: any }) {
     footerRights: tr("جميع الحقوق محفوظة", "Tous droits réservés", "All rights reserved"),
     footerCountry: tr("الجزائر", "Algérie", "Algeria"),
     brandLine: tr("متجر إلكتروني", "Boutique en ligne", "Online store"),
+    deliveryType: tr("طريقة التوصيل", "Mode de livraison", "Delivery method"),
+    homeDelivery: tr("التوصيل إلى المنزل", "Livraison à domicile", "Home delivery"),
+    stopDesk: tr("نقطة استلام (Stop Desk)", "Point de relais (Stop Desk)", "Pickup point (Stop Desk)"),
+    station: tr("نقطة الاستلام", "Point de relais", "Relay point"),
+    stationPickWilaya: tr("اختر الولاية أولاً", "Choisissez d'abord une wilaya", "Choose a wilaya first"),
+    stationNone: tr("لا توجد نقطة استلام في هذه الولاية", "Aucun point de relais dans cette wilaya", "No relay point in this wilaya"),
+    stationRequired: tr("يرجى اختيار نقطة استلام", "Veuillez choisir un point de relais", "Please choose a relay point"),
   };
+
+  const defaultApiCarrier = (enabledCarriers ?? []).find((c: any) => c.isDefault && c.hasApi && c.credentials);
+
+  // Load desks once
+  useEffect(() => {
+    if (!defaultApiCarrier) { setDesks([]); return; }
+    let cancelled = false;
+    getCarrierDesks({ slug: defaultApiCarrier.slug, credentials: defaultApiCarrier.credentials! })
+      .then((res: any) => { if (!cancelled && res.desks) setDesks(res.desks); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultApiCarrier?.slug]);
+
+  // Reset station when wilaya/deliveryType changes; fetch live fee
+  useEffect(() => {
+    setStationCode("");
+    setDynamicShipping(null);
+    if (!wilaya || !defaultApiCarrier) return;
+    const wilayaNum = getWilayaNumber(wilaya);
+    if (wilayaNum === 0) return;
+    let cancelled = false;
+    getCarrierFees({
+      slug: defaultApiCarrier.slug,
+      credentials: defaultApiCarrier.credentials!,
+      fromWilaya: 17,
+      toWilaya: wilayaNum,
+      stopDesk: deliveryType === "stopdesk",
+    }).then((res: any) => {
+      if (!cancelled && res.fee > 0) setDynamicShipping(res.fee);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wilaya, deliveryType, defaultApiCarrier?.slug]);
+
+  const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
+  const desksForWilaya = wilayaNumForDesks ? desks.filter((d) => d.wilayaId === wilayaNumForDesks) : [];
 
   useEffect(() => {
     incView({ id: page._id as Id<"landingPages"> });
@@ -218,6 +269,10 @@ export function LandingPageClient({ page }: { page: any }) {
       setError(DZ_PHONE_ERROR[lang] ?? DZ_PHONE_ERROR.fr);
       return;
     }
+    if (deliveryType === "stopdesk" && !stationCode) {
+      setError(mc.stationRequired);
+      return;
+    }
     const normalizedPhone = normalizeDzPhone(phone);
     setSubmitting(true);
     try {
@@ -228,7 +283,7 @@ export function LandingPageClient({ page }: { page: any }) {
           currency: "DZD",
         });
       }
-      const shipping = getShippingCost(wilaya);
+      const shipping = dynamicShipping ?? getShippingCost(wilaya);
       const res = await createOrder({
         items: [
           {
@@ -251,6 +306,8 @@ export function LandingPageClient({ page }: { page: any }) {
         },
         paymentMethod: "cod",
         locale: lang === "en" ? "fr" : lang,
+        deliveryType,
+        stationCode: deliveryType === "stopdesk" ? stationCode : undefined,
       });
       await incOrder({ id: page._id as Id<"landingPages"> });
       if (typeof window !== "undefined" && window.fbq) {
@@ -271,7 +328,7 @@ export function LandingPageClient({ page }: { page: any }) {
   }
 
   const subtotal = price * qty;
-  const shipping = wilaya ? getShippingCost(wilaya) : 0;
+  const shipping = wilaya ? (dynamicShipping ?? getShippingCost(wilaya)) : 0;
   const total = subtotal + shipping;
   const savings = compare ? (compare - price) * qty : 0;
   const discountPct = compare && compare > price ? Math.round(((compare - price) / compare) * 100) : 0;
@@ -784,6 +841,61 @@ export function LandingPageClient({ page }: { page: any }) {
                     isLight={isLight}
                     textColor={textColor}
                   />
+
+                  <div>
+                    <div className="text-xs font-black mb-1.5">{mc.deliveryType}</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        { v: "home" as const, label: mc.homeDelivery, icon: "home" },
+                        { v: "stopdesk" as const, label: mc.stopDesk, icon: "storefront" },
+                      ]).map((opt) => {
+                        const checked = deliveryType === opt.v;
+                        return (
+                          <button
+                            key={opt.v}
+                            type="button"
+                            onClick={() => setDeliveryType(opt.v)}
+                            className="flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-bold transition-all"
+                            style={{
+                              backgroundColor: checked ? rgba(primaryColor, 0.12) : cardBg,
+                              border: `2px solid ${checked ? primaryColor : borderColor}`,
+                              color: textColor,
+                            }}
+                          >
+                            <span className="material-symbols-outlined text-base" style={{ color: primaryColor }}>{opt.icon}</span>
+                            <span>{opt.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {deliveryType === "stopdesk" && (
+                    <LabeledSelect
+                      label={mc.station}
+                      icon="storefront"
+                      value={stationCode}
+                      onChange={setStationCode}
+                      primaryColor={primaryColor}
+                      borderColor={borderColor}
+                      isLight={isLight}
+                      textColor={textColor}
+                      required
+                    >
+                      <option value="">
+                        {!wilaya
+                          ? mc.stationPickWilaya
+                          : desksForWilaya.length === 0
+                            ? mc.stationNone
+                            : "—"}
+                      </option>
+                      {desksForWilaya.map((d) => (
+                        <option key={d.code} value={d.code}>
+                          {d.name}{d.address ? ` — ${d.address}` : ""}
+                        </option>
+                      ))}
+                    </LabeledSelect>
+                  )}
 
                   <div>
                     <div className="text-xs font-black mb-1.5">{mc.qty}</div>
