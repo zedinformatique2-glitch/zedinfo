@@ -304,12 +304,13 @@ export function LandingPageClient({ page }: { page: any }) {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm"
-              style={{ backgroundColor: primaryColor, color: "#ffffff" }}
-            >
-              Z
-            </div>
+            <Image
+              src="/logo.jpg"
+              alt="ZED INFORMATIQUE"
+              width={32}
+              height={32}
+              className="rounded-lg object-cover"
+            />
             <div className="font-bold tracking-tight text-sm" style={{ color: textColor }}>
               ZED INFORMATIQUE
             </div>
