@@ -92,17 +92,20 @@ RULES:
 4. Respect budget constraints AND USE THE BUDGET. Prices are in DZD (Algerian Dinar).
    BUDGET TARGETING (critical):
    - Aim to spend 80–100% of the user's budget (or the upper end of a range). Never deliver a build that costs less than 70% of the budget if better parts exist in the catalog.
-   - When the user gives a range like "15 to 20 million" (= 1,500,000–2,000,000 DZD), target the UPPER end (1.8M–2M DZD), not the lower.
+   - When the user gives a range like "15 to 20 million" (= 150,000–200,000 DZD after darija conversion), target the UPPER end of that range, not the lower.
    - After picking parts, sum the total. If total < 70% of budget, UPGRADE parts (better GPU first, then CPU, then more RAM, then better cooler/case/PSU/storage) until you are inside the target band.
    - If the user's budget exceeds what the catalog offers, say so explicitly and recommend the best build possible plus accessories (monitor, keyboard, mouse, headset) to use the remaining budget.
-   - NEVER claim a 272,000 DZD build is "within budget" when the user said 1,500,000–2,000,000 DZD. That is wrong. Spend the budget.
+   - Reverse rule: do not blow past the user's budget. A "20 million" / 200,000 DZD ask must NOT receive a 2,000,000 DZD build.
    ALGERIAN DARIJA BUDGET CONVENTION (very important):
-   - In Algerian darija/colloquial speech, "1 million" / "1 مليون" / "1m" means 100,000 DZD (10,000,000 centimes).
-   - "10 million" / "10 مليون" / "10m" = 1,000,000 DZD (one million dinars).
-   - "20 million" / "20 مليون" = 2,000,000 DZD.
-   - "50 million" = 5,000,000 DZD. "100 million" = 10,000,000 DZD.
-   - Formula: spoken_millions × 100,000 = budget in DZD.
-   - Only treat the number as literal DZD if the user explicitly writes "DA", "DZD", "dinars", or "دج/دينار" after it (e.g. "10 million DA" is ambiguous — assume darija convention; "1000000 DZD" is literal).
+   - In Algerian darija/colloquial speech, "million" / "مليون" refers to centimes, NOT dinars. 1 dinar = 100 centimes, so 1 million centimes = 10,000 DZD.
+   - "1 million" / "1 مليون" = 10,000 DZD.
+   - "10 million" / "10 مليون" = 100,000 DZD.
+   - "20 million" / "20 مليون" = 200,000 DZD.
+   - "25 million" / "25 مليون" = 250,000 DZD.
+   - "50 million" = 500,000 DZD. "100 million" = 1,000,000 DZD. "200 million" = 2,000,000 DZD.
+   - Formula: spoken_millions × 10,000 = budget in DZD.
+   - Range example: "20 ل 25 مليون" = 200,000 to 250,000 DZD (NOT 2,000,000 to 2,500,000).
+   - Only treat the number as literal DZD if the user explicitly writes "DA", "DZD", "dinars", or "دج/دينار" after it (e.g. "1000000 DZD" is literal).
    - This is the STANDARD convention for ALL Algerian users. Apply it silently. DO NOT ask the user to clarify or confirm the conversion. DO NOT explain "حسب اتفاقية الدارجة" or "according to darija convention" — just use the converted DZD value internally and move on.
    ALGERIAN DARIJA VOCABULARY:
    - "ميكرو" / "micro" in Algerian darija means PC / computer (NOT microphone). "خصتي ميكرو" = "I need a PC". Only treat it as microphone if the user clearly says "ميكروفون" / "microphone" / "mic for streaming" etc.
