@@ -104,6 +104,29 @@ export const setVerified = internalMutation({
   },
 });
 
+export const ensureDefaults = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("deliveryCarriers").collect();
+    const existing = new Set(all.map((c) => c.slug));
+    let added = 0;
+    for (const c of DEFAULT_CARRIERS) {
+      if (existing.has(c.slug)) continue;
+      await ctx.db.insert("deliveryCarriers", {
+        slug: c.slug,
+        name: c.name,
+        enabled: false,
+        isDefault: false,
+        hasApi: c.hasApi,
+        verified: false,
+        createdAt: Date.now(),
+      });
+      added++;
+    }
+    return { added };
+  },
+});
+
 export const seedDefaults = mutation({
   args: {},
   handler: async (ctx) => {
