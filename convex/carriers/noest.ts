@@ -30,6 +30,26 @@ async function postForm(url: string, body: Record<string, any>) {
   return data;
 }
 
+async function getJson(url: string, params: Record<string, any>) {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null) continue;
+    qs.append(k, String(v));
+  }
+  const res = await fetch(`${url}?${qs.toString()}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  const text = await res.text();
+  let data: any;
+  try { data = JSON.parse(text); } catch { data = text; }
+  if (!res.ok) {
+    const msg = typeof data === "object" ? data?.message ?? JSON.stringify(data) : String(data);
+    throw new Error(`Noest ${res.status}: ${msg}`);
+  }
+  return data;
+}
+
 function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   // Noest expects 9-10 digits; Algerian mobile usually 10 (e.g. 0555123456) or 9 without leading 0
@@ -41,7 +61,7 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
   return {
     async testConnection() {
       try {
-        await postForm(`${BASE}/desks`, auth(creds));
+        await getJson(`${BASE}/desks`, auth(creds));
         return true;
       } catch {
         return false;
@@ -49,7 +69,7 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
     },
 
     async getFees(_fromWilaya, toWilaya, opts) {
-      const data = await postForm(`${BASE}/fees`, auth(creds));
+      const data = await getJson(`${BASE}/fees`, auth(creds));
       const tarif = data?.tarifs?.delivery?.[String(toWilaya)];
       if (!tarif) return 0;
       const raw = opts?.stopDesk ? tarif.tarif_stopdesk : tarif.tarif;
@@ -57,14 +77,16 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
     },
 
     async getDesks(): Promise<Desk[]> {
-      const data = await postForm(`${BASE}/desks`, auth(creds));
+      const data = await getJson(`${BASE}/desks`, auth(creds));
       const out: Desk[] = [];
-      for (const [code, info] of Object.entries<any>(data ?? {})) {
+      for (const [key, info] of Object.entries<any>(data ?? {})) {
+        // key is padded e.g. "01A" → wilaya 1, "16A" → 16
+        const wilayaId = parseInt(key.slice(0, 2), 10);
         out.push({
-          code: info.code ?? code,
-          name: info.name ?? code,
+          code: info.code ?? key,
+          name: info.name ?? key,
           address: info.address,
-          wilayaId: typeof info.code === "string" ? parseInt(info.code.slice(0, 2), 10) : undefined,
+          wilayaId: Number.isFinite(wilayaId) ? wilayaId : undefined,
         });
       }
       return out;
