@@ -301,7 +301,6 @@ export default function ConfiguratorPage() {
                         </div>
                       )}
                       {filteredSlotProducts.map(({ product: p, compatible, incompatibilityReason }) => {
-                        const showThumb = slot.key === "gpu";
                         const thumb = (p as any).images?.[0] as string | undefined;
                         return (
                         <button
@@ -327,7 +326,6 @@ export default function ConfiguratorPage() {
                               : "bg-slate-50 ring-slate-100 opacity-50 cursor-not-allowed"
                           }`}
                         >
-                          {showThumb && (
                           <div className={`relative h-11 w-11 shrink-0 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center ${compatible ? "" : "opacity-60"}`}>
                             {thumb ? (
                               <Image
@@ -341,7 +339,6 @@ export default function ConfiguratorPage() {
                               <Icon name={SLOT_ICONS[slot.key]} className="text-slate-400 text-[20px]" />
                             )}
                           </div>
-                          )}
                           <div className="flex-1 min-w-0">
                             <div className={`font-semibold text-sm truncate ${compatible ? "text-slate-900" : "text-slate-400"}`}>
                               {localizedName(p as any, locale)}
