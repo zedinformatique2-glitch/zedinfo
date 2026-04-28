@@ -266,8 +266,8 @@ export const CONFIG_SLOTS = [
   { key: "motherboard", categorySlug: "motherboards", required: true },
   { key: "ram", categorySlug: "ram", required: true },
   { key: "gpu", categorySlug: "graphics-cards", required: true },
-  { key: "storage", categorySlug: "storage", required: true },
+  { key: "storage", categorySlug: "ssds", required: true },
   { key: "psu", categorySlug: "power-supplies", required: true },
   { key: "case", categorySlug: "cases", required: true },
-  { key: "cooler", categorySlug: "cooling", required: false },
+  { key: "cooler", categorySlug: "cpu-cooling", required: false },
 ] as const;
