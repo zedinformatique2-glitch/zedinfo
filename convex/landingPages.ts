@@ -26,6 +26,19 @@ export const getBySlug = query({
   },
 });
 
+export const slugAvailable = query({
+  args: { slug: v.string(), excludeId: v.optional(v.id("landingPages")) },
+  handler: async (ctx, { slug, excludeId }) => {
+    if (!slug.trim()) return true;
+    const existing = await ctx.db
+      .query("landingPages")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .unique();
+    if (!existing) return true;
+    return excludeId ? existing._id === excludeId : false;
+  },
+});
+
 export const getById = query({
   args: { id: v.id("landingPages") },
   handler: async (ctx, { id }) => {

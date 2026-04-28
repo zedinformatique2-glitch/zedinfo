@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -13,6 +13,8 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   const products = useQuery(api.products.list, {});
   const create = useMutation(api.landingPages.create);
   const update = useMutation(api.landingPages.update);
+  const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
+  const getUrlFromId = useMutation(api.storage.getUrlFromId);
 
   const init = mode.kind === "edit" ? mode.initial : null;
 
@@ -58,6 +60,8 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const splitLines = (s: string) => s.split("\n").map((v) => v.trim()).filter(Boolean);
   const optStr = (s: string) => (s.trim() ? s : undefined);
@@ -77,6 +81,38 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
     return "";
   };
 
+  const finalSlug = autoSlug();
+  const slugCheck = useQuery(
+    api.landingPages.slugAvailable,
+    finalSlug
+      ? { slug: finalSlug, excludeId: mode.kind === "edit" ? mode.id : undefined }
+      : "skip"
+  );
+  const slugTaken = slugCheck === false;
+
+  async function onPickFile(file: File) {
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const url = await generateUploadUrl();
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!res.ok) throw new Error("فشل الرفع");
+      const { storageId } = await res.json();
+      const fileUrl = await getUrlFromId({ storageId });
+      if (!fileUrl) throw new Error("فشل الحصول على الرابط");
+      setHeroImage(fileUrl);
+    } catch (err: any) {
+      setError(err.message || "فشل رفع الصورة");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -88,9 +124,12 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       setError("أدخل العنوان الرئيسي");
       return;
     }
-    const finalSlug = autoSlug();
     if (!finalSlug) {
       setError("أدخل رابطًا (slug)");
+      return;
+    }
+    if (slugTaken) {
+      setError(`الرابط "${finalSlug}" مستخدم بالفعل — اختر رابطًا آخر`);
       return;
     }
     const bulletsList = splitLines(bullets);
@@ -135,7 +174,12 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       }
       router.push("/admin/landing-pages");
     } catch (err: any) {
-      setError(err.message || "خطأ");
+      const msg = String(err?.message || err || "");
+      if (msg.includes("Slug already exists")) {
+        setError(`الرابط "${finalSlug}" مستخدم بالفعل — اختر رابطًا آخر`);
+      } else {
+        setError(msg || "خطأ");
+      }
       setSaving(false);
     }
   }
@@ -168,10 +212,18 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder={selected?.nameFr ? "اتركه فارغًا للإنشاء التلقائي" : "promo-rtx-4070"}
-            className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
+            className={`w-full rounded-xl border px-3 py-2 text-sm ${slugTaken ? "border-red-400 bg-red-50" : "border-outline-variant"}`}
             dir="ltr"
           />
-          <div className="text-xs text-on-surface-variant mt-1 ltr">→ /lp/{autoSlug() || "..."}</div>
+          <div className="text-xs mt-1 ltr flex items-center gap-1.5" style={{ color: slugTaken ? "#dc2626" : undefined }}>
+            <span className="text-on-surface-variant">→ /lp/{finalSlug || "..."}</span>
+            {finalSlug && slugTaken && (
+              <span className="font-bold">— ⚠ هذا الرابط مستخدم بالفعل</span>
+            )}
+            {finalSlug && slugCheck === true && (
+              <span className="font-bold text-emerald-600">✓ متاح</span>
+            )}
+          </div>
         </Field>
       </Section>
 
@@ -259,13 +311,46 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
         {advancedOpen && (
           <div className="px-6 pb-6 space-y-5 border-t border-outline-variant/40 pt-5">
             <Field label="صورة مخصصة (اتركها فارغة لاستخدام صور المنتج)">
-              <input
-                value={heroImage}
-                onChange={(e) => setHeroImage(e.target.value)}
-                className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-                dir="ltr"
-                placeholder="https://..."
-              />
+              <div className="flex items-center gap-3">
+                {heroImage && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={heroImage}
+                    alt=""
+                    className="w-20 h-20 rounded-xl object-cover ring-1 ring-outline-variant/40"
+                  />
+                )}
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onPickFile(f);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold disabled:opacity-50"
+                  >
+                    {uploading ? "جارٍ الرفع..." : heroImage ? "تغيير الصورة" : "اختر صورة من جهازك"}
+                  </button>
+                  {heroImage && (
+                    <button
+                      type="button"
+                      onClick={() => setHeroImage("")}
+                      className="px-3 py-2 rounded-xl bg-surface-container text-on-surface text-sm font-bold"
+                    >
+                      إزالة
+                    </button>
+                  )}
+                </div>
+              </div>
             </Field>
 
             <Field label="وصف طويل (فقرات)">
@@ -334,7 +419,7 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || slugTaken}
           className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-sm hover:shadow-lg disabled:opacity-50"
         >
           {saving ? "جارٍ الحفظ..." : mode.kind === "new" ? "إنشاء الصفحة" : "حفظ التغييرات"}

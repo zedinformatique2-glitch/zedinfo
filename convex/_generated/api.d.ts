@@ -13,6 +13,7 @@ import type * as aiChat from "../aiChat.js";
 import type * as carriers_ecotrack from "../carriers/ecotrack.js";
 import type * as carriers_index from "../carriers/index.js";
 import type * as carriers_maystro from "../carriers/maystro.js";
+import type * as carriers_noest from "../carriers/noest.js";
 import type * as carriers_types from "../carriers/types.js";
 import type * as carriers_yalidine from "../carriers/yalidine.js";
 import type * as carriers_zrExpress from "../carriers/zrExpress.js";
@@ -31,6 +32,7 @@ import type * as seed from "../seed.js";
 import type * as seedCategories from "../seedCategories.js";
 import type * as seedReal from "../seedReal.js";
 import type * as storage from "../storage.js";
+import type * as telegram from "../telegram.js";
 
 import type {
   ApiFromModules,
@@ -44,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   "carriers/ecotrack": typeof carriers_ecotrack;
   "carriers/index": typeof carriers_index;
   "carriers/maystro": typeof carriers_maystro;
+  "carriers/noest": typeof carriers_noest;
   "carriers/types": typeof carriers_types;
   "carriers/yalidine": typeof carriers_yalidine;
   "carriers/zrExpress": typeof carriers_zrExpress;
@@ -62,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   seedCategories: typeof seedCategories;
   seedReal: typeof seedReal;
   storage: typeof storage;
+  telegram: typeof telegram;
 }>;
 
 /**
