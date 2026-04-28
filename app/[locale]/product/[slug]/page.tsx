@@ -9,6 +9,7 @@ import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { formatDzd, localizedDesc, localizedName } from "@/lib/format";
+import { buildAlternates } from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -19,17 +20,19 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   const loc = locale as Locale;
+  const alternates = buildAlternates(loc, `/product/${slug}`);
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-    return { title: "ZED INFORMATIQUE" };
+    return { title: "ZED INFORMATIQUE", alternates };
   }
   try {
     const product: any = await fetchQuery(api.products.bySlug, { slug });
-    if (!product) return { title: "ZED INFORMATIQUE" };
+    if (!product) return { title: "ZED INFORMATIQUE", alternates };
     const name = localizedName(product, loc);
     const desc = localizedDesc(product, loc);
     return {
       title: `${name} | ZED INFORMATIQUE`,
       description: desc || `${name} — ${formatDzd(product.priceDzd, loc)}`,
+      alternates,
       openGraph: {
         title: `${name} | ZED INFORMATIQUE`,
         description: desc || `${name} — ${formatDzd(product.priceDzd, loc)}`,
@@ -37,7 +40,7 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return { title: "ZED INFORMATIQUE" };
+    return { title: "ZED INFORMATIQUE", alternates };
   }
 }
 

@@ -1,10 +1,13 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
 import { Link } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/Button";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { BrandMarquee } from "@/components/home/BrandMarquee";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { PromoSection } from "@/components/home/PromoSection";
+import { buildAlternates } from "@/lib/seo";
+import type { Locale } from "@/lib/i18n/config";
 
 const HERO_VIDEO = "/heroclip2.mp4";
 const HERO_POSTER = "/hero1.webp";
@@ -12,6 +15,11 @@ const HERO_POSTER = "/hero1.webp";
 export const revalidate = 300;
 
 type Params = { locale: string };
+
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: buildAlternates(locale as Locale, "") };
+}
 
 export default async function HomePage({ params }: { params: Promise<Params> }) {
   const { locale } = await params;

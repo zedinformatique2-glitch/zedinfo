@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { localizedName } from "@/lib/format";
+import { buildAlternates } from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -16,8 +17,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, category } = await params;
   const loc = locale as Locale;
+  const alternates = buildAlternates(loc, `/shop/${category}`);
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-    return { title: "ZED INFORMATIQUE" };
+    return { title: "ZED INFORMATIQUE", alternates };
   }
   try {
     const catDoc: any = await fetchQuery(api.categories.bySlug, { slug: category });
@@ -25,9 +27,10 @@ export async function generateMetadata({
     return {
       title: `${name} | ZED INFORMATIQUE`,
       description: `Achetez ${name} en Algérie — livraison dans les 58 wilayas.`,
+      alternates,
     };
   } catch {
-    return { title: "ZED INFORMATIQUE" };
+    return { title: "ZED INFORMATIQUE", alternates };
   }
 }
 

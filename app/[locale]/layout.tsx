@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { setRequestLocale, getMessages } from "next-intl/server";
 import { routing } from "@/lib/i18n/routing";
 import { isRtl, type Locale } from "@/lib/i18n/config";
+import { siteUrl } from "@/lib/seo";
 import Script from "next/script";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
 import { Header } from "@/components/layout/Header";
@@ -30,6 +31,7 @@ const orbitron = Orbitron({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: "ZED INFORMATIQUE | Premium PC Hardware — Algeria",
   description:
     "Solutions informatiques haute performance en Algérie. PC gaming, composants, configurateur sur mesure.",

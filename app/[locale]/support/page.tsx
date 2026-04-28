@@ -1,9 +1,21 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
 import { Icon } from "@/components/ui/Icon";
 import { Input, Textarea, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { buildAlternates } from "@/lib/seo";
+import type { Locale } from "@/lib/i18n/config";
 
 export const revalidate = 3600;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: buildAlternates(locale as Locale, "/support") };
+}
 
 export default async function SupportPage({
   params,

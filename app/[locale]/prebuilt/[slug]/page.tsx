@@ -2,12 +2,40 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
+import type { Metadata } from "next";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Locale } from "@/lib/i18n/config";
 import { formatDzd, localizedDesc, localizedName } from "@/lib/format";
+import { buildAlternates } from "@/lib/seo";
 
 export const revalidate = 300;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const loc = locale as Locale;
+  const alternates = buildAlternates(loc, `/prebuilt/${slug}`);
+  if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+    return { title: "ZED INFORMATIQUE", alternates };
+  }
+  try {
+    const pb: any = await fetchQuery(api.prebuilts.bySlug, { slug });
+    if (!pb) return { title: "ZED INFORMATIQUE", alternates };
+    const name = localizedName(pb, loc);
+    const desc = localizedDesc(pb, loc);
+    return {
+      title: `${name} | ZED INFORMATIQUE`,
+      description: desc || `${name} — ${formatDzd(pb.priceDzd, loc)}`,
+      alternates,
+    };
+  } catch {
+    return { title: "ZED INFORMATIQUE", alternates };
+  }
+}
 
 async function safeFetch<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) return fallback;
