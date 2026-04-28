@@ -14,13 +14,16 @@ type CarrierDoc = {
     apiId?: string;
     apiToken?: string;
     bearerToken?: string;
+    userGuid?: string;
   };
   isDefault: boolean;
   hasApi: boolean;
   verified?: boolean;
 };
 
-const CREDENTIAL_FIELDS: Record<string, { label: string; field: "apiId" | "apiToken" | "bearerToken" }[]> = {
+type CredField = "apiId" | "apiToken" | "bearerToken" | "userGuid";
+
+const CREDENTIAL_FIELDS: Record<string, { label: string; field: CredField }[]> = {
   yalidine: [
     { label: "API ID", field: "apiId" },
     { label: "API Token", field: "apiToken" },
@@ -34,6 +37,10 @@ const CREDENTIAL_FIELDS: Record<string, { label: string; field: "apiId" | "apiTo
   ],
   ecotrack: [
     { label: "Bearer Token", field: "bearerToken" },
+  ],
+  noest: [
+    { label: "API Token", field: "apiToken" },
+    { label: "User GUID", field: "userGuid" },
   ],
 };
 
@@ -65,6 +72,7 @@ export default function AdminDeliveryPage() {
           apiId: c.credentials?.apiId ?? "",
           apiToken: c.credentials?.apiToken ?? "",
           bearerToken: c.credentials?.bearerToken ?? "",
+          userGuid: c.credentials?.userGuid ?? "",
         };
       }
     }
@@ -109,6 +117,7 @@ export default function AdminDeliveryPage() {
         apiId: creds.apiId || undefined,
         apiToken: creds.apiToken || undefined,
         bearerToken: creds.bearerToken || undefined,
+        userGuid: creds.userGuid || undefined,
       },
       isDefault: carrier.isDefault,
       hasApi: carrier.hasApi,
@@ -127,6 +136,7 @@ export default function AdminDeliveryPage() {
           apiId: creds.apiId || undefined,
           apiToken: creds.apiToken || undefined,
           bearerToken: creds.bearerToken || undefined,
+          userGuid: creds.userGuid || undefined,
         },
       });
       setTestResults((p) => ({ ...p, [carrier.slug]: result }));

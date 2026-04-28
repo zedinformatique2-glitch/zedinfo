@@ -29,6 +29,11 @@ const schema = z.object({
   address: z.string().optional(),
   notes: z.string().optional(),
   paymentMethod: z.enum(["cod", "whatsapp"]),
+  deliveryType: z.enum(["home", "stopdesk"]),
+  stationCode: z.string().optional(),
+}).refine((d) => d.deliveryType !== "stopdesk" || (d.stationCode && d.stationCode.length > 0), {
+  message: "STATION_REQUIRED",
+  path: ["stationCode"],
 });
 
 type FormData = z.infer<typeof schema>;
@@ -47,11 +52,13 @@ export default function CheckoutPage() {
   const createOrder = useMutation(api.orders.create);
   const enabledCarriers = useQuery(api.delivery.getEnabledCarriers);
   const getCarrierFees = useAction(api.delivery.getFees);
+  const getCarrierDesks = useAction(api.delivery.getDesks);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [dynamicShipping, setDynamicShipping] = useState<number | null>(null);
   const [fetchingFees, setFetchingFees] = useState(false);
+  const [desks, setDesks] = useState<{ code: string; name: string; address?: string; wilayaId?: number }[]>([]);
 
   const {
     register,
@@ -61,20 +68,39 @@ export default function CheckoutPage() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { paymentMethod: "cod" },
+    defaultValues: { paymentMethod: "cod", deliveryType: "home" },
   });
 
   const wilaya = watch("wilaya");
+  const deliveryType = watch("deliveryType");
   const communes = wilaya ? getCommunesForWilaya(wilaya) : [];
 
-  // Reset commune when wilaya changes, and try to fetch real shipping fees
+  const defaultApiCarrier = (enabledCarriers ?? []).find(
+    (c: any) => c.isDefault && c.hasApi && c.credentials,
+  );
+
+  // Load desks once when an API carrier is available
+  useEffect(() => {
+    if (!defaultApiCarrier) { setDesks([]); return; }
+    let cancelled = false;
+    getCarrierDesks({
+      slug: defaultApiCarrier.slug,
+      credentials: defaultApiCarrier.credentials!,
+    }).then((res: any) => {
+      if (!cancelled && res.desks) setDesks(res.desks);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultApiCarrier?.slug]);
+
+  // Reset commune/station when wilaya changes, and fetch real shipping fees
   useEffect(() => {
     setValue("commune", "");
+    setValue("stationCode", "");
     setDynamicShipping(null);
 
     if (!wilaya) return;
-    const defaultCarrier = (enabledCarriers ?? []).find((c: any) => c.isDefault && c.hasApi && c.credentials);
-    if (!defaultCarrier) return;
+    if (!defaultApiCarrier) return;
 
     const wilayaNum = getWilayaNumber(wilaya);
     if (wilayaNum === 0) return;
@@ -82,21 +108,25 @@ export default function CheckoutPage() {
     let cancelled = false;
     setFetchingFees(true);
     getCarrierFees({
-      slug: defaultCarrier.slug,
-      credentials: defaultCarrier.credentials!,
-      fromWilaya: 17, // Djelfa (store location)
+      slug: defaultApiCarrier.slug,
+      credentials: defaultApiCarrier.credentials!,
+      fromWilaya: 17,
       toWilaya: wilayaNum,
+      stopDesk: deliveryType === "stopdesk",
     }).then((result: any) => {
-      if (!cancelled && result.fee > 0) {
-        setDynamicShipping(result.fee);
-      }
+      if (!cancelled && result.fee > 0) setDynamicShipping(result.fee);
     }).catch(() => {}).finally(() => {
       if (!cancelled) setFetchingFees(false);
     });
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wilaya, enabledCarriers]);
+  }, [wilaya, deliveryType, defaultApiCarrier?.slug]);
+
+  const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
+  const desksForWilaya = wilayaNumForDesks
+    ? desks.filter((d) => d.wilayaId === wilayaNumForDesks)
+    : [];
 
   const shipping = dynamicShipping ?? (wilaya ? getShippingCost(wilaya) : 800);
   const total = subtotal + shipping;
@@ -126,6 +156,8 @@ export default function CheckoutPage() {
         },
         paymentMethod: data.paymentMethod,
         locale,
+        deliveryType: data.deliveryType,
+        stationCode: data.deliveryType === "stopdesk" ? data.stationCode : undefined,
       });
 
       if (data.paymentMethod === "whatsapp") {
@@ -254,6 +286,46 @@ export default function CheckoutPage() {
                 <Label>{t("notes")}</Label>
                 <Textarea {...register("notes")} rows={3} />
               </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-[10px] uppercase tracking-widest font-bold mb-4 border-b border-outline-variant pb-2">
+              {t("deliveryType")}
+            </h2>
+            <div className="space-y-3 mt-4">
+              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+                <input type="radio" value="home" {...register("deliveryType")} />
+                <Icon name="home" className="text-primary" />
+                <span className="font-bold uppercase text-xs sm:text-sm">{t("homeDelivery")}</span>
+              </label>
+              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+                <input type="radio" value="stopdesk" {...register("deliveryType")} />
+                <Icon name="storefront" className="text-primary" />
+                <span className="font-bold uppercase text-xs sm:text-sm">{t("stopDesk")}</span>
+              </label>
+              {deliveryType === "stopdesk" && (
+                <div>
+                  <Label>{t("station")}</Label>
+                  <Select {...register("stationCode")} disabled={!wilaya || desksForWilaya.length === 0}>
+                    <option value="">
+                      {!wilaya
+                        ? t("stationPickWilayaFirst")
+                        : desksForWilaya.length === 0
+                          ? t("stationNone")
+                          : "—"}
+                    </option>
+                    {desksForWilaya.map((d) => (
+                      <option key={d.code} value={d.code}>
+                        {d.name}{d.address ? ` — ${d.address}` : ""}
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.stationCode && (
+                    <p className="text-error text-xs mt-1">{t("stationRequired")}</p>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 

@@ -8,6 +8,7 @@ const DEFAULT_CARRIERS = [
   { slug: "zr_express", name: "ZR Express", hasApi: true },
   { slug: "maystro", name: "Maystro Delivery", hasApi: true },
   { slug: "ecotrack", name: "Ecotrack", hasApi: true },
+  { slug: "noest", name: "Noest Express", hasApi: true },
   { slug: "ems", name: "EMS / Algérie Poste", hasApi: false },
   { slug: "northeast", name: "NorthEast Delivery", hasApi: false },
   { slug: "custom", name: "Custom", hasApi: false },
@@ -37,6 +38,7 @@ export const upsert = mutation({
       apiId: v.optional(v.string()),
       apiToken: v.optional(v.string()),
       bearerToken: v.optional(v.string()),
+      userGuid: v.optional(v.string()),
     })),
     isDefault: v.boolean(),
     hasApi: v.boolean(),
@@ -130,6 +132,7 @@ export const testConnection = action({
       apiId: v.optional(v.string()),
       apiToken: v.optional(v.string()),
       bearerToken: v.optional(v.string()),
+      userGuid: v.optional(v.string()),
     }),
   },
   handler: async (ctx, args) => {
@@ -154,19 +157,43 @@ export const getFees = action({
       apiId: v.optional(v.string()),
       apiToken: v.optional(v.string()),
       bearerToken: v.optional(v.string()),
+      userGuid: v.optional(v.string()),
     }),
     fromWilaya: v.number(),
     toWilaya: v.number(),
+    stopDesk: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const adapter = getAdapter(args.slug, args.credentials);
     if (!adapter) return { fee: 0, error: "No adapter" };
 
     try {
-      const fee = await adapter.getFees(args.fromWilaya, args.toWilaya);
+      const fee = await adapter.getFees(args.fromWilaya, args.toWilaya, { stopDesk: args.stopDesk });
       return { fee, error: undefined };
     } catch (e: any) {
       return { fee: 0, error: e.message };
+    }
+  },
+});
+
+export const getDesks = action({
+  args: {
+    slug: v.string(),
+    credentials: v.object({
+      apiId: v.optional(v.string()),
+      apiToken: v.optional(v.string()),
+      bearerToken: v.optional(v.string()),
+      userGuid: v.optional(v.string()),
+    }),
+  },
+  handler: async (_ctx, args) => {
+    const adapter = getAdapter(args.slug, args.credentials);
+    if (!adapter || !adapter.getDesks) return { desks: [], error: "Carrier does not support desks" };
+    try {
+      const desks = await adapter.getDesks();
+      return { desks, error: undefined };
+    } catch (e: any) {
+      return { desks: [], error: e.message };
     }
   },
 });
@@ -178,6 +205,7 @@ export const createShipment = action({
       apiId: v.optional(v.string()),
       apiToken: v.optional(v.string()),
       bearerToken: v.optional(v.string()),
+      userGuid: v.optional(v.string()),
     }),
     shipment: v.object({
       orderNumber: v.string(),
@@ -189,9 +217,12 @@ export const createShipment = action({
       totalAmount: v.number(),
       weight: v.optional(v.number()),
       isCod: v.boolean(),
+      deliveryType: v.optional(v.union(v.literal("home"), v.literal("stopdesk"))),
+      stationCode: v.optional(v.string()),
+      productSummary: v.optional(v.string()),
     }),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const adapter = getAdapter(args.slug, args.credentials);
     if (!adapter) return { tracking: "", error: "No adapter" };
 

@@ -1,4 +1,5 @@
 import { query, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 function genOrderNumber(): string {
@@ -35,6 +36,8 @@ export const create = mutation({
     }),
     paymentMethod: v.union(v.literal("cod"), v.literal("whatsapp")),
     locale: v.union(v.literal("fr"), v.literal("ar"), v.literal("en")),
+    deliveryType: v.optional(v.union(v.literal("home"), v.literal("stopdesk"))),
+    stationCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const subtotal = args.items.reduce((s, i) => s + i.priceDzd * i.qty, 0);
@@ -63,9 +66,14 @@ export const create = mutation({
       customer: args.customer,
       paymentMethod: args.paymentMethod,
       locale: args.locale,
+      deliveryType: args.deliveryType,
+      stationCode: args.stationCode,
       createdAt: now,
       updatedAt: now,
     });
+    // Fire-and-forget Telegram notification (no-op if env vars unset)
+    await ctx.scheduler.runAfter(0, internal.telegram.notifyNewOrder, { orderId: id });
+
     return { id, orderNumber };
   },
 });

@@ -105,6 +105,8 @@ export default defineSchema({
     trackingNumber: v.optional(v.string()),
     carrier: v.optional(v.string()),
     carrierTrackingUrl: v.optional(v.string()),
+    deliveryType: v.optional(v.union(v.literal("home"), v.literal("stopdesk"))),
+    stationCode: v.optional(v.string()),
     statusHistory: v.optional(v.array(v.object({
       status: v.string(),
       timestamp: v.number(),
@@ -126,6 +128,7 @@ export default defineSchema({
       apiId: v.optional(v.string()),
       apiToken: v.optional(v.string()),
       bearerToken: v.optional(v.string()),
+      userGuid: v.optional(v.string()),
     })),
     isDefault: v.boolean(),
     hasApi: v.boolean(),

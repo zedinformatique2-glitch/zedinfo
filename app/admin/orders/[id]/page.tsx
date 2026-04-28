@@ -182,6 +182,8 @@ export default function AdminOrderDetailPage() {
                       setCreatingShipment(true);
                       setShipmentError("");
                       try {
+                        const { getWilayaNumber } = await import("@/lib/wilayas");
+                        const wilayaNum = getWilayaNumber(order.customer.wilaya);
                         const result = await createShipment({
                           slug: selectedCarrier.slug,
                           credentials: selectedCarrier.credentials!,
@@ -190,10 +192,13 @@ export default function AdminOrderDetailPage() {
                             customerName: order.customer.fullName,
                             phone: order.customer.phone,
                             address: order.customer.address,
-                            wilaya: order.customer.wilaya,
+                            wilaya: selectedCarrier.slug === "noest" ? String(wilayaNum) : order.customer.wilaya,
                             commune: order.customer.commune || undefined,
                             totalAmount: order.totalDzd,
                             isCod: order.paymentMethod === "cod",
+                            deliveryType: order.deliveryType,
+                            stationCode: order.stationCode,
+                            productSummary: order.items.map((i: any) => `${i.nameFr} x${i.qty}`).join(", ").slice(0, 240),
                           },
                         });
                         if (result.error) {
