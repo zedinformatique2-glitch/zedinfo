@@ -132,7 +132,7 @@ export function LandingPageClient({ page }: { page: any }) {
   const mc = {
     delivery: tr("التوصيل لجميع الولايات", "Livraison dans les 58 wilayas", "Delivery to all 58 wilayas"),
     payment: tr("الدفع عند الاستلام", "Paiement à la livraison", "Cash on delivery"),
-    returns: tr("منتج أصلي 100%", "Produit 100% authentique", "100% authentic product"),
+    fastShip: tr("شحن سريع 24-48 ساعة", "Expédition 24-48h", "Fast 24-48h shipping"),
     whyTitle: tr("لماذا تختار هذا المنتج", "Pourquoi choisir ce produit", "Why choose this product"),
     detailsTitle: tr("تفاصيل المنتج", "Détails du produit", "Product details"),
     orderTitle: tr("أكمل طلبك", "Finalisez votre commande", "Complete your order"),
@@ -275,7 +275,7 @@ export function LandingPageClient({ page }: { page: any }) {
   const ctaStyle: React.CSSProperties = {
     backgroundColor: accentColor,
     color: "#ffffff",
-    boxShadow: `0 8px 30px ${rgba(accentColor, 0.4)}`,
+    boxShadow: `0 10px 30px -10px ${rgba(accentColor, 0.55)}, inset 0 1px 0 rgba(255,255,255,0.18)`,
   };
 
   const reveals = {
@@ -299,25 +299,22 @@ export function LandingPageClient({ page }: { page: any }) {
 
       {/* Branded header */}
       <header
-        className="border-b text-center"
-        style={{ backgroundColor: rgba(accentColor, isLight ? 0.06 : 0.1), borderColor }}
+        className="border-b backdrop-blur-md sticky top-0 z-30"
+        style={{ backgroundColor: isLight ? "rgba(255,255,255,0.78)" : "rgba(20,20,20,0.78)", borderColor }}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
-          <div className="flex-1" />
-          <div className="flex flex-col items-center gap-1.5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+              className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm"
               style={{ backgroundColor: primaryColor, color: "#ffffff" }}
             >
               Z
             </div>
-            <div className="uppercase tracking-[0.3em] text-[10px] font-bold" style={{ color: mutedText }}>
+            <div className="font-bold tracking-tight text-sm" style={{ color: textColor }}>
               ZED INFORMATIQUE
             </div>
           </div>
-          <div className="flex-1 flex justify-end">
-            <LangSwitcher lang={lang} setLang={setLang} mutedText={mutedText} borderColor={borderColor} />
-          </div>
+          <LangSwitcher lang={lang} setLang={setLang} mutedText={mutedText} borderColor={borderColor} />
         </div>
       </header>
 
@@ -327,21 +324,14 @@ export function LandingPageClient({ page }: { page: any }) {
         <>
           {/* Hero */}
           <section className="relative overflow-hidden">
-            {/* Radial glow */}
+            {/* Soft background blobs */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0"
               style={{
-                background: `radial-gradient(ellipse at 50% 40%, ${rgba(accentColor, 0.15)} 0%, transparent 70%)`,
+                background: `radial-gradient(60% 50% at 80% 0%, ${rgba(primaryColor, 0.10)} 0%, transparent 60%), radial-gradient(50% 40% at 0% 100%, ${rgba(accentColor, 0.08)} 0%, transparent 60%)`,
               }}
             />
-            {/* Noise overlay */}
-            <svg aria-hidden className="pointer-events-none absolute inset-0 w-full h-full opacity-[0.025] mix-blend-overlay">
-              <filter id="noise-filter">
-                <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
-              </filter>
-              <rect width="100%" height="100%" filter="url(#noise-filter)" />
-            </svg>
 
             <div
               ref={reveals.hero.ref}
@@ -352,10 +342,13 @@ export function LandingPageClient({ page }: { page: any }) {
               {/* Image */}
               <div className={`${isRTL ? "lg:order-2" : "lg:order-1"} relative`}>
                 <div
-                  className="relative aspect-square rounded-2xl overflow-hidden"
+                  className="relative aspect-square rounded-3xl overflow-hidden"
                   style={{
-                    background: `linear-gradient(160deg, ${rgba(primaryColor, 0.08)} 0%, ${rgba(accentColor, 0.06)} 100%)`,
-                    filter: `drop-shadow(0 25px 50px ${rgba(primaryColor, 0.25)})`,
+                    background: isLight
+                      ? `linear-gradient(160deg, #ffffff 0%, ${rgba(primaryColor, 0.04)} 100%)`
+                      : `linear-gradient(160deg, ${rgba(primaryColor, 0.08)} 0%, rgba(255,255,255,0.02) 100%)`,
+                    border: `1px solid ${borderColor}`,
+                    boxShadow: `0 20px 50px -20px ${rgba(primaryColor, 0.18)}`,
                   }}
                 >
                   {currentImage && (
@@ -446,8 +439,8 @@ export function LandingPageClient({ page }: { page: any }) {
 
                 {/* Price block */}
                 <div
-                  className="mt-6 rounded-xl p-5"
-                  style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}` }}
+                  className="mt-6 rounded-2xl p-5"
+                  style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}`, boxShadow: `0 1px 2px ${rgba(primaryColor, 0.04)}` }}
                 >
                   <div className="flex items-baseline gap-3 flex-wrap">
                     <div className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: primaryColor, letterSpacing: "-0.02em" }}>
@@ -503,16 +496,18 @@ export function LandingPageClient({ page }: { page: any }) {
           <section
             className="w-full"
             style={{
-              backgroundColor: isLight ? primaryColor : rgba(accentColor, 0.1),
-              color: isLight ? "#ffffff" : textColor,
+              backgroundColor: isLight ? "rgba(0,0,0,0.025)" : "rgba(255,255,255,0.03)",
+              color: textColor,
               borderTop: `1px solid ${borderColor}`,
               borderBottom: `1px solid ${borderColor}`,
             }}
           >
-            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-              <TrustBadge label={mc.payment} />
-              <TrustBadge label={mc.delivery} />
-              <TrustBadge label={mc.returns} />
+            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2.5">
+              <TrustBadge label={mc.payment} accent={accentColor} />
+              <span className="hidden sm:inline-block w-1 h-1 rounded-full" style={{ backgroundColor: subtleText }} />
+              <TrustBadge label={mc.delivery} accent={accentColor} />
+              <span className="hidden sm:inline-block w-1 h-1 rounded-full" style={{ backgroundColor: subtleText }} />
+              <TrustBadge label={mc.fastShip} accent={accentColor} />
             </div>
           </section>
 
@@ -535,22 +530,23 @@ export function LandingPageClient({ page }: { page: any }) {
                   {bullets.map((b, i) => (
                     <div
                       key={i}
-                      className={`rounded-2xl p-6 transition-all duration-700 ${
+                      className={`rounded-2xl p-6 transition-all duration-700 hover:-translate-y-0.5 ${
                         reveals.benefits.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                       }`}
                       style={{
                         backgroundColor: cardBg,
                         border: `1px solid ${borderColor}`,
-                        transitionDelay: `${i * 100}ms`,
+                        boxShadow: `0 1px 2px ${rgba(primaryColor, 0.03)}`,
+                        transitionDelay: `${i * 80}ms`,
                       }}
                     >
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-sm mb-4"
-                        style={{ backgroundColor: accentColor }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
+                        style={{ backgroundColor: rgba(accentColor, 0.12), color: accentColor }}
                       >
-                        {i + 1}
+                        <span className="material-symbols-outlined text-[22px]">check</span>
                       </div>
-                      {b.title && <div className="font-bold text-base mb-1" style={{ color: textColor }}>{b.title}</div>}
+                      {b.title && <div className="font-bold text-base mb-1.5" style={{ color: textColor, letterSpacing: "-0.01em" }}>{b.title}</div>}
                       <div className="text-sm leading-relaxed" style={{ color: mutedText }}>
                         {b.description}
                       </div>
@@ -643,19 +639,22 @@ export function LandingPageClient({ page }: { page: any }) {
                 reveals.form.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
-              <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}`, boxShadow: `0 25px 60px ${rgba(primaryColor, 0.18)}` }}>
-                <div className="p-6 sm:p-7" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${rgba(primaryColor, 0.85)})`, color: "#ffffff" }}>
-                  <div className="flex items-center gap-2 text-xs font-bold opacity-90 mb-1.5">
-                    <span className="material-symbols-outlined text-base">lock</span>
+              <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: cardBg, border: `1px solid ${borderColor}`, boxShadow: `0 30px 60px -30px ${rgba(primaryColor, 0.25)}` }}>
+                <div className="px-6 sm:px-7 pt-7 pb-5" style={{ borderBottom: `1px solid ${borderColor}` }}>
+                  <div
+                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] mb-3"
+                    style={{ backgroundColor: rgba(primaryColor, 0.08), color: primaryColor }}
+                  >
+                    <span className="material-symbols-outlined text-sm">lock</span>
                     {mc.secured}
                   </div>
                   <h2
-                    className="font-black"
-                    style={{ fontFamily: '"Outfit", "Cairo", sans-serif', fontSize: "clamp(1.5rem, 4vw, 2rem)", letterSpacing: "-0.02em" }}
+                    className="font-bold"
+                    style={{ fontFamily: '"Outfit", "Cairo", sans-serif', fontSize: "clamp(1.4rem, 3.5vw, 1.75rem)", letterSpacing: "-0.02em", color: textColor }}
                   >
                     {mc.orderTitle}
                   </h2>
-                  <p className="text-xs opacity-90 mt-1">{mc.orderSubtitle}</p>
+                  <p className="text-sm mt-1" style={{ color: mutedText }}>{mc.orderSubtitle}</p>
                 </div>
 
                 <form onSubmit={onSubmit} className="p-6 sm:p-7 space-y-4">
@@ -894,10 +893,10 @@ function LangSwitcher({
   );
 }
 
-function TrustBadge({ label }: { label: string }) {
+function TrustBadge({ label, accent }: { label: string; accent?: string }) {
   return (
-    <div className="flex items-center gap-2 text-sm font-medium tracking-wide">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="shrink-0">
+    <div className="flex items-center gap-2 text-sm font-medium">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="shrink-0" style={{ color: accent || "currentColor" }}>
         <path d="M16.5 5.5L8 14L3.5 9.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span>{label}</span>
