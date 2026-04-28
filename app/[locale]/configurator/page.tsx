@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { useQuery, useMutation } from "convex/react";
 import { useTranslations, useLocale } from "next-intl";
 import { api } from "@/convex/_generated/api";
@@ -299,7 +300,10 @@ export default function ConfiguratorPage() {
                           {tc("loading")}
                         </div>
                       )}
-                      {filteredSlotProducts.map(({ product: p, compatible, incompatibilityReason }) => (
+                      {filteredSlotProducts.map(({ product: p, compatible, incompatibilityReason }) => {
+                        const showThumb = slot.key === "gpu";
+                        const thumb = (p as any).images?.[0] as string | undefined;
+                        return (
                         <button
                           key={(p as any)._id}
                           onClick={() => {
@@ -323,6 +327,21 @@ export default function ConfiguratorPage() {
                               : "bg-slate-50 ring-slate-100 opacity-50 cursor-not-allowed"
                           }`}
                         >
+                          {showThumb && (
+                          <div className={`relative h-11 w-11 shrink-0 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center ${compatible ? "" : "opacity-60"}`}>
+                            {thumb ? (
+                              <Image
+                                src={thumb}
+                                alt=""
+                                fill
+                                sizes="44px"
+                                className="object-contain p-1"
+                              />
+                            ) : (
+                              <Icon name={SLOT_ICONS[slot.key]} className="text-slate-400 text-[20px]" />
+                            )}
+                          </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className={`font-semibold text-sm truncate ${compatible ? "text-slate-900" : "text-slate-400"}`}>
                               {localizedName(p as any, locale)}
@@ -341,7 +360,8 @@ export default function ConfiguratorPage() {
                             {formatDzd((p as any).priceDzd, locale)}
                           </div>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
