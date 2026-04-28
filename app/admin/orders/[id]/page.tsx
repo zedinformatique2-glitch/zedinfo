@@ -33,10 +33,11 @@ export default function AdminOrderDetailPage() {
 
   if (!trackingInited) {
     setTrackingNumber(order.trackingNumber ?? "");
-    setCarrier(order.carrier ?? "");
+    const defaultApi = (enabledCarriers ?? []).find((c: any) => c.isDefault && c.hasApi && c.credentials);
+    setCarrier(order.carrier ?? defaultApi?.slug ?? "");
     setCarrierTrackingUrl(order.carrierTrackingUrl ?? "");
     setEstimatedDelivery(order.estimatedDelivery ?? "");
-    setTrackingInited(true);
+    if (enabledCarriers !== undefined) setTrackingInited(true);
   }
 
   const phoneE164 = order.customer.phone.replace(/[^0-9+]/g, "");
