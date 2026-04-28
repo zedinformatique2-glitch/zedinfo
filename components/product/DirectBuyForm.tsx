@@ -33,6 +33,11 @@ const schema = z.object({
   address: z.string().optional(),
   notes: z.string().optional(),
   paymentMethod: z.enum(["cod", "whatsapp"]),
+  deliveryType: z.enum(["home", "stopdesk"]),
+  stationCode: z.string().optional(),
+}).refine((d) => d.deliveryType !== "stopdesk" || (d.stationCode && d.stationCode.length > 0), {
+  message: "STATION_REQUIRED",
+  path: ["stationCode"],
 });
 
 type FormData = z.infer<typeof schema>;
@@ -62,6 +67,9 @@ export function DirectBuyForm({ product }: { product: Product }) {
   const createOrder = useMutation(api.orders.create);
   const enabledCarriers = useQuery(api.delivery.getEnabledCarriers);
   const getCarrierFees = useAction(api.delivery.getFees);
+  const getCarrierDesks = useAction(api.delivery.getDesks);
+
+  const [desks, setDesks] = useState<{ code: string; name: string; address?: string; wilayaId?: number }[]>([]);
 
   const {
     register,
@@ -71,21 +79,38 @@ export function DirectBuyForm({ product }: { product: Product }) {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { paymentMethod: "cod" },
+    defaultValues: { paymentMethod: "cod", deliveryType: "home" },
   });
 
   const wilaya = watch("wilaya");
+  const deliveryType = watch("deliveryType");
   const communes = wilaya ? getCommunesForWilaya(wilaya) : [];
+
+  const defaultApiCarrier = (enabledCarriers ?? []).find(
+    (c: any) => c.isDefault && c.hasApi && c.credentials
+  );
+
+  // Load desks once when carrier ready
+  useEffect(() => {
+    if (!defaultApiCarrier) { setDesks([]); return; }
+    let cancelled = false;
+    getCarrierDesks({
+      slug: defaultApiCarrier.slug,
+      credentials: defaultApiCarrier.credentials!,
+    }).then((res: any) => {
+      if (!cancelled && res.desks) setDesks(res.desks);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultApiCarrier?.slug]);
 
   useEffect(() => {
     setValue("commune", "");
+    setValue("stationCode", "");
     setDynamicShipping(null);
 
     if (!wilaya) return;
-    const defaultCarrier = (enabledCarriers ?? []).find(
-      (c: any) => c.isDefault && c.hasApi && c.credentials
-    );
-    if (!defaultCarrier) return;
+    if (!defaultApiCarrier) return;
 
     const wilayaNum = getWilayaNumber(wilaya);
     if (wilayaNum === 0) return;
@@ -93,10 +118,11 @@ export function DirectBuyForm({ product }: { product: Product }) {
     let cancelled = false;
     setFetchingFees(true);
     getCarrierFees({
-      slug: defaultCarrier.slug,
-      credentials: defaultCarrier.credentials!,
+      slug: defaultApiCarrier.slug,
+      credentials: defaultApiCarrier.credentials!,
       fromWilaya: 17,
       toWilaya: wilayaNum,
+      stopDesk: deliveryType === "stopdesk",
     })
       .then((result: any) => {
         if (!cancelled && result.fee > 0) {
@@ -112,7 +138,10 @@ export function DirectBuyForm({ product }: { product: Product }) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wilaya, enabledCarriers]);
+  }, [wilaya, deliveryType, defaultApiCarrier?.slug]);
+
+  const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
+  const desksForWilaya = wilayaNumForDesks ? desks.filter((d) => d.wilayaId === wilayaNumForDesks) : [];
 
   const shipping = dynamicShipping ?? (wilaya ? getShippingCost(wilaya) : 800);
   const subtotal = product.priceDzd;
@@ -144,6 +173,8 @@ export function DirectBuyForm({ product }: { product: Product }) {
         },
         paymentMethod: data.paymentMethod,
         locale,
+        deliveryType: data.deliveryType,
+        stationCode: data.deliveryType === "stopdesk" ? data.stationCode : undefined,
       });
 
       if (data.paymentMethod === "whatsapp") {
@@ -276,6 +307,45 @@ export function DirectBuyForm({ product }: { product: Product }) {
                 <Label>{t("notes")}</Label>
                 <Textarea {...register("notes")} rows={2} />
               </div>
+            </div>
+
+            {/* Delivery type */}
+            <div className="space-y-2">
+              <Label>{t("deliveryType")}</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-2 p-3 rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+                  <input type="radio" value="home" {...register("deliveryType")} />
+                  <Icon name="home" className="text-primary text-sm" />
+                  <span className="font-bold uppercase text-[10px]">{t("homeDelivery")}</span>
+                </label>
+                <label className="flex items-center gap-2 p-3 rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+                  <input type="radio" value="stopdesk" {...register("deliveryType")} />
+                  <Icon name="storefront" className="text-primary text-sm" />
+                  <span className="font-bold uppercase text-[10px]">{t("stopDesk")}</span>
+                </label>
+              </div>
+              {deliveryType === "stopdesk" && (
+                <div>
+                  <Label>{t("station")}</Label>
+                  <Select {...register("stationCode")} disabled={!wilaya || desksForWilaya.length === 0}>
+                    <option value="">
+                      {!wilaya
+                        ? t("stationPickWilayaFirst")
+                        : desksForWilaya.length === 0
+                          ? t("stationNone")
+                          : "—"}
+                    </option>
+                    {desksForWilaya.map((d) => (
+                      <option key={d.code} value={d.code}>
+                        {d.name}{d.address ? ` — ${d.address}` : ""}
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.stationCode && (
+                    <p className="text-error text-xs mt-1">{t("stationRequired")}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Payment method */}
