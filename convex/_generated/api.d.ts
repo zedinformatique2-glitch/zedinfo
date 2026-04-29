@@ -23,6 +23,7 @@ import type * as delivery from "../delivery.js";
 import type * as fpsEstimate from "../fpsEstimate.js";
 import type * as landingPages from "../landingPages.js";
 import type * as migrateImages from "../migrateImages.js";
+import type * as normalizeSpecs from "../normalizeSpecs.js";
 import type * as orders from "../orders.js";
 import type * as prebuilts from "../prebuilts.js";
 import type * as products from "../products.js";
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   fpsEstimate: typeof fpsEstimate;
   landingPages: typeof landingPages;
   migrateImages: typeof migrateImages;
+  normalizeSpecs: typeof normalizeSpecs;
   orders: typeof orders;
   prebuilts: typeof prebuilts;
   products: typeof products;
