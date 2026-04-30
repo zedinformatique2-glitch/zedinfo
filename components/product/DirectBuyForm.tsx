@@ -229,7 +229,7 @@ export function DirectBuyForm({ product }: { product: Product }) {
     <div className="mt-3">
       <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 overflow-hidden">
         <div className="bg-gradient-to-r from-primary via-primary-container to-primary h-1" />
-        <div className="p-4 sm:p-6">
+        <div className="p-3 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold uppercase tracking-widest text-xs">
               {td("title")}
@@ -237,7 +237,8 @@ export function DirectBuyForm({ product }: { product: Product }) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-on-surface-variant hover:text-on-surface transition-colors"
+              aria-label={tc("close") || "Close"}
+              className="-me-2 -mt-2 p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
             >
               <Icon name="close" />
             </button>
@@ -313,15 +314,15 @@ export function DirectBuyForm({ product }: { product: Product }) {
             <div className="space-y-2">
               <Label>{t("deliveryType")}</Label>
               <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 p-3 rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
-                  <input type="radio" value="home" {...register("deliveryType")} />
-                  <Icon name="home" className="text-primary text-sm" />
-                  <span className="font-bold uppercase text-[10px]">{t("homeDelivery")}</span>
+                <label className="flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary transition-all">
+                  <input type="radio" value="home" {...register("deliveryType")} className="sr-only" />
+                  <Icon name="home" className="text-primary text-xl" />
+                  <span className="font-bold uppercase text-[10px] leading-tight">{t("homeDelivery")}</span>
                 </label>
-                <label className="flex items-center gap-2 p-3 rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
-                  <input type="radio" value="stopdesk" {...register("deliveryType")} />
-                  <Icon name="storefront" className="text-primary text-sm" />
-                  <span className="font-bold uppercase text-[10px]">{t("stopDesk")}</span>
+                <label className="flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary transition-all">
+                  <input type="radio" value="stopdesk" {...register("deliveryType")} className="sr-only" />
+                  <Icon name="storefront" className="text-primary text-xl" />
+                  <span className="font-bold uppercase text-[10px] leading-tight">{t("stopDesk")}</span>
                 </label>
               </div>
               {deliveryType === "stopdesk" && (
@@ -352,25 +353,27 @@ export function DirectBuyForm({ product }: { product: Product }) {
             <div className="space-y-2">
               <Label>{t("paymentMethod")}</Label>
               <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 p-3 rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+                <label className="flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary transition-all">
                   <input
                     type="radio"
                     value="cod"
                     {...register("paymentMethod")}
+                    className="sr-only"
                   />
-                  <Icon name="payments" className="text-primary text-sm" />
-                  <span className="font-bold uppercase text-[10px]">
+                  <Icon name="payments" className="text-primary text-xl" />
+                  <span className="font-bold uppercase text-[10px] leading-tight">
                     {t("cod")}
                   </span>
                 </label>
-                <label className="flex items-center gap-2 p-3 rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+                <label className="flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary transition-all">
                   <input
                     type="radio"
                     value="whatsapp"
                     {...register("paymentMethod")}
+                    className="sr-only"
                   />
-                  <Icon name="chat" className="text-primary text-sm" />
-                  <span className="font-bold uppercase text-[10px]">
+                  <Icon name="chat" className="text-primary text-xl" />
+                  <span className="font-bold uppercase text-[10px] leading-tight">
                     {t("whatsapp")}
                   </span>
                 </label>
@@ -379,11 +382,11 @@ export function DirectBuyForm({ product }: { product: Product }) {
 
             {/* Order summary */}
             <div className="bg-surface-container-low rounded-xl p-3 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="truncate max-w-[60%]">
+              <div className="flex justify-between gap-2">
+                <span className="line-clamp-2 break-words flex-1 min-w-0">
                   {productName} × 1
                 </span>
-                <span className="font-bold">
+                <span className="font-bold whitespace-nowrap shrink-0">
                   {formatDzd(subtotal, locale)}
                 </span>
               </div>
