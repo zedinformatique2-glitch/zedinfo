@@ -4,11 +4,13 @@ import { AddToCartBar } from "@/components/product/AddToCartBar";
 import { DirectBuyForm } from "@/components/product/DirectBuyForm";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { RequiresBuildBanner } from "@/components/shop/RequiresBuildBanner";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { formatDzd, localizedDesc, localizedName } from "@/lib/format";
+import { buildRequiresBuildLabels } from "@/lib/requires-build-labels";
 import { buildAlternates } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -64,6 +66,7 @@ export default async function ProductPage({
 
   const tc = await getTranslations({ locale, namespace: "common" });
   const tp = await getTranslations({ locale, namespace: "product" });
+  const requiresBuildLabels = buildRequiresBuildLabels(tp);
 
   const product: any = await safeFetch(
     () => fetchQuery(api.products.bySlug, { slug }),
@@ -191,6 +194,10 @@ export default async function ProductPage({
             </div>
             <p className="text-on-surface-variant leading-relaxed mb-8">{desc}</p>
 
+            {product.requiresBuild && (
+              <RequiresBuildBanner product={product} locale={loc} />
+            )}
+
             <AddToCartBar
               product={product}
               addLabel={tc("addToCart")}
@@ -244,6 +251,7 @@ export default async function ProductPage({
                   locale={loc}
                   label={tc("inStock")}
                   addLabel={tc("addToCart")}
+                  requiresBuildLabels={requiresBuildLabels}
                 />
               ))}
             </div>

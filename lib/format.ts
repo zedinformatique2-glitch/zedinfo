@@ -46,3 +46,17 @@ export function localizedDesc<T extends { descFr: string; descAr: string }>(
 ): string {
   return locale === "ar" ? item.descAr : item.descFr;
 }
+
+export function localizedRequiresBuildNote<T extends {
+  requiresBuildNoteFr?: string;
+  requiresBuildNoteAr?: string;
+  requiresBuildNoteEn?: string;
+}>(item: T, locale: Locale): string | undefined {
+  const note =
+    locale === "ar"
+      ? item.requiresBuildNoteAr
+      : locale === "en"
+        ? item.requiresBuildNoteEn
+        : item.requiresBuildNoteFr;
+  return note?.trim() ? note : undefined;
+}

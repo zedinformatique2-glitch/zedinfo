@@ -159,7 +159,13 @@
     "reviews": "Avis",
     "related": "Produits similaires",
     "addedToCart": "Ajouté au panier",
-    "color": "Couleur"
+    "color": "Couleur",
+    "requiresBuildBadge": "Config requise",
+    "requiresBuildTitle": "Vendu uniquement en config PC",
+    "requiresBuildBody": "Ce produit ne peut pas être vendu seul — il doit être inclus dans une configuration PC complète assemblée par notre équipe. Contactez-nous sur WhatsApp ou utilisez le configurateur pour préparer votre PC.",
+    "requiresBuildContactCta": "Contacter sur WhatsApp",
+    "requiresBuildConfigureCta": "Configurer un PC",
+    "requiresBuildClose": "Fermer"
   },
   "cart": {
     "title": "Votre panier",

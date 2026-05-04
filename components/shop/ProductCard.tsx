@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { Link } from "@/lib/i18n/routing";
 import { useCart } from "@/lib/cart-store";
 import { Icon } from "@/components/ui/Icon";
-import { formatDzd, localizedName } from "@/lib/format";
+import { formatDzd, localizedName, localizedRequiresBuildNote } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
+import { RequiresBuildModal } from "@/components/shop/RequiresBuildModal";
 
 export type ProductCardData = {
   _id?: string;
@@ -16,6 +18,10 @@ export type ProductCardData = {
   images: string[];
   stock: number;
   brand?: string;
+  requiresBuild?: boolean;
+  requiresBuildNoteFr?: string;
+  requiresBuildNoteAr?: string;
+  requiresBuildNoteEn?: string;
 };
 
 export function ProductCard({
@@ -23,16 +29,39 @@ export function ProductCard({
   locale,
   label,
   addLabel,
+  requiresBuildLabels,
 }: {
   product: ProductCardData;
   locale: Locale;
   label: string;
   addLabel: string;
+  requiresBuildLabels?: {
+    badge: string;
+    title: string;
+    body: string;
+    contactCta: string;
+    configureCta: string;
+    close: string;
+  };
 }) {
   const add = useCart((s) => s.add);
   const image = product.images[0];
   const name = localizedName(product, locale);
   const inStock = product.stock > 0;
+  const [noteOpen, setNoteOpen] = useState(false);
+
+  const showRequiresBuild = !!product.requiresBuild && !!requiresBuildLabels;
+  const customNote = localizedRequiresBuildNote(product, locale);
+  const modalBody = customNote ?? requiresBuildLabels?.body ?? "";
+
+  const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "213663287772";
+  const waMessage =
+    locale === "ar"
+      ? `مرحبًا، أريد الاستفسار عن: ${product.nameAr}`
+      : locale === "en"
+        ? `Hello, I'd like to ask about: ${product.nameFr}`
+        : `Bonjour, je souhaite me renseigner sur : ${product.nameFr}`;
+  const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(waMessage)}`;
 
   return (
     <div className="group relative flex flex-col bg-white rounded-2xl shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 overflow-hidden ring-1 ring-outline-variant/40 hover:ring-primary/30">
@@ -73,6 +102,22 @@ export function ProductCard({
         </div>
       </Link>
 
+      {showRequiresBuild && requiresBuildLabels && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setNoteOpen(true);
+          }}
+          aria-label={requiresBuildLabels.badge}
+          className="absolute top-12 start-2 sm:top-14 sm:start-3 md:top-16 md:start-4 z-10 inline-flex items-center gap-1 sm:gap-1.5 rounded-full bg-amber-500/95 backdrop-blur px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-white shadow-sm hover:bg-amber-600 transition"
+        >
+          <Icon name="build" className="text-[10px] sm:text-xs" />
+          <span>{requiresBuildLabels.badge}</span>
+        </button>
+      )}
+
       <div className="flex flex-1 flex-col p-3 sm:p-4 md:p-5">
         <Link href={`/product/${product.slug}`} className="block">
           <h3 className="font-bold text-[12px] sm:text-[14px] md:text-[15px] leading-snug uppercase tracking-tight line-clamp-2 min-h-[2.6em] text-on-surface group-hover:text-primary transition-colors">
@@ -105,6 +150,19 @@ export function ProductCard({
           <span className="truncate">{addLabel}</span>
         </button>
       </div>
+
+      {showRequiresBuild && requiresBuildLabels && (
+        <RequiresBuildModal
+          open={noteOpen}
+          onClose={() => setNoteOpen(false)}
+          title={requiresBuildLabels.title}
+          body={modalBody}
+          contactCta={requiresBuildLabels.contactCta}
+          configureCta={requiresBuildLabels.configureCta}
+          closeLabel={requiresBuildLabels.close}
+          whatsappUrl={whatsappUrl}
+        />
+      )}
     </div>
   );
 }

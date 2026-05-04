@@ -1,11 +1,13 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { useTranslations } from "next-intl";
 import { api } from "@/convex/_generated/api";
 import { Link } from "@/lib/i18n/routing";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Icon } from "@/components/ui/Icon";
 import type { Locale } from "@/lib/i18n/config";
+import { buildRequiresBuildLabels } from "@/lib/requires-build-labels";
 
 export function FeaturedProducts({
   locale,
@@ -23,6 +25,8 @@ export function FeaturedProducts({
   viewAllLabel: string;
 }) {
   const products = useQuery(api.products.list, { featured: true, limit: 8 });
+  const tp = useTranslations("product");
+  const requiresBuildLabels = buildRequiresBuildLabels(tp);
 
   // products === undefined means still loading; [] means no featured products
   if (products && products.length === 0) return null;
@@ -72,6 +76,7 @@ export function FeaturedProducts({
                 locale={locale}
                 label={inStockLabel}
                 addLabel={addLabel}
+                requiresBuildLabels={requiresBuildLabels}
               />
             ))}
           </div>

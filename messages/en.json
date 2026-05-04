@@ -159,7 +159,13 @@
     "reviews": "Reviews",
     "related": "Related products",
     "addedToCart": "Added to cart",
-    "color": "Color"
+    "color": "Color",
+    "requiresBuildBadge": "Build required",
+    "requiresBuildTitle": "Sold only as part of a full PC build",
+    "requiresBuildBody": "This product cannot be sold on its own — it must be included in a complete PC build assembled by our team. Contact us on WhatsApp or use the configurator to prepare your PC.",
+    "requiresBuildContactCta": "Contact on WhatsApp",
+    "requiresBuildConfigureCta": "Configure a PC",
+    "requiresBuildClose": "Close"
   },
   "cart": {
     "title": "Your cart",

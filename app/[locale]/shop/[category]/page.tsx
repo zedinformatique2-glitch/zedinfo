@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { localizedName } from "@/lib/format";
+import { buildRequiresBuildLabels } from "@/lib/requires-build-labels";
 import {
   buildAlternates,
   categorySeo,
@@ -77,6 +78,8 @@ export default async function CategoryPage({
   const tc = await getTranslations({ locale, namespace: "common" });
   const ts = await getTranslations({ locale, namespace: "shop" });
   const tn = await getTranslations({ locale, namespace: "nav" });
+  const tp = await getTranslations({ locale, namespace: "product" });
+  const requiresBuildLabels = buildRequiresBuildLabels(tp);
 
   const [catDoc, products] = await Promise.all([
     safeFetch(() => fetchQuery(api.categories.bySlug, { slug: category }), null),
@@ -225,6 +228,7 @@ export default async function CategoryPage({
                   locale={loc}
                   label={tc("inStock")}
                   addLabel={tc("addToCart")}
+                  requiresBuildLabels={requiresBuildLabels}
                 />
               ))}
             </div>

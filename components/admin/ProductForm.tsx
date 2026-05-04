@@ -28,6 +28,10 @@ type InitialProduct = {
   stock: number;
   images: string[];
   featured: boolean;
+  requiresBuild?: boolean;
+  requiresBuildNoteFr?: string;
+  requiresBuildNoteAr?: string;
+  requiresBuildNoteEn?: string;
   specs: Record<string, any>;
   colorVariants?: ColorVariant[];
 };
@@ -53,6 +57,10 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
       stock: 0,
       images: [],
       featured: false,
+      requiresBuild: false,
+      requiresBuildNoteFr: "",
+      requiresBuildNoteAr: "",
+      requiresBuildNoteEn: "",
       specs: { type: "other" },
     }
   );
@@ -174,6 +182,10 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
           stock: form.stock,
           images,
           featured: form.featured,
+          requiresBuild: form.requiresBuild || undefined,
+          requiresBuildNoteFr: form.requiresBuildNoteFr?.trim() || undefined,
+          requiresBuildNoteAr: form.requiresBuildNoteAr?.trim() || undefined,
+          requiresBuildNoteEn: form.requiresBuildNoteEn?.trim() || undefined,
           specs,
           colorVariants: cleanVariants.length > 0 ? cleanVariants : undefined,
         });
@@ -303,6 +315,67 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
               {ar.productForm.featured}
             </label>
           </div>
+        </div>
+      </div>
+
+      {/* Sales options — requires-build toggle */}
+      <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 p-6 relative overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-l from-amber-500 via-amber-400 to-amber-500" />
+        <div className="space-y-3">
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={!!form.requiresBuild}
+              onChange={(e) => setForm({ ...form, requiresBuild: e.target.checked })}
+            />
+            <div>
+              <div className="font-bold">{ar.productForm.requiresBuild}</div>
+              <div className="text-xs text-on-surface-variant mt-0.5">
+                {ar.productForm.requiresBuildHint}
+              </div>
+            </div>
+          </label>
+
+          {form.requiresBuild && (
+            <div className="grid sm:grid-cols-2 gap-4 pt-2 ps-6">
+              <div className="sm:col-span-2 text-xs text-on-surface-variant">
+                {ar.productForm.requiresBuildNoteHelp}
+              </div>
+              <div>
+                <Label>{ar.productForm.requiresBuildNoteFr}</Label>
+                <Textarea
+                  rows={3}
+                  dir="ltr"
+                  value={form.requiresBuildNoteFr ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, requiresBuildNoteFr: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label>{ar.productForm.requiresBuildNoteAr}</Label>
+                <Textarea
+                  rows={3}
+                  value={form.requiresBuildNoteAr ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, requiresBuildNoteAr: e.target.value })
+                  }
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>{ar.productForm.requiresBuildNoteEn}</Label>
+                <Textarea
+                  rows={3}
+                  dir="ltr"
+                  value={form.requiresBuildNoteEn ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, requiresBuildNoteEn: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

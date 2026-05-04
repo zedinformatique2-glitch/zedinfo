@@ -29,6 +29,10 @@ export default function EditProductPage() {
         stock: product.stock,
         images: product.images,
         featured: product.featured,
+        requiresBuild: product.requiresBuild,
+        requiresBuildNoteFr: product.requiresBuildNoteFr,
+        requiresBuildNoteAr: product.requiresBuildNoteAr,
+        requiresBuildNoteEn: product.requiresBuildNoteEn,
         specs: product.specs || {},
         colorVariants: product.colorVariants,
       }}

@@ -24,6 +24,10 @@ export default defineSchema({
     stock: v.number(),
     images: v.array(v.string()),
     featured: v.boolean(),
+    requiresBuild: v.optional(v.boolean()),
+    requiresBuildNoteFr: v.optional(v.string()),
+    requiresBuildNoteAr: v.optional(v.string()),
+    requiresBuildNoteEn: v.optional(v.string()),
     comparePriceDzd: v.optional(v.number()),
     colorVariants: v.optional(
       v.array(

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
+import { useTranslations } from "next-intl";
 import { api } from "@/convex/_generated/api";
 import { ProductCard } from "./ProductCard";
 import { Icon } from "@/components/ui/Icon";
@@ -9,6 +10,7 @@ import { formatDzd } from "@/lib/format";
 import { useSearchParams } from "next/navigation";
 import type { Locale } from "@/lib/i18n/config";
 import type { Id } from "@/convex/_generated/dataModel";
+import { buildRequiresBuildLabels } from "@/lib/requires-build-labels";
 
 type SortOption = "newest" | "priceAsc" | "priceDesc";
 
@@ -44,6 +46,8 @@ export function ShopAllProducts({
 }) {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("q") || initialSearch || "";
+  const tp = useTranslations("product");
+  const requiresBuildLabels = buildRequiresBuildLabels(tp);
 
   const [selectedCategory, setSelectedCategory] = useState<
     Id<"categories"> | undefined
@@ -334,6 +338,7 @@ export function ShopAllProducts({
                       locale={locale}
                       label={t.inStock}
                       addLabel={t.addToCart}
+                      requiresBuildLabels={requiresBuildLabels}
                     />
                   ))}
             </div>
