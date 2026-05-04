@@ -6,7 +6,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { setRequestLocale, getMessages } from "next-intl/server";
 import { routing } from "@/lib/i18n/routing";
 import { isRtl, type Locale } from "@/lib/i18n/config";
-import { siteUrl } from "@/lib/seo";
+import { siteUrl, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import Script from "next/script";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
 import { Header } from "@/components/layout/Header";
@@ -32,9 +32,22 @@ const orbitron = Orbitron({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: "ZED INFORMATIQUE | Premium PC Hardware — Algeria",
+  title: {
+    default: `${SITE_NAME} — PC Gamer, Composants & Configurateur en Algérie`,
+    template: `%s | ${SITE_NAME}`,
+  },
   description:
-    "Solutions informatiques haute performance en Algérie. PC gaming, composants, configurateur sur mesure.",
+    "Boutique informatique en Algérie : cartes graphiques, processeurs, RAM, SSD, PC gamer pré-assemblés et configurateur PC sur mesure. Livraison 58 wilayas, paiement à la livraison.",
+  applicationName: SITE_NAME,
+  openGraph: {
+    siteName: SITE_NAME,
+    type: "website",
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [DEFAULT_OG_IMAGE],
+  },
   verification: {
     google: "e0PKvsr1-hqlZipEM5Ja8i-YUOBOtRpyQz0iAJ7sqBU",
   },

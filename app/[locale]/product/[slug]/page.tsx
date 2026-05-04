@@ -120,12 +120,37 @@ export default async function ProductPage({
       itemCondition: "https://schema.org/NewCondition",
     },
   };
+  const breadcrumbItems: { name: string; url: string }[] = [
+    { name: loc === "ar" ? "الرئيسية" : loc === "en" ? "Home" : "Accueil", url: `${siteUrl}/${locale}` },
+    { name: loc === "ar" ? "المتجر" : loc === "en" ? "Shop" : "Boutique", url: `${siteUrl}/${locale}/shop` },
+  ];
+  if (product.category) {
+    breadcrumbItems.push({
+      name: localizedName(product.category, loc),
+      url: `${siteUrl}/${locale}/shop/${product.category.slug}`,
+    });
+  }
+  breadcrumbItems.push({ name, url: productUrl });
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
 
   return (
     <article className="bg-surface">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <div className="container-zed py-8 lg:py-12">
         <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-8">

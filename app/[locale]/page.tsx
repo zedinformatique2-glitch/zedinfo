@@ -6,7 +6,17 @@ import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { BrandMarquee } from "@/components/home/BrandMarquee";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { PromoSection } from "@/components/home/PromoSection";
-import { buildAlternates } from "@/lib/seo";
+import {
+  buildAlternates,
+  siteUrl,
+  HOME_SEO,
+  SITE_NAME,
+  SITE_PHONE,
+  SITE_AREA,
+  SITE_LOGO,
+  DEFAULT_OG_IMAGE,
+  absUrl,
+} from "@/lib/seo";
 import type { Locale } from "@/lib/i18n/config";
 
 const HERO_VIDEO = "/heroclip2.mp4";
@@ -18,7 +28,28 @@ type Params = { locale: string };
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { locale } = await params;
-  return { alternates: buildAlternates(locale as Locale, "") };
+  const loc = locale as Locale;
+  const copy = HOME_SEO[loc] ?? HOME_SEO.fr;
+  const title = `${SITE_NAME} — ${copy.title}`;
+  return {
+    title,
+    description: copy.description,
+    alternates: buildAlternates(loc, ""),
+    openGraph: {
+      title,
+      description: copy.description,
+      type: "website",
+      siteName: SITE_NAME,
+      locale: loc === "ar" ? "ar_DZ" : loc === "fr" ? "fr_DZ" : "en_US",
+      images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: SITE_NAME }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: copy.description,
+      images: [DEFAULT_OG_IMAGE],
+    },
+  };
 }
 
 export default async function HomePage({ params }: { params: Promise<Params> }) {
@@ -28,8 +59,60 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
   const t = await getTranslations({ locale, namespace: "home" });
   const tc = await getTranslations({ locale, namespace: "common" });
 
+  const base = siteUrl();
+  const orgJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "@id": `${base}/#organization`,
+    name: SITE_NAME,
+    url: `${base}/${locale}`,
+    logo: absUrl(SITE_LOGO),
+    image: absUrl(DEFAULT_OG_IMAGE),
+    description: HOME_SEO[locale as Locale]?.description ?? HOME_SEO.fr.description,
+    areaServed: { "@type": "Country", name: SITE_AREA },
+    address: { "@type": "PostalAddress", addressCountry: "DZ" },
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        telephone: SITE_PHONE,
+        contactType: "customer service",
+        areaServed: "DZ",
+        availableLanguage: ["fr", "ar", "en"],
+      },
+    ],
+    sameAs: [
+      "https://www.facebook.com/zedinformatique",
+      "https://www.instagram.com/zedinformatique",
+    ],
+  };
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${base}/#website`,
+    url: `${base}/${locale}`,
+    name: SITE_NAME,
+    inLanguage: locale,
+    publisher: { "@id": `${base}/#organization` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${base}/${locale}/shop?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       {/* Hero */}
       <section className="relative min-h-screen flex items-center overflow-hidden -mt-20">
         <div className="absolute inset-0 z-0">

@@ -6,7 +6,13 @@ import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { localizedName } from "@/lib/format";
-import { buildAlternates } from "@/lib/seo";
+import {
+  buildAlternates,
+  categorySeo,
+  siteUrl,
+  SITE_NAME,
+  DEFAULT_OG_IMAGE,
+} from "@/lib/seo";
 
 export const revalidate = 300;
 
@@ -24,10 +30,26 @@ export async function generateMetadata({
   try {
     const catDoc: any = await fetchQuery(api.categories.bySlug, { slug: category });
     const name = catDoc ? localizedName(catDoc, loc) : category;
+    const copy = categorySeo(category, loc);
+    const title = copy ? copy.title : name;
+    const description =
+      copy?.description ??
+      (loc === "ar"
+        ? `${name} في الجزائر — توصيل لـ 58 ولاية، الدفع عند الاستلام، ضمان أصلي.`
+        : loc === "en"
+        ? `${name} in Algeria — delivery to all 58 wilayas, cash on delivery, original warranty.`
+        : `${name} en Algérie — livraison dans les 58 wilayas, paiement à la livraison, garantie d'origine.`);
     return {
-      title: `${name} | ZED INFORMATIQUE`,
-      description: `Achetez ${name} en Algérie — livraison dans les 58 wilayas.`,
+      title,
+      description,
       alternates,
+      openGraph: {
+        title: `${title} | ${SITE_NAME}`,
+        description,
+        type: "website",
+        siteName: SITE_NAME,
+        images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630, alt: name }],
+      },
     };
   } catch {
     return { title: "ZED INFORMATIQUE", alternates };
@@ -79,8 +101,60 @@ export default async function CategoryPage({
     parentDoc = allCats.find((c: any) => c._id === catDoc.parentId) ?? null;
   }
 
+  const base = siteUrl();
+  const catName = catDoc ? localizedName(catDoc, loc) : category;
+  const breadcrumbItems: { name: string; url: string }[] = [
+    { name: loc === "ar" ? "الرئيسية" : loc === "en" ? "Home" : "Accueil", url: `${base}/${locale}` },
+    { name: tn("shop"), url: `${base}/${locale}/shop` },
+  ];
+  if (parentDoc) {
+    breadcrumbItems.push({
+      name: localizedName(parentDoc, loc),
+      url: `${base}/${locale}/shop/${parentDoc.slug}`,
+    });
+  }
+  breadcrumbItems.push({
+    name: catName,
+    url: `${base}/${locale}/shop/${category}`,
+  });
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+  const itemListJsonLd =
+    products.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: catName,
+          numberOfItems: products.length,
+          itemListElement: products.slice(0, 30).map((p: any, i: number) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            url: `${base}/${locale}/product/${p.slug}`,
+            name: localizedName(p, loc),
+          })),
+        }
+      : null;
+
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      {itemListJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        />
+      )}
       {/* Category hero */}
       <section className="bg-surface-container-low py-16 lg:py-20 border-b border-outline-variant">
         <div className="container-zed">
