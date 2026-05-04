@@ -101,14 +101,39 @@ export const byIds = query({
   },
 });
 
+function normalizeSearch(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u064b-\u065f\u0670]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
 export const search = query({
   args: { q: v.string() },
   handler: async (ctx, { q }) => {
-    if (!q.trim()) return [];
-    return await ctx.db
-      .query("products")
-      .withSearchIndex("search_name", (s) => s.search("nameFr", q))
-      .take(20);
+    const normalized = normalizeSearch(q);
+    if (!normalized) return [];
+    const tokens = normalized.split(" ").filter(Boolean);
+    if (tokens.length === 0) return [];
+
+    const all = await ctx.db.query("products").collect();
+    type Hit = { product: (typeof all)[number]; score: number };
+    const hits: Hit[] = [];
+
+    for (const p of all) {
+      const name = normalizeSearch(`${p.nameFr} ${p.nameAr} ${p.brand}`);
+      const rest = normalizeSearch(`${p.slug} ${p.descFr} ${p.descAr}`);
+      const haystack = `${name} ${rest}`;
+      if (!tokens.every((t) => haystack.includes(t))) continue;
+      const nameHits = tokens.filter((t) => name.includes(t)).length;
+      hits.push({ product: p, score: nameHits });
+    }
+
+    hits.sort((a, b) => b.score - a.score);
+    return hits.slice(0, 50).map((h) => h.product);
   },
 });
 
