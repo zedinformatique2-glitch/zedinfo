@@ -211,12 +211,12 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container-zed py-6 sm:py-12 lg:py-16">
-      <h1 className="text-xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-4 sm:mb-12">
+    <div className="container-zed py-4 sm:py-12 lg:py-16 pb-28 sm:pb-12 max-w-full overflow-x-hidden">
+      <h1 className="text-xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-4 sm:mb-10">
         {t("title")}
       </h1>
       <form onSubmit={handleSubmit(onSubmit)} className="grid lg:grid-cols-3 gap-4 sm:gap-12">
-        <div className="lg:col-span-2 space-y-4 sm:space-y-8">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-8 min-w-0">
           <section>
             <h2 className="text-[10px] uppercase tracking-widest font-bold mb-4 border-b border-outline-variant pb-2">
               {t("contactInfo")}
@@ -294,15 +294,15 @@ export default function CheckoutPage() {
               {t("deliveryType")}
             </h2>
             <div className="space-y-3 mt-4">
-              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+              <label className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all min-w-0">
                 <input type="radio" value="home" {...register("deliveryType")} />
                 <Icon name="home" className="text-primary" />
-                <span className="font-bold uppercase text-xs sm:text-sm">{t("homeDelivery")}</span>
+                <span className="font-bold uppercase text-[11px] sm:text-sm truncate min-w-0">{t("homeDelivery")}</span>
               </label>
-              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+              <label className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all min-w-0">
                 <input type="radio" value="stopdesk" {...register("deliveryType")} />
                 <Icon name="storefront" className="text-primary" />
-                <span className="font-bold uppercase text-xs sm:text-sm">{t("stopDesk")}</span>
+                <span className="font-bold uppercase text-[11px] sm:text-sm truncate min-w-0">{t("stopDesk")}</span>
               </label>
               {deliveryType === "stopdesk" && (
                 <div>
@@ -334,30 +334,30 @@ export default function CheckoutPage() {
               {t("paymentMethod")}
             </h2>
             <div className="space-y-3 mt-4">
-              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+              <label className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all min-w-0">
                 <input type="radio" value="cod" {...register("paymentMethod")} />
                 <Icon name="payments" className="text-primary" />
-                <span className="font-bold uppercase text-xs sm:text-sm">{t("cod")}</span>
+                <span className="font-bold uppercase text-[11px] sm:text-sm truncate min-w-0">{t("cod")}</span>
               </label>
-              <label className="flex items-center gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all">
+              <label className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all min-w-0">
                 <input type="radio" value="whatsapp" {...register("paymentMethod")} />
                 <Icon name="chat" className="text-primary" />
-                <span className="font-bold uppercase text-xs sm:text-sm">{t("whatsapp")}</span>
+                <span className="font-bold uppercase text-[11px] sm:text-sm truncate min-w-0">{t("whatsapp")}</span>
               </label>
             </div>
           </section>
         </div>
 
-        <div>
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-outline-variant/40 p-3 sm:p-6 lg:p-8 sticky top-24 relative overflow-hidden">
+        <div className="min-w-0">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-card ring-1 ring-outline-variant/40 p-3 sm:p-6 lg:p-8 lg:sticky lg:top-24 relative overflow-hidden min-w-0">
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-primary-container to-primary" />
-            <h2 className="font-bold uppercase tracking-widest text-xs mb-6">
+            <h2 className="font-bold uppercase tracking-widest text-xs mb-4 sm:mb-6">
               {tc("total")}
             </h2>
             <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 text-xs sm:text-sm">
               {items.map((i) => (
                 <div key={i.slug} className="flex justify-between gap-2 min-w-0">
-                  <span className="truncate min-w-0 max-w-[55%]">
+                  <span className="truncate min-w-0 flex-1">
                     {i.nameFr} × {i.qty}
                   </span>
                   <span className="font-bold whitespace-nowrap shrink-0">
@@ -365,17 +365,17 @@ export default function CheckoutPage() {
                   </span>
                 </div>
               ))}
-              <div className="border-t border-outline-variant pt-3 flex justify-between">
-                <span className="text-on-surface-variant">{tc("subtotal")}</span>
-                <span className="font-bold">{formatDzd(subtotal, locale)}</span>
+              <div className="border-t border-outline-variant pt-3 flex justify-between gap-2 min-w-0">
+                <span className="text-on-surface-variant shrink-0">{tc("subtotal")}</span>
+                <span className="font-bold truncate text-end">{formatDzd(subtotal, locale)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-on-surface-variant">{tc("shipping")}</span>
-                <span className="font-bold">{formatDzd(shipping, locale)}</span>
+              <div className="flex justify-between gap-2 min-w-0">
+                <span className="text-on-surface-variant shrink-0">{tc("shipping")}</span>
+                <span className="font-bold truncate text-end">{formatDzd(shipping, locale)}</span>
               </div>
-              <div className="border-t border-outline-variant pt-3 flex justify-between">
-                <span className="font-bold uppercase">{tc("total")}</span>
-                <span className="font-black text-primary text-base sm:text-xl">
+              <div className="border-t border-outline-variant pt-3 flex justify-between gap-2 min-w-0">
+                <span className="font-bold uppercase shrink-0">{tc("total")}</span>
+                <span className="font-black text-primary text-base sm:text-xl truncate text-end">
                   {formatDzd(total, locale)}
                 </span>
               </div>
