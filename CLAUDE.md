@@ -171,7 +171,7 @@ Admin UI at `/admin/landing-pages` creates conversion-style pages at `/lp/[slug]
 
 ## Performance — what's already been done (May 2026)
 
-A site-speed pass landed in commits `1390301` (safer-scope wins) and `6b81b21` (icon-CLS fix). Desktop went 54 → **94**, mobile LCP 33.5s → **8.3s**, total payload 15 MB → 6 MB. Before re-attempting performance work, know what was tried and what regressed:
+A site-speed pass landed in commits `1390301` (safer-scope wins) and `6b81b21` (icon-CLS fix). Results were partial: mobile LCP 33.5s → **8.3s** and total payload 15 MB → 6 MB are real wins, but the overall PageSpeed score is still in the **40s on both mobile and desktop** as of last measurement. The remaining drag is render-blocking CSS + the 444 KB Cairo woff2 — see "Still open" below. Before re-attempting performance work, know what was tried and what regressed:
 
 **Currently in production (do NOT undo):**
 - `public/build-pc.gif` (8.9 MB) replaced by `public/pc-buildgif.webp` (31 KB) via `next/image` on the home page. The GIF file still sits in the repo for now but is unreferenced.
