@@ -37,7 +37,7 @@ export function BrandMarquee({ heading }: { heading: string }) {
           <span className="h-px w-10 bg-white/30" />
         </div>
 
-        <div className="marquee-mask group relative overflow-hidden py-2 min-h-[56px] md:min-h-[64px]" dir="ltr">
+        <div className="marquee-mask group relative overflow-hidden py-2" dir="ltr">
           <div className="animate-marquee flex w-max items-center gap-12 md:gap-16">
             {loop.map((brand, i) => (
               <div

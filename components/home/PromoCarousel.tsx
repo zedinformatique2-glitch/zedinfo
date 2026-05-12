@@ -149,7 +149,6 @@ function PromoCard({
               src={image}
               alt={name}
               fill
-              loading="lazy"
               sizes="300px"
               className="object-contain p-6 group-hover/card:scale-110 transition-transform duration-500 pointer-events-none"
               draggable={false}

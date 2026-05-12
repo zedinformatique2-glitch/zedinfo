@@ -1,6 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Link } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/Button";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
@@ -22,7 +21,6 @@ import type { Locale } from "@/lib/i18n/config";
 
 const HERO_VIDEO = "/heroclip2.mp4";
 const HERO_POSTER = "/hero1.webp";
-const BUILD_PC_IMAGE = "/pc-buildgif.webp";
 
 export const revalidate = 300;
 
@@ -118,14 +116,6 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
       {/* Hero */}
       <section className="relative min-h-screen flex items-center overflow-hidden -mt-20">
         <div className="absolute inset-0 z-0">
-          <Image
-            src={HERO_POSTER}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-          />
           <video
             src={HERO_VIDEO}
             poster={HERO_POSTER}
@@ -133,10 +123,8 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
             aria-hidden="true"
-            width={1920}
-            height={1080}
             className="absolute inset-0 h-full w-full object-cover"
           />
           {/* Light overlay for text legibility only */}
@@ -210,15 +198,12 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
                 </Link>
               </div>
 
-              {/* Image side */}
+              {/* GIF side */}
               <div className="relative order-1 md:order-2 h-64 md:h-full min-h-[320px]">
-                <Image
-                  src={BUILD_PC_IMAGE}
+                <img
+                  src="/build-pc.gif"
                   alt="Gaming PC build"
-                  fill
-                  loading="lazy"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 via-gray-900/30 to-transparent md:block hidden" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/30 to-transparent md:hidden" />

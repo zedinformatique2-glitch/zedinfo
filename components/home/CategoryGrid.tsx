@@ -10,15 +10,15 @@ import type { Locale } from "@/lib/i18n/config";
 
 /* Map parent-category slugs to the static images in /public/categories/categories/ */
 const CATEGORY_IMAGES: Record<string, string> = {
-  "pc-components": "/categories/categories/cpu.webp",
-  "storage-devices": "/categories/categories/storage.webp",
-  "peripherals": "/categories/categories/peripherals.webp",
-  "desktops": "/categories/categories/case.webp",
-  "laptops": "/categories/categories/motherboard.webp",
-  "printers-scanners": "/categories/categories/psu.webp",
-  "accessories": "/categories/categories/ram.webp",
-  "networking": "/categories/categories/gpu.webp",
-  "furniture": "/categories/categories/furniture.webp",
+  "pc-components": "/categories/categories/cpu.jpg",
+  "storage-devices": "/categories/categories/storage.jpg",
+  "peripherals": "/categories/categories/peripherals.jpg",
+  "desktops": "/categories/categories/case.jpg",
+  "laptops": "/categories/categories/motherboard.jpg",
+  "printers-scanners": "/categories/categories/psu.jpg",
+  "accessories": "/categories/categories/ram.jpg",
+  "networking": "/categories/categories/gpu.jpg",
+  "furniture": "/categories/categories/furniture.jpg",
 };
 
 export function CategoryGrid() {
