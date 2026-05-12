@@ -169,6 +169,33 @@ Landing pages at `/lp/[slug]` additionally fire `ViewContent`, `InitiateCheckout
 
 Admin UI at `/admin/landing-pages` creates conversion-style pages at `/lp/[slug]`. Each landing page references one product and overrides price, headline, bullets, CTA, countdown, stock urgency. Pages are `noindex`. Backend functions in `convex/landingPages.ts`; schema table `landingPages` with `views` / `orders` counters. The public route bypasses next-intl (see `middleware.ts`) and has its own `app/lp/layout.tsx` root.
 
+## Performance — what's already been done (May 2026)
+
+A site-speed pass landed in commits `1390301` (safer-scope wins) and `6b81b21` (icon-CLS fix). Desktop went 54 → **94**, mobile LCP 33.5s → **8.3s**, total payload 15 MB → 6 MB. Before re-attempting performance work, know what was tried and what regressed:
+
+**Currently in production (do NOT undo):**
+- `public/build-pc.gif` (8.9 MB) replaced by `public/pc-buildgif.webp` (31 KB) via `next/image` on the home page. The GIF file still sits in the repo for now but is unreferenced.
+- Category JPGs in `public/categories/categories/` compressed in place (3.0 MB → 280 KB). Filenames and paths unchanged on purpose.
+- Material Symbols stylesheet uses `display=swap` (not `block`) in all three layouts.
+- `.material-symbols-outlined` in `app/globals.css` has `width: 1em; overflow: hidden` — required to clip the ligature-text fallback so the icon swap doesn't cause CLS. Don't remove this.
+- Hero `<video>` has explicit `width={1920} height={1080}` for CLS but still uses `preload="auto"` — the video is the LCP element, must stay full-priority.
+- `loading="lazy"` on `components/home/PromoCarousel.tsx` only.
+- `min-h-[56px] md:min-h-[64px]` on `BrandMarquee` mask div for CLS.
+- One-shot encoder lives at `scripts/compress-categories.mjs` (sharp; mozjpeg quality 78, max width 800). Re-run if you add new category images.
+
+**Tried and reverted — do NOT redo (commit `cf38515` reverts `1c2adb3`):**
+- Converting category JPGs to **renamed** `.webp` files and updating `CategoryGrid.tsx` references — broke image loading on prod (root cause not fully isolated; safest theory is Vercel CDN cache during deploy window). Keep `.jpg` extensions, compress in place.
+- Adding a duplicate `<Image priority>` poster on top of the hero `<video>` — fetches `hero1.webp` twice and didn't change the LCP candidate.
+- Changing hero video to `preload="metadata"` — the video IS the LCP element; downgrading its preload regressed mobile LCP.
+- `loading="lazy"` on `components/shop/ProductCard.tsx` — likely lazy-loaded above-the-fold featured products on the home page, regressing LCP.
+
+**Still open if you want more wins on mobile:**
+- Arabic Cairo font (`fonts.googleapis.com`) ships a ~444 KB woff2 that costs ~2.9s on slow 4G. Preload it, or trim weights to the ones actually used (`400` and `700` cover most of the site).
+- ~14 KiB of CSS is render-blocking (Tailwind output + a small chunk). Inlining critical CSS or splitting per-route would shave ~350-500ms.
+- `lh3.googleusercontent.com` `preconnect` in `app/[locale]/layout.tsx` is unused since product images moved to Convex storage — safe to remove.
+
+**Permanent constraint:** `next.config.ts` has `images.unoptimized: true` — set in commit `29a7e56` to stay inside Vercel's free image-optimization quota on Convex-hosted product images. Don't flip it back unless the quota issue is resolved. All optimization must happen at the source (WebP encoding, compressing JPGs before checkin, proper `sizes` attribute on `<Image>`).
+
 ## Gotchas
 
 - Port 3000 may be in use by another process; Next will fall back to 3001. Check the dev server output when smoke-testing URLs.
