@@ -72,6 +72,7 @@ export function ProductCard({
               src={image}
               alt={name}
               fill
+              loading="lazy"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-contain p-4 sm:p-6 md:p-8 group-hover:scale-[1.08] transition-transform duration-500 ease-out"
             />
