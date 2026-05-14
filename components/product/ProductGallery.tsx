@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
 import type { Locale } from "@/lib/i18n/config";
+import { useProductVariant } from "@/lib/product-variant-store";
 
 type ColorVariant = {
   hex: string;
@@ -13,6 +14,7 @@ type ColorVariant = {
 };
 
 export function ProductGallery({
+  productSlug,
   images,
   name,
   inStock,
@@ -21,6 +23,7 @@ export function ProductGallery({
   locale,
   colorLabel,
 }: {
+  productSlug: string;
   images: string[];
   name: string;
   inStock: boolean;
@@ -34,6 +37,11 @@ export function ProductGallery({
 
   const [activeVariant, setActiveVariant] = useState(0);
   const [activeThumb, setActiveThumb] = useState(0);
+  const setSelectedVariant = useProductVariant((s) => s.setSelected);
+
+  useEffect(() => {
+    setSelectedVariant(productSlug, hasVariants ? variants[activeVariant] : undefined);
+  }, [productSlug, hasVariants, activeVariant, variants, setSelectedVariant]);
 
   const gallery = useMemo(() => {
     if (hasVariants) return [variants[activeVariant].image, ...images.filter((i) => i !== variants[activeVariant].image)];

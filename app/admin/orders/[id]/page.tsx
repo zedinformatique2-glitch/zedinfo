@@ -86,6 +86,18 @@ export default function AdminOrderDetailPage() {
                 <div key={idx} className="flex justify-between py-2 border-b border-outline-variant">
                   <div>
                     <div className="font-bold">{i.nameFr}</div>
+                    {i.selectedColor && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span
+                          className="inline-block w-3.5 h-3.5 rounded-full ring-1 ring-outline-variant/60"
+                          style={{ backgroundColor: i.selectedColor.hex }}
+                          aria-hidden
+                        />
+                        <span className="text-xs text-on-surface-variant">
+                          {ar.orderDetail.color}: {i.selectedColor.nameFr || i.selectedColor.nameAr || i.selectedColor.hex}
+                        </span>
+                      </div>
+                    )}
                     <div className="text-xs text-on-surface-variant">{ar.orderDetail.qty}: {i.qty}</div>
                   </div>
                   <div className="font-black">{formatDzd(i.priceDzd * i.qty)}</div>

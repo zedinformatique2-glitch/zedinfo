@@ -90,6 +90,14 @@ export default defineSchema({
         priceDzd: v.number(),
         qty: v.number(),
         image: v.string(),
+        selectedColor: v.optional(
+          v.object({
+            hex: v.string(),
+            nameFr: v.optional(v.string()),
+            nameAr: v.optional(v.string()),
+            image: v.string(),
+          })
+        ),
       })
     ),
     subtotalDzd: v.number(),

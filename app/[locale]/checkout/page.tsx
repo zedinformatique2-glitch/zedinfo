@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useCart } from "@/lib/cart-store";
+import { useCart, cartItemKey } from "@/lib/cart-store";
 import { Input, Textarea, Select, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -144,6 +144,7 @@ export default function CheckoutPage() {
           priceDzd: i.priceDzd,
           qty: i.qty,
           image: i.image,
+          selectedColor: i.selectedColor,
         })),
         shippingDzd: shipping,
         customer: {
@@ -355,16 +356,28 @@ export default function CheckoutPage() {
               {tc("total")}
             </h2>
             <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 text-xs sm:text-sm">
-              {items.map((i) => (
-                <div key={i.slug} className="flex justify-between gap-2 min-w-0">
-                  <span className="truncate min-w-0 flex-1">
-                    {i.nameFr} × {i.qty}
-                  </span>
-                  <span className="font-bold whitespace-nowrap shrink-0">
-                    {formatDzd(i.priceDzd * i.qty, locale)}
-                  </span>
-                </div>
-              ))}
+              {items.map((i) => {
+                const colorName = i.selectedColor
+                  ? (locale === "ar" ? i.selectedColor.nameAr : i.selectedColor.nameFr) ||
+                    i.selectedColor.nameFr ||
+                    i.selectedColor.nameAr ||
+                    i.selectedColor.hex
+                  : "";
+                return (
+                  <div key={cartItemKey(i)} className="flex justify-between gap-2 min-w-0">
+                    <span className="truncate min-w-0 flex-1">
+                      {i.nameFr}
+                      {colorName && (
+                        <span className="text-on-surface-variant"> — {colorName}</span>
+                      )}
+                      {" "}× {i.qty}
+                    </span>
+                    <span className="font-bold whitespace-nowrap shrink-0">
+                      {formatDzd(i.priceDzd * i.qty, locale)}
+                    </span>
+                  </div>
+                );
+              })}
               <div className="border-t border-outline-variant pt-3 flex justify-between gap-2 min-w-0">
                 <span className="text-on-surface-variant shrink-0">{tc("subtotal")}</span>
                 <span className="font-bold truncate text-end">{formatDzd(subtotal, locale)}</span>

@@ -64,22 +64,42 @@ export default function OrderConfirmationPage() {
             {tc("total")}
           </h2>
           <div className="space-y-4 mb-6">
-            {order.items.map((i: any, idx: number) => (
-              <div
-                key={idx}
-                className="flex justify-between pb-4 border-b border-outline-variant"
-              >
-                <div>
-                  <div className="font-bold">{localizedName(i, locale)}</div>
-                  <div className="text-xs text-on-surface-variant">
-                    {tc("quantity")}: {i.qty}
+            {order.items.map((i: any, idx: number) => {
+              const colorName = i.selectedColor
+                ? (locale === "ar" ? i.selectedColor.nameAr : i.selectedColor.nameFr) ||
+                  i.selectedColor.nameFr ||
+                  i.selectedColor.nameAr ||
+                  i.selectedColor.hex
+                : "";
+              return (
+                <div
+                  key={idx}
+                  className="flex justify-between pb-4 border-b border-outline-variant"
+                >
+                  <div>
+                    <div className="font-bold">{localizedName(i, locale)}</div>
+                    {i.selectedColor && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span
+                          className="inline-block w-3 h-3 rounded-full ring-1 ring-outline-variant/60"
+                          style={{ backgroundColor: i.selectedColor.hex }}
+                          aria-hidden
+                        />
+                        <span className="text-xs text-on-surface-variant">
+                          {colorName}
+                        </span>
+                      </div>
+                    )}
+                    <div className="text-xs text-on-surface-variant">
+                      {tc("quantity")}: {i.qty}
+                    </div>
                   </div>
+                  <span className="font-black">
+                    {formatDzd(i.priceDzd * i.qty, locale)}
+                  </span>
                 </div>
-                <span className="font-black">
-                  {formatDzd(i.priceDzd * i.qty, locale)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
             <div className="flex justify-between">
               <span className="text-on-surface-variant">{tc("subtotal")}</span>
               <span className="font-bold">{formatDzd(order.subtotalDzd, locale)}</span>

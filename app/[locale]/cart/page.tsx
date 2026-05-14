@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/lib/i18n/routing";
-import { useCart } from "@/lib/cart-store";
+import { useCart, cartItemKey } from "@/lib/cart-store";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { formatDzd, localizedName } from "@/lib/format";
@@ -47,58 +47,79 @@ export default function CartPage() {
       </h1>
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-12">
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 min-w-0">
-          {items.map((item) => (
-            <div
-              key={item.slug}
-              className="flex items-start gap-3 p-3 sm:p-4 bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 hover:ring-primary/30 transition-all min-w-0"
-            >
-              <div className="w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-white to-surface-container-low rounded-xl ring-1 ring-outline-variant/30 shrink-0 relative overflow-hidden">
-                {item.image && (
-                  <Image
-                    src={item.image}
-                    alt=""
-                    fill
-                    sizes="(max-width: 640px) 56px, 96px"
-                    className="object-contain p-2"
-                  />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold uppercase tracking-tight text-[13px] sm:text-base leading-snug line-clamp-2 break-words">
-                  {localizedName(item, locale)}
-                </h3>
-                <div className="text-primary font-black text-sm sm:text-lg mt-1 truncate">
-                  {formatDzd(item.priceDzd, locale)}
+          {items.map((item) => {
+            const key = cartItemKey(item);
+            const colorName = item.selectedColor
+              ? (locale === "ar" ? item.selectedColor.nameAr : item.selectedColor.nameFr) ||
+                item.selectedColor.nameFr ||
+                item.selectedColor.nameAr ||
+                ""
+              : "";
+            return (
+              <div
+                key={key}
+                className="flex items-start gap-3 p-3 sm:p-4 bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 hover:ring-primary/30 transition-all min-w-0"
+              >
+                <div className="w-14 h-14 sm:w-24 sm:h-24 bg-gradient-to-br from-white to-surface-container-low rounded-xl ring-1 ring-outline-variant/30 shrink-0 relative overflow-hidden">
+                  {item.image && (
+                    <Image
+                      src={item.image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 56px, 96px"
+                      className="object-contain p-2"
+                    />
+                  )}
                 </div>
-                <div className="flex items-center justify-between mt-2 sm:mt-3 gap-2">
-                  <div className="flex items-center rounded-lg ring-1 ring-outline-variant/60 bg-white overflow-hidden shrink-0">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold uppercase tracking-tight text-[13px] sm:text-base leading-snug line-clamp-2 break-words">
+                    {localizedName(item, locale)}
+                  </h3>
+                  {item.selectedColor && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span
+                        className="inline-block w-3.5 h-3.5 rounded-full ring-1 ring-outline-variant/60"
+                        style={{ backgroundColor: item.selectedColor.hex }}
+                        aria-hidden
+                      />
+                      <span className="text-[11px] sm:text-xs text-on-surface-variant truncate">
+                        {colorName || item.selectedColor.hex}
+                      </span>
+                    </div>
+                  )}
+                  <div className="text-primary font-black text-sm sm:text-lg mt-1 truncate">
+                    {formatDzd(item.priceDzd, locale)}
+                  </div>
+                  <div className="flex items-center justify-between mt-2 sm:mt-3 gap-2">
+                    <div className="flex items-center rounded-lg ring-1 ring-outline-variant/60 bg-white overflow-hidden shrink-0">
+                      <button
+                        onClick={() => updateQty(key, item.qty - 1)}
+                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
+                        aria-label="−"
+                      >
+                        <Icon name="remove" className="text-[18px]" />
+                      </button>
+                      <span className="w-8 sm:w-9 text-center font-bold text-sm">{item.qty}</span>
+                      <button
+                        onClick={() => updateQty(key, item.qty + 1)}
+                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
+                        aria-label="+"
+                      >
+                        <Icon name="add" className="text-[18px]" />
+                      </button>
+                    </div>
                     <button
-                      onClick={() => updateQty(item.slug, item.qty - 1)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
-                      aria-label="−"
+                      onClick={() => remove(key)}
+                      className="p-2 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors shrink-0"
+                      aria-label={t("remove")}
                     >
-                      <Icon name="remove" className="text-[18px]" />
-                    </button>
-                    <span className="w-8 sm:w-9 text-center font-bold text-sm">{item.qty}</span>
-                    <button
-                      onClick={() => updateQty(item.slug, item.qty + 1)}
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-colors"
-                      aria-label="+"
-                    >
-                      <Icon name="add" className="text-[18px]" />
+                      <Icon name="delete" className="text-[20px]" />
                     </button>
                   </div>
-                  <button
-                    onClick={() => remove(item.slug)}
-                    className="p-2 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors shrink-0"
-                    aria-label={t("remove")}
-                  >
-                    <Icon name="delete" className="text-[20px]" />
-                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="min-w-0">

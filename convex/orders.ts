@@ -22,6 +22,14 @@ export const create = mutation({
         priceDzd: v.number(),
         qty: v.number(),
         image: v.string(),
+        selectedColor: v.optional(
+          v.object({
+            hex: v.string(),
+            nameFr: v.optional(v.string()),
+            nameAr: v.optional(v.string()),
+            image: v.string(),
+          })
+        ),
       })
     ),
     shippingDzd: v.number(),

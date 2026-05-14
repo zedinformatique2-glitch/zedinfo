@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "@/lib/cart-store";
+import { useProductVariant } from "@/lib/product-variant-store";
 import { Icon } from "@/components/ui/Icon";
 
 type Props = {
@@ -21,6 +22,7 @@ type Props = {
 export function AddToCartBar({ product, addLabel, qtyLabel }: Props) {
   const [qty, setQty] = useState(1);
   const add = useCart((s) => s.add);
+  const selectedColor = useProductVariant((s) => s.selected[product.slug]);
   const disabled = product.stock <= 0;
 
   return (
@@ -52,7 +54,8 @@ export function AddToCartBar({ product, addLabel, qtyLabel }: Props) {
               nameFr: product.nameFr,
               nameAr: product.nameAr,
               priceDzd: product.priceDzd,
-              image: product.images[0] ?? "",
+              image: selectedColor?.image || product.images[0] || "",
+              selectedColor,
             },
             qty
           )

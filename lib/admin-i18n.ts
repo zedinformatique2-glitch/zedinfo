@@ -61,6 +61,7 @@ export const ar = {
     order: "طلب",
     items: "المنتجات",
     qty: "الكمية",
+    color: "اللون",
     subtotal: "المجموع الفرعي",
     shipping: "الشحن",
     total: "الإجمالي",

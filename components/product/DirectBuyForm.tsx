@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useProductVariant } from "@/lib/product-variant-store";
 import { Input, Textarea, Select, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -68,6 +69,7 @@ export function DirectBuyForm({ product }: { product: Product }) {
   const enabledCarriers = useQuery(api.delivery.getEnabledCarriers);
   const getCarrierFees = useAction(api.delivery.getFees);
   const getCarrierDesks = useAction(api.delivery.getDesks);
+  const selectedColor = useProductVariant((s) => s.selected[product.slug]);
 
   const [desks, setDesks] = useState<{ code: string; name: string; address?: string; wilayaId?: number }[]>([]);
 
@@ -157,7 +159,8 @@ export function DirectBuyForm({ product }: { product: Product }) {
         nameAr: product.nameAr,
         priceDzd: product.priceDzd,
         qty: 1,
-        image: product.images[0] || "",
+        image: selectedColor?.image || product.images[0] || "",
+        selectedColor,
       };
 
       const result = await createOrder({
