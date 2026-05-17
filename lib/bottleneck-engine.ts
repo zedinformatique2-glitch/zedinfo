@@ -24,7 +24,7 @@ export type BottleneckInput = {
 };
 
 export type BottleneckWarning = {
-  type: "ram" | "psu" | "socket";
+  type: "ram" | "psu";
   messageKey: string;
   values?: Record<string, string | number>;
 };
@@ -49,8 +49,8 @@ const TASK_CPU_BOOST: Record<WorkloadTask, number> = {
   content: 0.25,
 };
 
-const BOTTLENECK_CAP_PERCENT = 40;
-const BALANCED_THRESHOLD_PERCENT = 5;
+export const BOTTLENECK_CAP_PERCENT = 40;
+export const BALANCED_THRESHOLD_PERCENT = 5;
 
 export function canRunDeterministic(input: BottleneckInput): boolean {
   return (
@@ -59,6 +59,16 @@ export function canRunDeterministic(input: BottleneckInput): boolean {
   );
 }
 
+/**
+ * Compute the CPU/GPU bottleneck for a build.
+ *
+ * Returns null if either `cpu.tierScore` or `gpu.tierScore` is missing —
+ * caller should fall through to the AI estimation path in that case.
+ *
+ * `cpuEffectiveScore` and `gpuEffectiveScore` in the result are
+ * workload-adjusted (resolution + task weights applied) and may exceed
+ * the raw 0-100 tier-score range — they are NOT a "/100" display value.
+ */
 export function calculateBottleneck(
   input: BottleneckInput
 ): BottleneckResult | null {
