@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as aiChat from "../aiChat.js";
 import type * as bottleneck from "../bottleneck.js";
+import type * as bottleneckAi from "../bottleneckAi.js";
 import type * as carriers_ecotrack from "../carriers/ecotrack.js";
 import type * as carriers_index from "../carriers/index.js";
 import type * as carriers_maystro from "../carriers/maystro.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   aiChat: typeof aiChat;
   bottleneck: typeof bottleneck;
+  bottleneckAi: typeof bottleneckAi;
   "carriers/ecotrack": typeof carriers_ecotrack;
   "carriers/index": typeof carriers_index;
   "carriers/maystro": typeof carriers_maystro;
