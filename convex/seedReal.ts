@@ -298,7 +298,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 4,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/04/101851018068754437.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 250, lengthMm: 242, powerConnectors: "16-pin", tierScore: 58 },
+    specs: { type: "gpu", tdp: 250, lengthMm: 242, powerConnectors: "16-pin", tierScore: 54 },
   },
   {
     slug: "xfx-rx-7900-xt",
@@ -312,7 +312,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 3,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/10/101614480546332699.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 300, lengthMm: 322, powerConnectors: "2x8-pin", tierScore: 55 },
+    specs: { type: "gpu", tdp: 300, lengthMm: 322, powerConnectors: "2x8-pin", tierScore: 60 },
   },
   {
     slug: "pny-rtx-4070-super-verto",
