@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAction, useQuery } from "convex/react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/lib/i18n/routing";
@@ -108,9 +108,15 @@ export function BottleneckCalculator() {
       : "skip"
   );
 
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+  }, []);
+
   function triggerShake() {
     setShake(true);
-    setTimeout(() => setShake(false), 500);
+    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+    shakeTimerRef.current = setTimeout(() => setShake(false), 500);
   }
 
   async function onCalculate() {
@@ -192,7 +198,29 @@ export function BottleneckCalculator() {
           error: "invalid_hardware",
         });
       } else {
-        setResult({ ...(ai as Omit<CalcResult, "source">), source: "ai" });
+        const safeWarnings = (Array.isArray((ai as { warnings?: unknown }).warnings)
+          ? ((ai as { warnings: unknown[] }).warnings as Array<{
+              type?: unknown;
+              message?: unknown;
+              messageKey?: unknown;
+            }>)
+          : []
+        )
+          .map((w) => ({
+            type: String(w.type ?? ""),
+            message: typeof w.message === "string" ? w.message : undefined,
+            messageKey: typeof w.messageKey === "string" ? w.messageKey : undefined,
+          }))
+          .filter((w) => w.message || w.messageKey);
+        setResult({
+          bottleneckPercent: typeof (ai as { bottleneckPercent?: unknown }).bottleneckPercent === "number" ? (ai as { bottleneckPercent: number }).bottleneckPercent : 0,
+          bottleneckedComponent: ((ai as { bottleneckedComponent?: unknown }).bottleneckedComponent === "cpu" || (ai as { bottleneckedComponent?: unknown }).bottleneckedComponent === "gpu" || (ai as { bottleneckedComponent?: unknown }).bottleneckedComponent === "balanced") ? (ai as { bottleneckedComponent: "cpu" | "gpu" | "balanced" }).bottleneckedComponent : "balanced",
+          verdict: String((ai as { verdict?: unknown }).verdict ?? ""),
+          explanation: String((ai as { explanation?: unknown }).explanation ?? ""),
+          confidence: String((ai as { confidence?: unknown }).confidence ?? "medium"),
+          warnings: safeWarnings,
+          source: "ai",
+        });
       }
     } catch {
       setResult({
@@ -366,16 +394,18 @@ export function BottleneckCalculator() {
                   </span>
                 </div>
 
-                {result.warnings.length > 0 && (
+                {result.warnings.filter((w) => w.messageKey || w.message).length > 0 && (
                   <div className="space-y-2">
-                    {result.warnings.map((w, i) => (
-                      <div key={i} className="flex items-start gap-2 bg-amber-500/10 ring-1 ring-amber-500/30 rounded-xl p-3">
-                        <Icon name="warning" className="text-amber-400 text-[18px] shrink-0 mt-0.5" />
-                        <p className="text-sm text-amber-100">
-                          {w.messageKey ? t(w.messageKey, w.values ?? {}) : w.message}
-                        </p>
-                      </div>
-                    ))}
+                    {result.warnings
+                      .filter((w) => w.messageKey || w.message)
+                      .map((w, i) => (
+                        <div key={i} className="flex items-start gap-2 bg-amber-500/10 ring-1 ring-amber-500/30 rounded-xl p-3">
+                          <Icon name="warning" className="text-amber-400 text-[18px] shrink-0 mt-0.5" />
+                          <p className="text-sm text-amber-100">
+                            {w.messageKey ? t(w.messageKey, w.values ?? {}) : w.message}
+                          </p>
+                        </div>
+                      ))}
                   </div>
                 )}
 
