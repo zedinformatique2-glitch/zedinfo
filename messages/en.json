@@ -70,7 +70,12 @@
     "promoSubtitle": "Limited-time offers on our best gaming components and accessories.",
     "promoLabel": "Sale",
     "featuredTitle": "FEATURED PRODUCTS",
-    "featuredSubtitle": "Our selection of the best components and equipment right now."
+    "featuredSubtitle": "Our selection of the best components and equipment right now.",
+    "bottleneckCard": {
+      "badge": "New tool",
+      "title": "Calculate your bottleneck",
+      "subtitle": "CPU + GPU + resolution = bottleneck percentage and upgrade picks."
+    }
   },
   "categories": {
     "pc-components": "PC Components",

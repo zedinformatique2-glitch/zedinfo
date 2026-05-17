@@ -70,7 +70,12 @@
     "promoSubtitle": "Sélection d'offres limitées sur nos meilleurs composants et accessoires gaming.",
     "promoLabel": "Promo",
     "featuredTitle": "PRODUITS VEDETTES",
-    "featuredSubtitle": "Notre sélection des meilleurs composants et équipements du moment."
+    "featuredSubtitle": "Notre sélection des meilleurs composants et équipements du moment.",
+    "bottleneckCard": {
+      "badge": "Nouvel outil",
+      "title": "Calculez votre goulot d'étranglement",
+      "subtitle": "CPU + GPU + résolution = pourcentage de goulot d'étranglement et recommandations."
+    }
   },
   "categories": {
     "pc-components": "Composants PC",
