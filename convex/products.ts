@@ -137,6 +137,36 @@ export const search = query({
   },
 });
 
+export const searchByType = query({
+  args: {
+    specType: v.union(v.literal("cpu"), v.literal("gpu")),
+    q: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { specType, q, limit }) => {
+    const max = limit ?? 8;
+    const normalized = normalizeSearch(q);
+    const all = await ctx.db.query("products").collect();
+    const matches = all.filter((p) => {
+      const t = (p.specs as { type?: string } | undefined)?.type;
+      if (t !== specType) return false;
+      if (!normalized) return true;
+      const haystack = normalizeSearch(`${p.nameFr} ${p.nameAr} ${p.brand} ${p.slug}`);
+      return haystack.includes(normalized);
+    });
+    return matches.slice(0, max).map((p) => ({
+      _id: p._id,
+      slug: p.slug,
+      nameFr: p.nameFr,
+      nameAr: p.nameAr,
+      brand: p.brand,
+      priceDzd: p.priceDzd,
+      images: p.images,
+      specs: p.specs,
+    }));
+  },
+});
+
 export const create = mutation({
   args: {
     slug: v.string(),
