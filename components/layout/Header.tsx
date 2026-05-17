@@ -17,6 +17,7 @@ export async function Header({ locale }: { locale: Locale }) {
     { href: "/support", label: t("services") },
     { href: "/track", label: t("trackOrder") },
     { href: "/fps-estimator", label: t("fpsEstimator") },
+    { href: "/bottleneck-calculator", label: t("bottleneck") },
   ];
 
   return (
