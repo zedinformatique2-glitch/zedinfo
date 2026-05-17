@@ -5,6 +5,8 @@ import { useQuery } from "convex/react";
 import { useLocale } from "next-intl";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { localizedName } from "@/lib/format";
+import type { Locale } from "@/lib/i18n/config";
 
 type Suggestion = {
   _id: Id<"products">;
@@ -60,7 +62,7 @@ export function PartAutocomplete({
   }, []);
 
   function pick(s: Suggestion) {
-    const name = locale === "ar" ? s.nameAr : s.nameFr;
+    const name = localizedName(s, locale as Locale);
     setQuery(name);
     setOpen(false);
     onChange({ kind: "catalog", product: s, freeText: null });
@@ -88,7 +90,7 @@ export function PartAutocomplete({
       {open && suggestions && suggestions.length > 0 && (
         <div className="absolute z-20 mt-1 w-full rounded-xl bg-slate-900/95 backdrop-blur ring-1 ring-white/15 shadow-card max-h-72 overflow-auto">
           {suggestions.map((s) => {
-            const name = locale === "ar" ? s.nameAr : s.nameFr;
+            const name = localizedName(s, locale as Locale);
             return (
               <button
                 key={s._id}
