@@ -303,7 +303,8 @@
     "estimate": "Estimer",
     "estimating": "Estimation en cours...",
     "fpsLabel": "FPS estimés",
-    "confidence": "Confiance"
+    "confidence": "Confiance",
+    "crossPromo": { "badge": "Outil complémentaire", "title": "Essayez le calculateur de goulot d'étranglement", "subtitle": "Vérifiez l'équilibre CPU/GPU et obtenez des recommandations de mise à niveau." }
   },
   "footer": {
     "tagline": "Solutions informatiques haute performance conçues pour la précision, la stabilité et la fiabilité extrême. Approuvées par les professionnels à travers l'Algérie.",
@@ -362,6 +363,7 @@
     "meta": {
       "title": "Calculateur de Goulot d'Étranglement PC — CPU GPU | ZED Informatique",
       "description": "Calculez le goulot d'étranglement entre votre CPU et GPU. Gratuit, rapide, avec recommandations de mise à niveau. Algérie."
-    }
+    },
+    "crossPromo": { "badge": "Outil complémentaire", "title": "Estimez les FPS de votre configuration", "subtitle": "Sélectionnez un jeu et obtenez une estimation FPS pour votre setup." }
   }
 }

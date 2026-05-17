@@ -303,7 +303,8 @@
     "estimate": "Estimate",
     "estimating": "Estimating...",
     "fpsLabel": "Estimated FPS",
-    "confidence": "Confidence"
+    "confidence": "Confidence",
+    "crossPromo": { "badge": "Companion tool", "title": "Try the bottleneck calculator", "subtitle": "Check CPU/GPU balance and get tailored upgrade picks." }
   },
   "footer": {
     "tagline": "High-performance computing solutions engineered for precision, stability, and extreme reliability. Trusted by professionals across Algeria.",
@@ -362,6 +363,7 @@
     "meta": {
       "title": "PC Bottleneck Calculator — CPU GPU | ZED Informatique",
       "description": "Calculate CPU/GPU bottleneck. Free, fast, with tailored upgrade picks. Algeria."
-    }
+    },
+    "crossPromo": { "badge": "Companion tool", "title": "Estimate FPS for your build", "subtitle": "Pick a game and get an FPS estimate for your setup." }
   }
 }

@@ -7,6 +7,7 @@ import { Link } from "@/lib/i18n/routing";
 import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
 import { PartAutocomplete, type PartSelection } from "./PartAutocomplete";
+import { ToolCrossPromo } from "./ToolCrossPromo";
 import {
   calculateBottleneck,
   canRunDeterministic,
@@ -455,6 +456,8 @@ export function BottleneckCalculator() {
           </div>
         )}
       </div>
+
+      <ToolCrossPromo target="fps" />
 
       <style jsx>{`
         @keyframes shake {

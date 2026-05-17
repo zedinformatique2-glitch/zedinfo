@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import Image from "next/image";
 import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
+import { ToolCrossPromo } from "@/components/bottleneck/ToolCrossPromo";
 
 const GAMES = [
   { id: "cs2", name: "Counter-Strike 2", img: "/games/cs2.jpg" },
@@ -315,6 +316,8 @@ export function FpsEstimatorStandalone() {
           </div>
         )}
       </div>
+
+      <ToolCrossPromo target="bottleneck" />
 
       {/* Shake animation */}
       <style jsx>{`
