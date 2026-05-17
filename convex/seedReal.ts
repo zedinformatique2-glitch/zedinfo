@@ -128,7 +128,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 4,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/01/101706070455484444.jpg"],
     featured: true,
-    specs: { type: "cpu", socket: "AM5", tdp: 120, cores: 8 },
+    specs: { type: "cpu", socket: "AM5", tdp: 120, cores: 8, tierScore: 95 },
   },
   {
     slug: "amd-ryzen-9-9900x",
@@ -142,7 +142,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 6,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/01/101720483912744966.jpg"],
     featured: true,
-    specs: { type: "cpu", socket: "AM5", tdp: 120, cores: 12 },
+    specs: { type: "cpu", socket: "AM5", tdp: 120, cores: 12, tierScore: 92 },
   },
   {
     slug: "amd-ryzen-7-7800x3d",
@@ -156,7 +156,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 5,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/01/101706070455484441.jpg"],
     featured: true,
-    specs: { type: "cpu", socket: "AM5", tdp: 120, cores: 8 },
+    specs: { type: "cpu", socket: "AM5", tdp: 120, cores: 8, tierScore: 80 },
   },
   {
     slug: "intel-core-ultra-7-265k",
@@ -170,7 +170,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 7,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/09/101562290402230274.jpg"],
     featured: false,
-    specs: { type: "cpu", socket: "LGA1851", tdp: 125, cores: 20 },
+    specs: { type: "cpu", socket: "LGA1851", tdp: 125, cores: 20, tierScore: 88 },
   },
   {
     slug: "intel-core-i7-14700kf",
@@ -184,7 +184,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 8,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/02/101752165034361089.jpg"],
     featured: false,
-    specs: { type: "cpu", socket: "LGA1700", tdp: 125, cores: 20 },
+    specs: { type: "cpu", socket: "LGA1700", tdp: 125, cores: 20, tierScore: 85 },
   },
   {
     slug: "intel-core-ultra-7-265kf",
@@ -198,7 +198,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 10,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/03/101800349114826893.jpg"],
     featured: false,
-    specs: { type: "cpu", socket: "LGA1851", tdp: 125, cores: 20 },
+    specs: { type: "cpu", socket: "LGA1851", tdp: 125, cores: 20, tierScore: 88 },
   },
   {
     slug: "intel-core-ultra-5-245k",
@@ -212,7 +212,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 9,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/08/101502848809828356.jpg"],
     featured: false,
-    specs: { type: "cpu", socket: "LGA1851", tdp: 125, cores: 14 },
+    specs: { type: "cpu", socket: "LGA1851", tdp: 125, cores: 14, tierScore: 75 },
   },
   {
     slug: "amd-ryzen-7-8700g",
@@ -226,7 +226,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 12,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/01/101743501850443824.jpg"],
     featured: false,
-    specs: { type: "cpu", socket: "AM5", tdp: 65, cores: 8 },
+    specs: { type: "cpu", socket: "AM5", tdp: 65, cores: 8, tierScore: 65 },
   },
   {
     slug: "amd-ryzen-5-9600x",
@@ -240,7 +240,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 15,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/03/101800349114826777.jpg"],
     featured: false,
-    specs: { type: "cpu", socket: "AM5", tdp: 65, cores: 6 },
+    specs: { type: "cpu", socket: "AM5", tdp: 65, cores: 6, tierScore: 70 },
   },
 
   // ============ GRAPHICS CARDS ============
@@ -256,7 +256,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 3,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/03/101797479304921102.jpg"],
     featured: true,
-    specs: { type: "gpu", tdp: 360, lengthMm: 310, powerConnectors: "16-pin" },
+    specs: { type: "gpu", tdp: 360, lengthMm: 310, powerConnectors: "16-pin", tierScore: 85 },
   },
   {
     slug: "zotac-rtx-4080-super-trinity",
@@ -270,7 +270,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 4,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/07/101457911053549608.jpg"],
     featured: true,
-    specs: { type: "gpu", tdp: 320, lengthMm: 306, powerConnectors: "16-pin" },
+    specs: { type: "gpu", tdp: 320, lengthMm: 306, powerConnectors: "16-pin", tierScore: 75 },
   },
   {
     slug: "sapphire-rx-9070-xt",
@@ -284,7 +284,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 5,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/03/101800349114826883.jpg"],
     featured: true,
-    specs: { type: "gpu", tdp: 300, lengthMm: 290, powerConnectors: "2x8-pin" },
+    specs: { type: "gpu", tdp: 300, lengthMm: 290, powerConnectors: "2x8-pin", tierScore: 68 },
   },
   {
     slug: "gigabyte-rtx-5070-eagle-oc",
@@ -298,7 +298,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 4,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/04/101851018068754437.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 250, lengthMm: 242, powerConnectors: "16-pin" },
+    specs: { type: "gpu", tdp: 250, lengthMm: 242, powerConnectors: "16-pin", tierScore: 58 },
   },
   {
     slug: "xfx-rx-7900-xt",
@@ -312,7 +312,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 3,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/10/101614480546332699.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 300, lengthMm: 322, powerConnectors: "2x8-pin" },
+    specs: { type: "gpu", tdp: 300, lengthMm: 322, powerConnectors: "2x8-pin", tierScore: 55 },
   },
   {
     slug: "pny-rtx-4070-super-verto",
@@ -326,7 +326,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 6,
     images: ["https://wifidjelfa.com/wp-content/uploads/2025/12/101669562914701461.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 220, lengthMm: 268, powerConnectors: "1x16-pin" },
+    specs: { type: "gpu", tdp: 220, lengthMm: 268, powerConnectors: "1x16-pin", tierScore: 53 },
   },
   {
     slug: "zotac-rtx-5060-ti-16g",
@@ -340,7 +340,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 7,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/02/101752165034360890.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 180, lengthMm: 252, powerConnectors: "1x8-pin" },
+    specs: { type: "gpu", tdp: 180, lengthMm: 252, powerConnectors: "1x8-pin", tierScore: 45 },
   },
   {
     slug: "gigabyte-rtx-5060-ti-gaming-oc",
@@ -354,7 +354,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 8,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/04/101851018068754435.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 180, lengthMm: 270, powerConnectors: "1x8-pin" },
+    specs: { type: "gpu", tdp: 180, lengthMm: 270, powerConnectors: "1x8-pin", tierScore: 43 },
   },
   {
     slug: "sapphire-rx-9060-xt",
@@ -368,7 +368,7 @@ const PRODUCTS: ProductSeed[] = [
     stock: 6,
     images: ["https://wifidjelfa.com/wp-content/uploads/2026/02/101775429664243740.jpg"],
     featured: false,
-    specs: { type: "gpu", tdp: 150, lengthMm: 260, powerConnectors: "1x8-pin" },
+    specs: { type: "gpu", tdp: 150, lengthMm: 260, powerConnectors: "1x8-pin", tierScore: 42 },
   },
 
   // ============ MOTHERBOARDS ============
