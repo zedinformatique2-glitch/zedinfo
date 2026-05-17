@@ -45,7 +45,8 @@
     "buildPc": "Build a PC",
     "contact": "Contact",
     "trackOrder": "Track order",
-    "fpsEstimator": "FPS Estimator"
+    "fpsEstimator": "FPS Estimator",
+    "bottleneck": "Bottleneck"
   },
   "home": {
     "heroEyebrow": "ZED INFORMATIQUE",
@@ -310,5 +311,57 @@
     "clientProtocol": "Client protocol",
     "location": "Laboratory",
     "rights": "© 2025–2026 ZED INFORMATIQUE. ENGINEERING PRECISION."
+  },
+  "bottleneck": {
+    "badge": "Bottleneck",
+    "title": "PC Bottleneck Calculator",
+    "subtitle": "Check whether your CPU and GPU are balanced. Upgrade picks tailored to your build.",
+    "cpuLabel": "Processor (CPU)",
+    "cpuPlaceholder": "e.g. Ryzen 7 5800X3D",
+    "gpuLabel": "Graphics card (GPU)",
+    "gpuPlaceholder": "e.g. RTX 4070 SUPER",
+    "resolution": "Resolution",
+    "task": "Workload",
+    "tasks": { "gaming": "Gaming", "streaming": "Streaming", "content": "Content creation" },
+    "ramLabel": "RAM (GB) — optional",
+    "ramPlaceholder": "e.g. 16",
+    "psuLabel": "PSU (W) — optional",
+    "psuPlaceholder": "e.g. 650",
+    "calculate": "Calculate",
+    "calculating": "Calculating...",
+    "needCpuGpu": "Please pick a CPU and a GPU.",
+    "invalidHardware": "We didn't recognize those parts. Try picking from the dropdown.",
+    "error": "Something went wrong.",
+    "componentLabels": { "cpu": "CPU bottleneck", "gpu": "GPU bottleneck", "balanced": "Balanced build" },
+    "verdicts": {
+      "cpu": "Your CPU is holding back your GPU by {percent}% at this resolution.",
+      "gpu": "Your GPU is holding back your CPU by {percent}% at this resolution.",
+      "balanced": "Your build is well balanced."
+    },
+    "explanations": {
+      "cpu": "The CPU can't feed the GPU enough data per second. You're losing potential FPS the GPU could otherwise produce.",
+      "gpu": "The GPU is the weak link. The CPU could sustain higher framerates if you paired it with a stronger card.",
+      "balanced": "CPU and GPU are well matched for this resolution and workload."
+    },
+    "confidence": "Confidence",
+    "confidenceLabels": { "high": "high", "medium": "medium", "low": "low" },
+    "sourceLabels": { "catalog": "Catalog data", "ai": "AI estimate" },
+    "warnings": {
+      "ram": {
+        "below16": "You have {ramGb} GB of RAM. 16 GB is the minimum we'd recommend for modern gaming.",
+        "contentNeeds32": "You have {ramGb} GB of RAM. Content creation really needs 32 GB or more."
+      },
+      "psu": { "under": "PSU {current}W is undersized. Recommended: {recommended}W minimum." }
+    },
+    "upgrades": {
+      "heading": "Recommended upgrades",
+      "socketMismatch": "These upgrades require a new motherboard (different socket)."
+    },
+    "balancedCta": "Want more performance? Aim for a higher resolution.",
+    "balancedCtaLink": "Browse graphics cards",
+    "meta": {
+      "title": "PC Bottleneck Calculator — CPU GPU | ZED Informatique",
+      "description": "Calculate CPU/GPU bottleneck. Free, fast, with tailored upgrade picks. Algeria."
+    }
   }
 }

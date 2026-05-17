@@ -45,7 +45,8 @@
     "buildPc": "Monter un PC",
     "contact": "Contact",
     "trackOrder": "Suivi de commande",
-    "fpsEstimator": "Estimateur FPS"
+    "fpsEstimator": "Estimateur FPS",
+    "bottleneck": "Goulot"
   },
   "home": {
     "heroEyebrow": "ZED INFORMATIQUE",
@@ -310,5 +311,57 @@
     "clientProtocol": "Protocole client",
     "location": "Laboratoire",
     "rights": "© 2025–2026 ZED INFORMATIQUE. PRÉCISION D'INGÉNIERIE."
+  },
+  "bottleneck": {
+    "badge": "Goulot d'étranglement",
+    "title": "Calculateur de Goulot d'Étranglement PC",
+    "subtitle": "Vérifiez si votre CPU et votre GPU sont équilibrés. Recommandations de mise à niveau adaptées à votre configuration.",
+    "cpuLabel": "Processeur (CPU)",
+    "cpuPlaceholder": "ex: Ryzen 7 5800X3D",
+    "gpuLabel": "Carte graphique (GPU)",
+    "gpuPlaceholder": "ex: RTX 4070 SUPER",
+    "resolution": "Résolution",
+    "task": "Usage",
+    "tasks": { "gaming": "Gaming", "streaming": "Streaming", "content": "Création" },
+    "ramLabel": "RAM (GB) — optionnel",
+    "ramPlaceholder": "ex: 16",
+    "psuLabel": "Alimentation (W) — optionnel",
+    "psuPlaceholder": "ex: 650",
+    "calculate": "Calculer",
+    "calculating": "Calcul en cours...",
+    "needCpuGpu": "Veuillez choisir un CPU et un GPU.",
+    "invalidHardware": "Composants non reconnus. Essayez de les choisir dans la liste.",
+    "error": "Une erreur est survenue.",
+    "componentLabels": { "cpu": "Goulot d'étranglement CPU", "gpu": "Goulot d'étranglement GPU", "balanced": "Configuration équilibrée" },
+    "verdicts": {
+      "cpu": "Votre CPU limite votre GPU de {percent}% à cette résolution.",
+      "gpu": "Votre GPU limite votre CPU de {percent}% à cette résolution.",
+      "balanced": "Votre configuration est bien équilibrée."
+    },
+    "explanations": {
+      "cpu": "Le CPU n'arrive pas à alimenter le GPU avec assez de données par seconde. Vous perdez des FPS potentiels que le GPU pourrait produire.",
+      "gpu": "Le GPU est le maillon faible. Le CPU pourrait soutenir plus d'images par seconde si vous aviez une carte plus puissante.",
+      "balanced": "CPU et GPU sont bien appariés pour cette résolution et cet usage."
+    },
+    "confidence": "Confiance",
+    "confidenceLabels": { "high": "élevée", "medium": "moyenne", "low": "faible" },
+    "sourceLabels": { "catalog": "Données catalogue", "ai": "Estimation IA" },
+    "warnings": {
+      "ram": {
+        "below16": "Vous avez {ramGb} GB de RAM. 16 GB est le minimum recommandé pour le gaming moderne.",
+        "contentNeeds32": "Vous avez {ramGb} GB de RAM. La création de contenu nécessite plutôt 32 GB."
+      },
+      "psu": { "under": "Alimentation {current}W trop juste. Recommandé : {recommended}W minimum." }
+    },
+    "upgrades": {
+      "heading": "Mises à niveau recommandées",
+      "socketMismatch": "Ces mises à niveau nécessitent une nouvelle carte mère (socket différent)."
+    },
+    "balancedCta": "Vous voulez plus de performances ? Visez une résolution supérieure.",
+    "balancedCtaLink": "Voir les cartes graphiques",
+    "meta": {
+      "title": "Calculateur de Goulot d'Étranglement PC — CPU GPU | ZED Informatique",
+      "description": "Calculez le goulot d'étranglement entre votre CPU et GPU. Gratuit, rapide, avec recommandations de mise à niveau. Algérie."
+    }
   }
 }
