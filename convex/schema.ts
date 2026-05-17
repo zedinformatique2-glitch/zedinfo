@@ -219,4 +219,11 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_product", ["productId"])
     .index("by_createdAt", ["createdAt"]),
+
+  bottleneckCache: defineTable({
+    key: v.string(),
+    result: v.string(),
+    hits: v.number(),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
 });
