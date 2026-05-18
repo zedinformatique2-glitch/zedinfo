@@ -25,6 +25,7 @@ type InitialProduct = {
   descFr: string;
   descAr: string;
   priceDzd: number;
+  comparePriceDzd?: number;
   stock: number;
   images: string[];
   featured: boolean;
@@ -54,6 +55,7 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
       descFr: "",
       descAr: "",
       priceDzd: 0,
+      comparePriceDzd: undefined,
       stock: 0,
       images: [],
       featured: false,
@@ -164,10 +166,14 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
           nameAr: v.nameAr?.trim() || undefined,
         }));
       const colorVariants = cleanVariants.length > 0 ? cleanVariants : [];
+      const cleanCompare =
+        form.comparePriceDzd && form.comparePriceDzd > form.priceDzd
+          ? form.comparePriceDzd
+          : undefined;
       if (initial?._id) {
         await update({
           id: initial._id as any,
-          patch: { ...form, images, specs, colorVariants },
+          patch: { ...form, comparePriceDzd: cleanCompare, images, specs, colorVariants },
         });
       } else {
         await create({
@@ -179,6 +185,7 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
           descFr: form.descFr,
           descAr: form.descAr,
           priceDzd: form.priceDzd,
+          comparePriceDzd: cleanCompare,
           stock: form.stock,
           images,
           featured: form.featured,
@@ -294,6 +301,29 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
               required
               dir="ltr"
             />
+          </div>
+          <div>
+            <Label>{ar.productForm.comparePrice}</Label>
+            <Input
+              type="number"
+              value={form.comparePriceDzd ?? ""}
+              onChange={(e) => {
+                const v = e.target.value;
+                setForm({ ...form, comparePriceDzd: v === "" ? undefined : Number(v) });
+              }}
+              dir="ltr"
+              placeholder="0"
+            />
+            <p className="text-xs text-on-surface-variant mt-1">
+              {ar.productForm.comparePriceHint}
+            </p>
+            {form.comparePriceDzd !== undefined &&
+              form.comparePriceDzd > 0 &&
+              form.comparePriceDzd <= form.priceDzd && (
+                <p className="text-xs text-rose-600 mt-1 font-bold">
+                  يجب أن يكون أكبر من السعر الحالي
+                </p>
+              )}
           </div>
           <div>
             <Label>{ar.productForm.stock}</Label>

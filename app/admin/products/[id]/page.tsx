@@ -26,6 +26,7 @@ export default function EditProductPage() {
         descFr: product.descFr,
         descAr: product.descAr,
         priceDzd: product.priceDzd,
+        comparePriceDzd: product.comparePriceDzd,
         stock: product.stock,
         images: product.images,
         featured: product.featured,

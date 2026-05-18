@@ -177,6 +177,7 @@ export const create = mutation({
     descFr: v.string(),
     descAr: v.string(),
     priceDzd: v.number(),
+    comparePriceDzd: v.optional(v.number()),
     stock: v.number(),
     images: v.array(v.string()),
     featured: v.boolean(),
