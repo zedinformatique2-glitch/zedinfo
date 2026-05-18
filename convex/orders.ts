@@ -81,6 +81,8 @@ export const create = mutation({
     });
     // Fire-and-forget Telegram notification (no-op if env vars unset)
     await ctx.scheduler.runAfter(0, internal.telegram.notifyNewOrder, { orderId: id });
+    // Fire-and-forget email notification to admin (no-op if RESEND_API_KEY unset)
+    await ctx.scheduler.runAfter(0, internal.email.notifyNewOrder, { orderId: id });
 
     return { id, orderNumber };
   },
