@@ -39,6 +39,14 @@ export const metadata: Metadata = {
   description:
     "Boutique informatique en Algérie : cartes graphiques, processeurs, RAM, SSD, PC gamer pré-assemblés et configurateur PC sur mesure. Livraison 58 wilayas, paiement à la livraison.",
   applicationName: SITE_NAME,
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png?v=2", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: ["/favicon.ico"],
+    apple: [{ url: "/apple-icon.png?v=2", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     siteName: SITE_NAME,
     type: "website",
