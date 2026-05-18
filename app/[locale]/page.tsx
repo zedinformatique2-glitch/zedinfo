@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Link } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/Button";
-import { Icon } from "@/components/ui/Icon";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { BrandMarquee } from "@/components/home/BrandMarquee";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
@@ -218,29 +217,6 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Bottleneck Calculator promo card */}
-      <section className="container mx-auto px-4 py-10">
-        <Link
-          href="/bottleneck-calculator"
-          className="group block rounded-2xl bg-white ring-1 ring-outline-variant/40 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all p-6 sm:p-8"
-        >
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
-                {t("bottleneckCard.badge")}
-              </div>
-              <div className="text-lg sm:text-xl font-semibold text-on-surface">
-                {t("bottleneckCard.title")}
-              </div>
-              <div className="text-sm text-on-surface-variant mt-1">
-                {t("bottleneckCard.subtitle")}
-              </div>
-            </div>
-            <Icon name="arrow_forward" className="text-on-surface-variant group-hover:text-primary text-[22px] shrink-0 transition-colors" />
-          </div>
-        </Link>
       </section>
 
       {/* Featured Products */}
