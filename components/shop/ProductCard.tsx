@@ -15,6 +15,7 @@ export type ProductCardData = {
   nameFr: string;
   nameAr: string;
   priceDzd: number;
+  comparePriceDzd?: number;
   images: string[];
   stock: number;
   brand?: string;
@@ -49,6 +50,17 @@ export function ProductCard({
   const name = localizedName(product, locale);
   const inStock = product.stock > 0;
   const [noteOpen, setNoteOpen] = useState(false);
+
+  const hasPromo =
+    product.comparePriceDzd !== undefined &&
+    product.comparePriceDzd > product.priceDzd;
+  const discountPct = hasPromo
+    ? Math.round(
+        ((product.comparePriceDzd! - product.priceDzd) /
+          product.comparePriceDzd!) *
+          100,
+      )
+    : null;
 
   const showRequiresBuild = !!product.requiresBuild && !!requiresBuildLabels;
   const customNote = localizedRequiresBuildNote(product, locale);
@@ -91,11 +103,20 @@ export function ProductCard({
             )}
           </div>
 
-          {/* Brand chip — desktop only on small cards */}
-          {product.brand && (
+          {/* Brand chip — desktop only; hidden when a discount chip takes its slot */}
+          {product.brand && !hasPromo && (
             <div className="absolute top-2 end-2 sm:top-3 sm:end-3 md:top-4 md:end-4 hidden sm:block">
               <span className="inline-flex items-center rounded-full bg-on-surface/85 backdrop-blur px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
                 {product.brand}
+              </span>
+            </div>
+          )}
+
+          {/* Discount chip — shown when comparePriceDzd > priceDzd */}
+          {hasPromo && discountPct !== null && (
+            <div className="absolute top-2 end-2 sm:top-3 sm:end-3 md:top-4 md:end-4">
+              <span className="inline-flex items-center rounded-full bg-rose-500 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-black text-white shadow-sm">
+                −{discountPct}%
               </span>
             </div>
           )}
@@ -129,6 +150,11 @@ export function ProductCard({
           <span className="text-primary text-base sm:text-xl md:text-2xl font-black tracking-tight">
             {formatDzd(product.priceDzd, locale)}
           </span>
+          {hasPromo && (
+            <span className="text-on-surface-variant/70 text-[11px] sm:text-xs md:text-sm line-through">
+              {formatDzd(product.comparePriceDzd!, locale)}
+            </span>
+          )}
         </div>
 
         <button

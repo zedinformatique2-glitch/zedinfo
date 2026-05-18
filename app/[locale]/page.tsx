@@ -259,8 +259,8 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
         eyebrow={t("promoEyebrow")}
         title={t("promoTitle")}
         subtitle={t("promoSubtitle")}
+        inStockLabel={tc("inStock")}
         addLabel={tc("addToCart")}
-        promoLabel={t("promoLabel")}
         viewAllLabel={tc("viewAll")}
       />
 
