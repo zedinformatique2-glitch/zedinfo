@@ -224,24 +224,21 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
       <section className="container mx-auto px-4 py-10">
         <Link
           href="/bottleneck-calculator"
-          className="block rounded-2xl bg-gradient-to-br from-slate-900 via-primary/20 to-slate-900 ring-1 ring-primary/30 hover:ring-primary/60 transition-all p-6 sm:p-8"
+          className="group block rounded-2xl bg-white ring-1 ring-outline-variant/40 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all p-6 sm:p-8"
         >
           <div className="flex items-center gap-4">
-            <div className="rounded-xl bg-primary/30 p-3 shrink-0">
-              <Icon name="balance" className="text-white text-[28px]" />
-            </div>
             <div className="flex-1">
-              <div className="text-xs font-bold uppercase tracking-wider text-primary-200 mb-1">
+              <div className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
                 {t("bottleneckCard.badge")}
               </div>
-              <div className="text-lg sm:text-2xl font-bold text-white">
+              <div className="text-lg sm:text-xl font-semibold text-on-surface">
                 {t("bottleneckCard.title")}
               </div>
-              <div className="text-sm text-slate-300 mt-1">
+              <div className="text-sm text-on-surface-variant mt-1">
                 {t("bottleneckCard.subtitle")}
               </div>
             </div>
-            <Icon name="arrow_forward" className="text-white text-[24px] shrink-0" />
+            <Icon name="arrow_forward" className="text-on-surface-variant group-hover:text-primary text-[22px] shrink-0 transition-colors" />
           </div>
         </Link>
       </section>
