@@ -61,7 +61,7 @@ export default function BackupsPage() {
           </h1>
           <p className="mt-2 text-sm text-on-surface-variant">
             نسخة كاملة (المنتجات، الأسعار، الطلبات، الصور…) تُرسَل وتُحفَظ على
-            Cloudflare. تُنشأ نسخة احتياطية تلقائية كل ليلة.
+            Cloudflare. اضغط « احفظ الآن » وقت ما تحب لإنشاء نسخة.
           </p>
         </div>
         <button
