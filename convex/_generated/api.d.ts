@@ -10,6 +10,8 @@
 
 import type * as admin from "../admin.js";
 import type * as aiChat from "../aiChat.js";
+import type * as backup from "../backup.js";
+import type * as backupActions from "../backupActions.js";
 import type * as bottleneck from "../bottleneck.js";
 import type * as bottleneckAi from "../bottleneckAi.js";
 import type * as carriers_ecotrack from "../carriers/ecotrack.js";
@@ -21,6 +23,7 @@ import type * as carriers_yalidine from "../carriers/yalidine.js";
 import type * as carriers_zrExpress from "../carriers/zrExpress.js";
 import type * as categories from "../categories.js";
 import type * as configurator from "../configurator.js";
+import type * as crons from "../crons.js";
 import type * as delivery from "../delivery.js";
 import type * as email from "../email.js";
 import type * as fpsEstimate from "../fpsEstimate.js";
@@ -47,6 +50,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   aiChat: typeof aiChat;
+  backup: typeof backup;
+  backupActions: typeof backupActions;
   bottleneck: typeof bottleneck;
   bottleneckAi: typeof bottleneckAi;
   "carriers/ecotrack": typeof carriers_ecotrack;
@@ -58,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   "carriers/zrExpress": typeof carriers_zrExpress;
   categories: typeof categories;
   configurator: typeof configurator;
+  crons: typeof crons;
   delivery: typeof delivery;
   email: typeof email;
   fpsEstimate: typeof fpsEstimate;

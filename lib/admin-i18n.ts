@@ -9,6 +9,7 @@ export const ar = {
     delivery: "التوصيل",
     promotions: "العروض الترويجية",
     landingPages: "صفحات الهبوط",
+    backups: "النسخ الاحتياطي",
     logout: "تسجيل الخروج",
   },
 

@@ -228,4 +228,37 @@ export default defineSchema({
     hits: v.number(),
     createdAt: v.number(),
   }).index("by_key", ["key"]),
+
+  // Off-platform backup snapshots shipped to Cloudflare R2.
+  backups: defineTable({
+    // R2 key prefix for this snapshot, e.g. "snapshots/2026-05-30T03-00-00Z".
+    prefix: v.string(),
+    status: v.union(
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    trigger: v.union(v.literal("manual"), v.literal("cron")),
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    // Row counts per table, captured at snapshot time.
+    counts: v.optional(
+      v.object({
+        categories: v.number(),
+        products: v.number(),
+        prebuilts: v.number(),
+        orders: v.number(),
+        landingPages: v.number(),
+        savedBuilds: v.number(),
+        promotions: v.number(),
+        deliveryCarriers: v.number(),
+      })
+    ),
+    dataBytes: v.optional(v.number()),
+    imageBytes: v.optional(v.number()),
+    imagesTotal: v.optional(v.number()),
+    imagesCopied: v.optional(v.number()),
+    imagesFailed: v.optional(v.number()),
+    error: v.optional(v.string()),
+  }).index("by_startedAt", ["startedAt"]),
 });

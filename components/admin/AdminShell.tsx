@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/admin/delivery", label: ar.nav.delivery, icon: "local_shipping" },
   { href: "/admin/promotions", label: ar.nav.promotions, icon: "auto_awesome" },
   { href: "/admin/landing-pages", label: ar.nav.landingPages, icon: "rocket_launch" },
+  { href: "/admin/backups", label: ar.nav.backups, icon: "cloud_sync" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
