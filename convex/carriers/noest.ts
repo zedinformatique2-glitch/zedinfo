@@ -9,6 +9,21 @@ function authHeaders(creds: CarrierCredentials) {
   };
 }
 
+function formatNoestError(data: any): string {
+  if (data == null) return "réponse vide";
+  if (typeof data !== "object") return String(data);
+  // Laravel-style validation: { message, errors: { field: ["msg", ...] } }
+  if (data.errors && typeof data.errors === "object") {
+    const parts: string[] = [];
+    for (const [field, msgs] of Object.entries<any>(data.errors)) {
+      const list = Array.isArray(msgs) ? msgs.join(" ") : String(msgs);
+      parts.push(`${field}: ${list}`);
+    }
+    if (parts.length > 0) return parts.join(" | ");
+  }
+  return data.message ?? JSON.stringify(data);
+}
+
 async function getJson(path: string, creds: CarrierCredentials) {
   const res = await fetch(`${BASE}${path}`, {
     method: "GET",
@@ -18,8 +33,7 @@ async function getJson(path: string, creds: CarrierCredentials) {
   let data: any;
   try { data = JSON.parse(text); } catch { data = text; }
   if (!res.ok) {
-    const msg = typeof data === "object" ? data?.message ?? JSON.stringify(data) : String(data);
-    throw new Error(`Noest ${res.status}: ${msg}`);
+    throw new Error(`Noest ${res.status}: ${formatNoestError(data)}`);
   }
   return data;
 }
@@ -34,17 +48,21 @@ async function postJson(path: string, creds: CarrierCredentials, body: Record<st
   let data: any;
   try { data = JSON.parse(text); } catch { data = text; }
   if (!res.ok) {
-    const msg = typeof data === "object"
-      ? (data?.message ?? JSON.stringify(data))
-      : String(data);
-    throw new Error(`Noest ${res.status}: ${msg}`);
+    throw new Error(`Noest ${res.status}: ${formatNoestError(data)}`);
   }
   return data;
 }
 
 function normalizePhone(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length > 10) return digits.slice(-10);
+  let digits = raw.replace(/\D/g, "");
+  // International "00" prefix → drop it
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  // Algerian country code "213" → restore the leading "0" that the international format drops
+  if (digits.startsWith("213") && digits.length >= 11) {
+    digits = "0" + digits.slice(3);
+  }
+  // Last-resort: trim to 10 digits if still too long
+  if (digits.length > 10) digits = digits.slice(-10);
   return digits;
 }
 
@@ -91,14 +109,23 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
     async createShipment(order: ShipmentData) {
       if (!creds.userGuid) throw new Error("Noest: user_guid manquant dans les identifiants");
       const wilayaNum = parseInt(order.wilaya, 10) || 0;
+      if (wilayaNum < 1 || wilayaNum > 58) {
+        throw new Error(`Noest: wilaya_id invalide (${wilayaNum}). La wilaya du client ne correspond à aucun ID Noest (1-58).`);
+      }
       const stopDesk = order.deliveryType === "stopdesk" ? 1 : 0;
+      const phone = normalizePhone(order.phone);
+      if (phone.length < 9 || phone.length > 10) {
+        throw new Error(`Noest: numéro de téléphone invalide (${phone}). Le format attendu est 9 à 10 chiffres.`);
+      }
+      const address = (order.address && order.address.trim().length > 0) ? order.address.trim().slice(0, 255) : "";
+      if (!address) throw new Error("Noest: adresse de livraison manquante.");
 
       const payload: Record<string, any> = {
         user_guid: creds.userGuid,
         reference: ensureReference(order.orderNumber),
-        client: order.customerName,
-        phone: normalizePhone(order.phone),
-        adresse: (order.address && order.address.length > 0) ? order.address.slice(0, 255) : "—",
+        client: order.customerName.slice(0, 255),
+        phone,
+        adresse: address,
         wilaya_id: wilayaNum,
         montant: order.isCod ? order.totalAmount : 0,
         produit: (order.productSummary || order.orderNumber).slice(0, 240),
@@ -112,7 +139,10 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
         payload.station_code = order.stationCode;
       } else {
         // commune is required when stop_desk is 0 and zip_code is not provided
-        payload.commune = (order.commune && order.commune.length > 0) ? order.commune : "—";
+        if (!order.commune || order.commune.trim().length === 0) {
+          throw new Error("Noest: commune requise pour la livraison à domicile. Ouvre la commande et choisis une commune avant de créer l'expédition.");
+        }
+        payload.commune = order.commune.trim();
       }
 
       const data = await postJson("/create/order", creds, payload);
