@@ -238,6 +238,7 @@
     "buildSummary": "Summary",
     "selected": "selected",
     "notSelected": "No part selected",
+    "addAnother": "Add another",
     "fps": {
       "title": "FPS Estimator",
       "subtitle": "Estimate your build's performance in your favorite games",

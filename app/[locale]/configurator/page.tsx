@@ -72,16 +72,6 @@ export default function ConfiguratorPage() {
     setOpenSlot(null);
   }
 
-  function setRam(comp: ConfigComponent) {
-    setSelection((s) => ({ ...s, ram: [comp] }));
-    setOpenSlot(null);
-  }
-
-  function setStorage(comp: ConfigComponent) {
-    setSelection((s) => ({ ...s, storage: [comp] }));
-    setOpenSlot(null);
-  }
-
   function clearSlot(key: SlotKey) {
     setSelection((s) => {
       const next = { ...s };
@@ -89,6 +79,76 @@ export default function ConfiguratorPage() {
       return next;
     });
   }
+
+  // ── Multi-quantity slots (RAM, Storage) ──────────────────────────────────
+  // Quantity is modelled as repeated entries in the array, so the engine,
+  // cart, and save logic keep working unchanged. The UI groups by itemKey.
+  const itemKey = (c: ConfigComponent): string => c._id ?? c.slug;
+
+  function addMultiItem(key: "ram" | "storage", comp: ConfigComponent) {
+    setSelection((s) => ({ ...s, [key]: [...(s[key] ?? []), comp] }));
+    setOpenSlot(null);
+  }
+
+  function incMultiItem(key: "ram" | "storage", k: string) {
+    setSelection((s) => {
+      const arr = s[key] ?? [];
+      const found = arr.find((c) => itemKey(c) === k);
+      if (!found) return s;
+      return { ...s, [key]: [...arr, found] };
+    });
+  }
+
+  function decMultiItem(key: "ram" | "storage", k: string) {
+    setSelection((s) => {
+      const arr = s[key] ?? [];
+      const idx = arr.findIndex((c) => itemKey(c) === k);
+      if (idx === -1) return s;
+      const arrNext = [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+      const next = { ...s };
+      if (arrNext.length) (next as any)[key] = arrNext;
+      else delete (next as any)[key];
+      return next;
+    });
+  }
+
+  function removeMultiGroup(key: "ram" | "storage", k: string) {
+    setSelection((s) => {
+      const arrNext = (s[key] ?? []).filter((c) => itemKey(c) !== k);
+      const next = { ...s };
+      if (arrNext.length) (next as any)[key] = arrNext;
+      else delete (next as any)[key];
+      return next;
+    });
+  }
+
+  /** Group repeated entries into { comp, qty }, preserving insertion order. */
+  function groupItems(items: ConfigComponent[] = []): { comp: ConfigComponent; qty: number }[] {
+    const map = new Map<string, { comp: ConfigComponent; qty: number }>();
+    for (const it of items) {
+      const k = itemKey(it);
+      const ex = map.get(k);
+      if (ex) ex.qty += 1;
+      else map.set(k, { comp: it, qty: 1 });
+    }
+    return [...map.values()];
+  }
+
+  const slotTotal = (key: SlotKey): number => {
+    if (key === "ram") return (selection.ram ?? []).reduce((sum, c) => sum + c.priceDzd, 0);
+    if (key === "storage") return (selection.storage ?? []).reduce((sum, c) => sum + c.priceDzd, 0);
+    const c = (selection as any)[key] as ConfigComponent | undefined;
+    return c ? c.priceDzd : 0;
+  };
+
+  const slotFilled = (key: SlotKey): boolean => {
+    if (key === "ram") return (selection.ram?.length ?? 0) > 0;
+    if (key === "storage") return (selection.storage?.length ?? 0) > 0;
+    return !!(selection as any)[key];
+  };
+
+  const isMultiSlot = (key: SlotKey): key is "ram" | "storage" =>
+    key === "ram" || key === "storage";
 
   async function onSave() {
     const ids: string[] = [];
@@ -137,7 +197,7 @@ export default function ConfiguratorPage() {
     return (selection as any)[key];
   };
 
-  const selectedCount = CONFIG_SLOTS.filter((s) => !!slotComponent(s.key)).length;
+  const selectedCount = CONFIG_SLOTS.filter((s) => slotFilled(s.key)).length;
 
   return (
     <div className="bg-white min-h-screen pb-16">
@@ -161,12 +221,12 @@ export default function ConfiguratorPage() {
 
               <div className="space-y-3">
                 {CONFIG_SLOTS.map((slot) => {
-                  const current = slotComponent(slot.key);
+                  const filled = slotFilled(slot.key);
                   return (
                     <div key={slot.key} className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">{t(`steps.${slot.key}` as any)}</span>
-                      <span className={current ? "font-semibold text-slate-900" : "text-slate-300"}>
-                        {current ? formatDzd(current.priceDzd, locale) : "---"}
+                      <span className={filled ? "font-semibold text-slate-900" : "text-slate-300"}>
+                        {filled ? formatDzd(slotTotal(slot.key), locale) : "---"}
                       </span>
                     </div>
                   );
@@ -246,7 +306,10 @@ export default function ConfiguratorPage() {
           {/* Right — Slot cards + FPS estimator */}
           <div className="flex-1 order-1 lg:order-2 space-y-4">
             {CONFIG_SLOTS.map((slot) => {
-              const current = slotComponent(slot.key);
+              const multi = isMultiSlot(slot.key);
+              const current = multi ? undefined : slotComponent(slot.key);
+              const groups = multi ? groupItems((selection as any)[slot.key]) : [];
+              const filled = slotFilled(slot.key);
               const isOpen = openSlot === slot.key;
               return (
                 <div key={slot.key} className="rounded-2xl ring-1 ring-slate-200 overflow-hidden">
@@ -257,7 +320,9 @@ export default function ConfiguratorPage() {
                       onClick={() => setOpenSlot(isOpen ? null : slot.key)}
                       className="shrink-0 bg-primary text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-primary/90 transition-colors"
                     >
-                      {current ? t("change") : t("select")}
+                      {multi
+                        ? filled ? t("addAnother") : t("select")
+                        : current ? t("change") : t("select")}
                     </button>
 
                     {/* Info */}
@@ -265,7 +330,7 @@ export default function ConfiguratorPage() {
                       <div className="font-semibold text-slate-900 text-sm sm:text-base">
                         {t(`steps.${slot.key}` as any)}
                       </div>
-                      {current ? (
+                      {!multi && current ? (
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-sm text-slate-600 truncate">
                             {localizedName(current, locale)}
@@ -281,9 +346,9 @@ export default function ConfiguratorPage() {
                             <Icon name="close" className="text-[16px]" />
                           </button>
                         </div>
-                      ) : (
+                      ) : !filled ? (
                         <p className="text-xs text-slate-400 mt-0.5">{t("notSelected")}</p>
-                      )}
+                      ) : null}
                     </div>
 
                     {/* Icon */}
@@ -291,6 +356,58 @@ export default function ConfiguratorPage() {
                       <Icon name={SLOT_ICONS[slot.key]} className="text-[22px]" />
                     </div>
                   </div>
+
+                  {/* Selected items list with quantity steppers (multi slots) */}
+                  {multi && groups.length > 0 && (
+                    <div className="border-t border-slate-200 bg-white p-3 sm:p-4 space-y-2">
+                      {groups.map(({ comp, qty }) => {
+                        const k = itemKey(comp);
+                        return (
+                          <div key={k} className="flex items-center gap-2 sm:gap-3 rounded-xl ring-1 ring-slate-200 p-2.5 sm:p-3">
+                            <div className="h-10 w-10 shrink-0 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+                              <Icon name={SLOT_ICONS[slot.key]} className="text-[20px]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-sm text-slate-900 truncate">
+                                {localizedName(comp, locale)}
+                              </div>
+                              <div className="text-xs text-slate-400">
+                                {formatDzd(comp.priceDzd, locale)}
+                              </div>
+                            </div>
+                            {/* Quantity stepper */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => decMultiItem(slot.key as "ram" | "storage", k)}
+                                className="h-7 w-7 rounded-lg ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
+                                aria-label="-"
+                              >
+                                <Icon name="remove" className="text-[16px]" />
+                              </button>
+                              <span className="w-6 text-center text-sm font-bold tabular-nums">{qty}</span>
+                              <button
+                                onClick={() => incMultiItem(slot.key as "ram" | "storage", k)}
+                                className="h-7 w-7 rounded-lg ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
+                                aria-label="+"
+                              >
+                                <Icon name="add" className="text-[16px]" />
+                              </button>
+                            </div>
+                            <div className="hidden sm:block w-24 text-end font-bold text-sm text-primary whitespace-nowrap">
+                              {formatDzd(comp.priceDzd * qty, locale)}
+                            </div>
+                            <button
+                              onClick={() => removeMultiGroup(slot.key as "ram" | "storage", k)}
+                              className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
+                              aria-label={tc("delete")}
+                            >
+                              <Icon name="close" className="text-[16px]" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {/* Inline dropdown product list */}
                   {isOpen && (
@@ -315,8 +432,8 @@ export default function ConfiguratorPage() {
                               priceDzd: (p as any).priceDzd,
                               specs: (p as any).specs,
                             };
-                            if (slot.key === "ram") setRam(comp);
-                            else if (slot.key === "storage") setStorage(comp);
+                            if (slot.key === "ram" || slot.key === "storage")
+                              addMultiItem(slot.key, comp);
                             else setSingle(slot.key, comp);
                           }}
                           disabled={!compatible}

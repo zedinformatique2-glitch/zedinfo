@@ -238,6 +238,7 @@
     "buildSummary": "Récapitulatif",
     "selected": "sélectionné",
     "notSelected": "Aucune pièce sélectionnée",
+    "addAnother": "Ajouter un autre",
     "fps": {
       "title": "Estimation FPS",
       "subtitle": "Estimez les performances de votre config dans vos jeux",
