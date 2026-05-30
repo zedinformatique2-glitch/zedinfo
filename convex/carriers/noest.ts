@@ -117,8 +117,15 @@ export function createNoestAdapter(creds: CarrierCredentials): CarrierAdapter {
       if (phone.length < 9 || phone.length > 10) {
         throw new Error(`Noest: numéro de téléphone invalide (${phone}). Le format attendu est 9 à 10 chiffres.`);
       }
-      const address = (order.address && order.address.trim().length > 0) ? order.address.trim().slice(0, 255) : "";
-      if (!address) throw new Error("Noest: adresse de livraison manquante.");
+      // Address is optional in our checkout (customers often leave it blank).
+      // Noest still requires a non-empty `adresse`, so fall back to the commune
+      // name, then a placeholder. Never block the shipment over a missing street.
+      const address =
+        order.address && order.address.trim().length > 0
+          ? order.address.trim().slice(0, 255)
+          : order.commune && order.commune.trim().length > 0
+            ? order.commune.trim().slice(0, 255)
+            : "—";
 
       const payload: Record<string, any> = {
         user_guid: creds.userGuid,
