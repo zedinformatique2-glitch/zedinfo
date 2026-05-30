@@ -26,14 +26,14 @@ function resolveBuild(build: BuildTag, products: any[]): ConfigSelection {
     };
   };
   const sel: ConfigSelection = {};
-  const single = (k: "cpu" | "motherboard" | "gpu" | "psu" | "case" | "cooler") => {
+  const single = (k: "cpu" | "motherboard" | "gpu" | "psu" | "case") => {
     const s = build[k];
     if (typeof s === "string") {
       const c = toComp(s);
       if (c) (sel as any)[k] = c;
     }
   };
-  const multi = (k: "ram" | "storage") => {
+  const multi = (k: "ram" | "storage" | "cooler") => {
     const s = build[k];
     const slugs = Array.isArray(s) ? s : typeof s === "string" ? [s] : [];
     const comps = slugs.map(toComp).filter((c): c is ConfigComponent => !!c);
@@ -44,9 +44,9 @@ function resolveBuild(build: BuildTag, products: any[]): ConfigSelection {
   single("gpu");
   single("psu");
   single("case");
-  single("cooler");
   multi("ram");
   multi("storage");
+  multi("cooler");
   return sel;
 }
 

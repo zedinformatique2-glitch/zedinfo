@@ -145,6 +145,7 @@ export default function CheckoutPage() {
           qty: i.qty,
           image: i.image,
           selectedColor: i.selectedColor,
+          fromBuild: i.fromBuild,
         })),
         shippingDzd: shipping,
         customer: {

@@ -80,17 +80,18 @@ export default function ConfiguratorPage() {
     });
   }
 
-  // ── Multi-quantity slots (RAM, Storage) ──────────────────────────────────
+  // ── Multi-quantity slots (RAM, Storage, Cooling) ─────────────────────────
   // Quantity is modelled as repeated entries in the array, so the engine,
   // cart, and save logic keep working unchanged. The UI groups by itemKey.
+  type MultiKey = "ram" | "storage" | "cooler";
   const itemKey = (c: ConfigComponent): string => c._id ?? c.slug;
 
-  function addMultiItem(key: "ram" | "storage", comp: ConfigComponent) {
+  function addMultiItem(key: MultiKey, comp: ConfigComponent) {
     setSelection((s) => ({ ...s, [key]: [...(s[key] ?? []), comp] }));
     setOpenSlot(null);
   }
 
-  function incMultiItem(key: "ram" | "storage", k: string) {
+  function incMultiItem(key: MultiKey, k: string) {
     setSelection((s) => {
       const arr = s[key] ?? [];
       const found = arr.find((c) => itemKey(c) === k);
@@ -99,7 +100,7 @@ export default function ConfiguratorPage() {
     });
   }
 
-  function decMultiItem(key: "ram" | "storage", k: string) {
+  function decMultiItem(key: MultiKey, k: string) {
     setSelection((s) => {
       const arr = s[key] ?? [];
       const idx = arr.findIndex((c) => itemKey(c) === k);
@@ -112,7 +113,7 @@ export default function ConfiguratorPage() {
     });
   }
 
-  function removeMultiGroup(key: "ram" | "storage", k: string) {
+  function removeMultiGroup(key: MultiKey, k: string) {
     setSelection((s) => {
       const arrNext = (s[key] ?? []).filter((c) => itemKey(c) !== k);
       const next = { ...s };
@@ -135,20 +136,20 @@ export default function ConfiguratorPage() {
   }
 
   const slotTotal = (key: SlotKey): number => {
-    if (key === "ram") return (selection.ram ?? []).reduce((sum, c) => sum + c.priceDzd, 0);
-    if (key === "storage") return (selection.storage ?? []).reduce((sum, c) => sum + c.priceDzd, 0);
+    if (key === "ram" || key === "storage" || key === "cooler")
+      return (selection[key] ?? []).reduce((sum, c) => sum + c.priceDzd, 0);
     const c = (selection as any)[key] as ConfigComponent | undefined;
     return c ? c.priceDzd : 0;
   };
 
   const slotFilled = (key: SlotKey): boolean => {
-    if (key === "ram") return (selection.ram?.length ?? 0) > 0;
-    if (key === "storage") return (selection.storage?.length ?? 0) > 0;
+    if (key === "ram" || key === "storage" || key === "cooler")
+      return (selection[key]?.length ?? 0) > 0;
     return !!(selection as any)[key];
   };
 
-  const isMultiSlot = (key: SlotKey): key is "ram" | "storage" =>
-    key === "ram" || key === "storage";
+  const isMultiSlot = (key: SlotKey): key is MultiKey =>
+    key === "ram" || key === "storage" || key === "cooler";
 
   async function onSave() {
     const ids: string[] = [];
@@ -159,7 +160,7 @@ export default function ConfiguratorPage() {
     selection.storage?.forEach((s) => s._id && ids.push(s._id));
     if (selection.psu?._id) ids.push(selection.psu._id);
     if (selection.case?._id) ids.push(selection.case._id);
-    if (selection.cooler?._id) ids.push(selection.cooler._id);
+    selection.cooler?.forEach((c) => c._id && ids.push(c._id));
     if (ids.length === 0) return;
     const res = await saveBuild({
       componentIds: ids as any,
@@ -177,7 +178,7 @@ export default function ConfiguratorPage() {
       ...(selection.storage ?? []),
       selection.psu,
       selection.case,
-      selection.cooler,
+      ...(selection.cooler ?? []),
     ].filter((c): c is ConfigComponent => !!c);
     comps.forEach((c) => {
       addToCart({
@@ -187,6 +188,7 @@ export default function ConfiguratorPage() {
         nameAr: c.nameAr,
         priceDzd: c.priceDzd,
         image: "",
+        fromBuild: true,
       });
     });
   }
@@ -194,6 +196,7 @@ export default function ConfiguratorPage() {
   const slotComponent = (key: SlotKey): ConfigComponent | undefined => {
     if (key === "ram") return selection.ram?.[0];
     if (key === "storage") return selection.storage?.[0];
+    if (key === "cooler") return selection.cooler?.[0];
     return (selection as any)[key];
   };
 
@@ -378,7 +381,7 @@ export default function ConfiguratorPage() {
                             {/* Quantity stepper */}
                             <div className="flex items-center gap-1 shrink-0">
                               <button
-                                onClick={() => decMultiItem(slot.key as "ram" | "storage", k)}
+                                onClick={() => decMultiItem(slot.key as MultiKey, k)}
                                 className="h-7 w-7 rounded-lg ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
                                 aria-label="-"
                               >
@@ -386,7 +389,7 @@ export default function ConfiguratorPage() {
                               </button>
                               <span className="w-6 text-center text-sm font-bold tabular-nums">{qty}</span>
                               <button
-                                onClick={() => incMultiItem(slot.key as "ram" | "storage", k)}
+                                onClick={() => incMultiItem(slot.key as MultiKey, k)}
                                 className="h-7 w-7 rounded-lg ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
                                 aria-label="+"
                               >
@@ -397,7 +400,7 @@ export default function ConfiguratorPage() {
                               {formatDzd(comp.priceDzd * qty, locale)}
                             </div>
                             <button
-                              onClick={() => removeMultiGroup(slot.key as "ram" | "storage", k)}
+                              onClick={() => removeMultiGroup(slot.key as MultiKey, k)}
                               className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
                               aria-label={tc("delete")}
                             >
@@ -432,7 +435,7 @@ export default function ConfiguratorPage() {
                               priceDzd: (p as any).priceDzd,
                               specs: (p as any).specs,
                             };
-                            if (slot.key === "ram" || slot.key === "storage")
+                            if (isMultiSlot(slot.key))
                               addMultiItem(slot.key, comp);
                             else setSingle(slot.key, comp);
                           }}

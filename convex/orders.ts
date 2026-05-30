@@ -30,6 +30,7 @@ export const create = mutation({
             image: v.string(),
           })
         ),
+        fromBuild: v.optional(v.boolean()),
       })
     ),
     shippingDzd: v.number(),

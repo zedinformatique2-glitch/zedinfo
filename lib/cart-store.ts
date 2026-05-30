@@ -19,6 +19,8 @@ export type CartItem = {
   image: string;
   qty: number;
   selectedColor?: CartItemColor;
+  /** True when this line was added from the PC configurator ("custom build"). */
+  fromBuild?: boolean;
 };
 
 export function cartItemKey(item: Pick<CartItem, "slug" | "selectedColor">): string {

@@ -41,6 +41,7 @@ export default function AdminOrderDetailPage() {
   }
 
   const phoneE164 = order.customer.phone.replace(/[^0-9+]/g, "");
+  const isCustomBuild = (order.items ?? []).some((i: any) => i.fromBuild);
 
   const handleStatusChange = async (newStatus: string) => {
     await updateStatus({
@@ -73,6 +74,13 @@ export default function AdminOrderDetailPage() {
         <div className="text-xs text-on-surface-variant mt-2">
           {formatDateTime(order.createdAt)}
         </div>
+        {isCustomBuild && (
+          <div className="mt-3">
+            <span className="inline-block rounded-xl bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 ring-1 ring-primary/20">
+              {ar.orderDetail.customBuild}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 md:gap-8">
@@ -85,7 +93,14 @@ export default function AdminOrderDetailPage() {
               {order.items.map((i: any, idx: number) => (
                 <div key={idx} className="flex justify-between py-2 border-b border-outline-variant">
                   <div>
-                    <div className="font-bold">{i.nameFr}</div>
+                    <div className="font-bold flex items-center gap-2 flex-wrap">
+                      {i.nameFr}
+                      {i.fromBuild && (
+                        <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">
+                          {ar.orderDetail.buildItem}
+                        </span>
+                      )}
+                    </div>
                     {i.selectedColor && (
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span

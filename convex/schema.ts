@@ -98,6 +98,8 @@ export default defineSchema({
             image: v.string(),
           })
         ),
+        // Set when this line came from the PC configurator ("custom build").
+        fromBuild: v.optional(v.boolean()),
       })
     ),
     subtotalDzd: v.number(),

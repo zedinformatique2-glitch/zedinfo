@@ -22,7 +22,7 @@ export type ConfigSelection = {
   gpu?: ConfigComponent;
   psu?: ConfigComponent;
   case?: ConfigComponent;
-  cooler?: ConfigComponent;
+  cooler?: ConfigComponent[];
   storage?: ConfigComponent[];
 };
 
@@ -75,7 +75,7 @@ export function checkCompatibility(sel: ConfigSelection): CompatibilityResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const { cpu, motherboard, ram = [], gpu, psu, case: pcCase, cooler, storage = [] } = sel;
+  const { cpu, motherboard, ram = [], gpu, psu, case: pcCase, cooler = [], storage = [] } = sel;
 
   // Socket match (CPU ↔ motherboard)
   if (cpu && motherboard && socketMismatch(cpu.specs.socket, motherboard.specs.socket)) {
@@ -136,33 +136,38 @@ export function checkCompatibility(sel: ConfigSelection): CompatibilityResult {
     }
   }
 
-  // Cooler height (case)
-  if (cooler && pcCase && typeof cooler.specs.heightMm === "number" && typeof pcCase.specs.maxCoolerHeightMm === "number") {
-    if (cooler.specs.heightMm > pcCase.specs.maxCoolerHeightMm) {
-      warnings.push(
-        `Hauteur du ventirad: ${cooler.specs.heightMm}mm > ${pcCase.specs.maxCoolerHeightMm}mm`
-      );
+  // Cooling checks — the slot can hold a CPU cooler plus extra case fans, so we
+  // iterate. Items with socket/height/TDP data (CPU coolers) get validated against
+  // the CPU and case; items without (fans) carry no such data and pass cleanly.
+  for (const cool of cooler) {
+    // Height vs case
+    if (pcCase && typeof cool.specs.heightMm === "number" && typeof pcCase.specs.maxCoolerHeightMm === "number") {
+      if (cool.specs.heightMm > pcCase.specs.maxCoolerHeightMm) {
+        warnings.push(
+          `Hauteur du ventirad: ${cool.specs.heightMm}mm > ${pcCase.specs.maxCoolerHeightMm}mm`
+        );
+      }
+    }
+    // Socket vs CPU — only error when the item lists sockets AND excludes the CPU socket.
+    if (cpu) {
+      const sockets = toSocketList(cool.specs.socket);
+      if (sockets.length && listExcludes(sockets, cpu.specs.socket)) {
+        errors.push(`Ventirad non compatible avec le socket ${cpu.specs.socket}`);
+      }
+    }
+    // TDP vs CPU
+    if (cpu && typeof cpu.specs.tdp === "number" && typeof cool.specs.tdpSupport === "number") {
+      if (cpu.specs.tdp > cool.specs.tdpSupport) {
+        warnings.push(
+          `Ventirad sous-dimensionné: TDP CPU ${cpu.specs.tdp}W > ${cool.specs.tdpSupport}W`
+        );
+      }
     }
   }
-
-  // Cooler socket — only error if cooler has socket data AND it excludes the cpu socket.
-  // If the cooler has no socket data at all, assume universal modern mounting (warn instead of block).
-  if (cooler && cpu) {
-    const sockets = toSocketList(cooler.specs.socket);
-    if (sockets.length === 0) {
-      warnings.push(`Compatibilité du ventirad non spécifiée — vérifiez avant achat`);
-    } else if (listExcludes(sockets, cpu.specs.socket)) {
-      errors.push(`Ventirad non compatible avec le socket ${cpu.specs.socket}`);
-    }
-  }
-
-  // Cooler TDP
-  if (cooler && cpu && typeof cpu.specs.tdp === "number" && typeof cooler.specs.tdpSupport === "number") {
-    if (cpu.specs.tdp > cooler.specs.tdpSupport) {
-      warnings.push(
-        `Ventirad sous-dimensionné: TDP CPU ${cpu.specs.tdp}W > ${cooler.specs.tdpSupport}W`
-      );
-    }
+  // "Compatibility unspecified" note only for the classic single-cooler case with no
+  // socket data — suppressed when multiple cooling items are present (fans are noise here).
+  if (cpu && cooler.length === 1 && toSocketList(cooler[0].specs.socket).length === 0) {
+    warnings.push(`Compatibilité du ventirad non spécifiée — vérifiez avant achat`);
   }
 
   // Wattage estimate
@@ -189,7 +194,7 @@ export function checkCompatibility(sel: ConfigSelection): CompatibilityResult {
     (gpu?.priceDzd ?? 0) +
     (psu?.priceDzd ?? 0) +
     (pcCase?.priceDzd ?? 0) +
-    (cooler?.priceDzd ?? 0) +
+    cooler.reduce((s, c) => s + c.priceDzd, 0) +
     storage.reduce((s, r) => s + r.priceDzd, 0);
 
   return {
@@ -222,7 +227,7 @@ export function filterCompatibleProducts<T extends { specs: ComponentSpec }>(
   selection: ConfigSelection,
   slotKey: SlotKey
 ): FilteredProduct<T>[] {
-  const { cpu, motherboard, ram = [], gpu, psu, case: pcCase, cooler } = selection;
+  const { cpu, motherboard, ram = [], gpu, psu, case: pcCase, cooler = [] } = selection;
 
   return products.map((product) => {
     const s = product.specs;
@@ -232,10 +237,12 @@ export function filterCompatibleProducts<T extends { specs: ComponentSpec }>(
       case "cpu":
         if (motherboard && socketMismatch(s.socket, motherboard.specs.socket))
           reasons.push(`Socket ${s.socket} ≠ ${motherboard.specs.socket}`);
-        if (cooler) {
-          const cs = toSocketList(cooler.specs.socket);
-          if (cs.length && listExcludes(cs, s.socket))
+        for (const cool of cooler) {
+          const cs = toSocketList(cool.specs.socket);
+          if (cs.length && listExcludes(cs, s.socket)) {
             reasons.push(`Ventirad incompatible avec ${s.socket}`);
+            break;
+          }
         }
         break;
 
@@ -299,8 +306,14 @@ export function filterCompatibleProducts<T extends { specs: ComponentSpec }>(
         }
         if (gpu && typeof s.maxGpuLengthMm === "number" && typeof gpu.specs.lengthMm === "number" && s.maxGpuLengthMm < gpu.specs.lengthMm)
           reasons.push(`GPU ${gpu.specs.lengthMm}mm > ${s.maxGpuLengthMm}mm max`);
-        if (cooler && typeof s.maxCoolerHeightMm === "number" && typeof cooler.specs.heightMm === "number" && s.maxCoolerHeightMm < cooler.specs.heightMm)
-          reasons.push(`Ventirad ${cooler.specs.heightMm}mm > ${s.maxCoolerHeightMm}mm max`);
+        {
+          const maxCoolerH = cooler.reduce(
+            (m, c) => (typeof c.specs.heightMm === "number" ? Math.max(m, c.specs.heightMm) : m),
+            0
+          );
+          if (maxCoolerH > 0 && typeof s.maxCoolerHeightMm === "number" && s.maxCoolerHeightMm < maxCoolerH)
+            reasons.push(`Ventirad ${maxCoolerH}mm > ${s.maxCoolerHeightMm}mm max`);
+        }
         break;
 
       case "cooler": {

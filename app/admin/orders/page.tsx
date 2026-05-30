@@ -36,6 +36,7 @@ function OrderRow({ o }: { o: any }) {
   const remove = useMutation(api.orders.remove);
   const phone = o.customer?.phone;
   const cleanPhone = phone?.replace(/\s+/g, "");
+  const isBuild = (o.items ?? []).some((i: any) => i.fromBuild);
 
   return (
     <>
@@ -47,6 +48,13 @@ function OrderRow({ o }: { o: any }) {
           >
             {o.orderNumber}
           </Link>
+          {isBuild && (
+            <div className="mt-1">
+              <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary ring-1 ring-primary/20">
+                {ar.orders.customBuild}
+              </span>
+            </div>
+          )}
         </td>
         <td className="p-4 hidden md:table-cell">{o.customer.fullName}</td>
         <td className="p-4 hidden lg:table-cell text-xs text-on-surface-variant">

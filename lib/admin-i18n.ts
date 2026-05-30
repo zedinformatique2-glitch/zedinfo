@@ -54,6 +54,7 @@ export const ar = {
     viewItems: "عرض المنتجات",
     hideItems: "إخفاء المنتجات",
     phone: "الهاتف",
+    customBuild: "تجميعة مخصّصة",
   },
 
   // Order detail
@@ -88,6 +89,8 @@ export const ar = {
     notes: "ملاحظات",
     call: "اتصال",
     whatsapp: "واتساب",
+    customBuild: "تجميعة مخصّصة — للتركيب",
+    buildItem: "تجميعة",
   },
 
   // Statuses
