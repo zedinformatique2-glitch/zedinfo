@@ -60,10 +60,16 @@ export default function ConfiguratorPage() {
 
   const filteredSlotProducts = useMemo(() => {
     if (!slotProducts || !openSlot) return [];
-    const filtered = filterCompatibleProducts(slotProducts as any[], selection, openSlot);
+    const filtered = filterCompatibleProducts(slotProducts as any[], selection, openSlot).map((f) => {
+      // Availability is separate from compatibility: an out-of-stock part can't be
+      // picked even if it's technically compatible. Mirrors the rest of the site
+      // (ProductCard / AddToCartBar / shop filter / AI chat all gate on stock > 0).
+      const inStock = ((f.product as any).stock ?? 0) > 0;
+      return { ...f, inStock, selectable: f.compatible && inStock };
+    });
     return filtered.sort((a, b) => {
-      if (a.compatible === b.compatible) return 0;
-      return a.compatible ? -1 : 1;
+      if (a.selectable === b.selectable) return 0;
+      return a.selectable ? -1 : 1;
     });
   }, [slotProducts, openSlot, selection]);
 
@@ -420,13 +426,15 @@ export default function ConfiguratorPage() {
                           {tc("loading")}
                         </div>
                       )}
-                      {filteredSlotProducts.map(({ product: p, compatible, incompatibilityReason }) => {
+                      {filteredSlotProducts.map(({ product: p, inStock, selectable, incompatibilityReason }) => {
                         const thumb = (p as any).images?.[0] as string | undefined;
+                        // Out of stock is a hard block and takes priority over a compatibility note.
+                        const reason = !inStock ? tc("outOfStock") : incompatibilityReason;
                         return (
                         <button
                           key={(p as any)._id}
                           onClick={() => {
-                            if (!compatible) return;
+                            if (!selectable) return;
                             const comp: ConfigComponent = {
                               _id: (p as any)._id,
                               slug: (p as any).slug,
@@ -439,14 +447,14 @@ export default function ConfiguratorPage() {
                               addMultiItem(slot.key, comp);
                             else setSingle(slot.key, comp);
                           }}
-                          disabled={!compatible}
+                          disabled={!selectable}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl ring-1 transition-all text-start ${
-                            compatible
+                            selectable
                               ? "bg-white ring-slate-200 hover:ring-primary/40 hover:bg-primary/5 cursor-pointer"
                               : "bg-slate-50 ring-slate-100 opacity-50 cursor-not-allowed"
                           }`}
                         >
-                          <div className={`relative h-11 w-11 shrink-0 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center ${compatible ? "" : "opacity-60"}`}>
+                          <div className={`relative h-11 w-11 shrink-0 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center ${selectable ? "" : "opacity-60"}`}>
                             {thumb ? (
                               <Image
                                 src={thumb}
@@ -460,20 +468,20 @@ export default function ConfiguratorPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className={`font-semibold text-sm truncate ${compatible ? "text-slate-900" : "text-slate-400"}`}>
+                            <div className={`font-semibold text-sm truncate ${selectable ? "text-slate-900" : "text-slate-400"}`}>
                               {localizedName(p as any, locale)}
                             </div>
                             {(p as any).brand && (
                               <div className="text-xs text-slate-400">{(p as any).brand}</div>
                             )}
-                            {incompatibilityReason && (
+                            {reason && (
                               <div className="text-xs text-red-500 mt-0.5 flex items-center gap-1">
-                                <Icon name="error" className="text-[12px] shrink-0" />
-                                {incompatibilityReason}
+                                <Icon name={!inStock ? "inventory_2" : "error"} className="text-[12px] shrink-0" />
+                                {reason}
                               </div>
                             )}
                           </div>
-                          <div className={`font-bold text-sm whitespace-nowrap ${compatible ? "text-primary" : "text-slate-300"}`}>
+                          <div className={`font-bold text-sm whitespace-nowrap ${selectable ? "text-primary" : "text-slate-300"}`}>
                             {formatDzd((p as any).priceDzd, locale)}
                           </div>
                         </button>
