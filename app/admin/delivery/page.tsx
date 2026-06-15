@@ -29,8 +29,8 @@ const CREDENTIAL_FIELDS: Record<string, { label: string; field: CredField }[]> =
     { label: "API Token", field: "apiToken" },
   ],
   zr_express: [
-    { label: "API ID", field: "apiId" },
-    { label: "API Token", field: "apiToken" },
+    { label: "Tenant ID", field: "apiId" },
+    { label: "API Key", field: "apiToken" },
   ],
   maystro: [
     { label: "Bearer Token", field: "bearerToken" },
