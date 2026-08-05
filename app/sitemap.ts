@@ -2,20 +2,15 @@ import type { MetadataRoute } from "next";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 
-const LOCALES = ["ar", "fr", "en"] as const;
+import { locales } from "@/lib/i18n/config";
+import { buildAlternates, siteUrl as getSiteUrl } from "@/lib/seo";
 
-function getSiteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
-    "https://www.zed-informatique.com"
-  );
-}
+const LOCALES = locales;
 
-function alternatesFor(path: string, siteUrl: string) {
-  const languages: Record<string, string> = {};
-  for (const l of LOCALES) languages[l] = `${siteUrl}/${l}${path}`;
-  languages["x-default"] = `${siteUrl}/ar${path}`;
-  return languages;
+// Single source of truth with the on-page <link rel="alternate"> tags, so the
+// sitemap and the page markup can never disagree on x-default.
+function alternatesFor(path: string) {
+  return buildAlternates(LOCALES[0], path).languages;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -26,6 +21,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "", changeFrequency: "daily", priority: 1.0 },
     { path: "/shop", changeFrequency: "daily", priority: 0.9 },
     { path: "/configurator", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/fps-estimator", changeFrequency: "monthly", priority: 0.7 },
+    { path: "/bottleneck-calculator", changeFrequency: "monthly", priority: 0.7 },
     { path: "/support", changeFrequency: "monthly", priority: 0.5 },
     { path: "/track", changeFrequency: "monthly", priority: 0.3 },
     { path: "/return-policy", changeFrequency: "yearly", priority: 0.3 },
@@ -40,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: now,
         changeFrequency: s.changeFrequency,
         priority: s.priority,
-        alternates: { languages: alternatesFor(s.path, siteUrl) },
+        alternates: { languages: alternatesFor(s.path) },
       });
     }
   }
@@ -63,7 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           lastModified,
           changeFrequency: "weekly",
           priority: 0.8,
-          alternates: { languages: alternatesFor(path, siteUrl) },
+          alternates: { languages: alternatesFor(path) },
         });
       }
     }
@@ -77,7 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           lastModified: now,
           changeFrequency: "weekly",
           priority: 0.7,
-          alternates: { languages: alternatesFor(path, siteUrl) },
+          alternates: { languages: alternatesFor(path) },
         });
       }
     }
@@ -91,7 +88,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           lastModified: now,
           changeFrequency: "weekly",
           priority: 0.75,
-          alternates: { languages: alternatesFor(path, siteUrl) },
+          alternates: { languages: alternatesFor(path) },
         });
       }
     }

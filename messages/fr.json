@@ -297,6 +297,10 @@
     "error": "Désolé, une erreur est survenue. Réessayez."
   },
   "fpsEstimator": {
+    "meta": {
+      "title": "Estimateur de FPS — Calculez vos FPS par jeu",
+      "description": "Estimez vos FPS selon votre processeur et carte graphique, jeu par jeu et par résolution. Gratuit et instantané. Algérie."
+    },
     "badge": "Outil gratuit",
     "title": "Estimez vos FPS",
     "subtitle": "Entrez votre processeur et carte graphique — même du matériel que nous ne vendons pas — et obtenez une estimation IA des FPS pour vos jeux préférés.",
@@ -371,7 +375,7 @@
     "balancedCta": "Vous voulez plus de performances ? Visez une résolution supérieure.",
     "balancedCtaLink": "Voir les cartes graphiques",
     "meta": {
-      "title": "Calculateur de Goulot d'Étranglement PC — CPU GPU | ZED Informatique",
+      "title": "Calculateur de Goulot d'Étranglement PC — CPU GPU",
       "description": "Calculez le goulot d'étranglement entre votre CPU et GPU. Gratuit, rapide, avec recommandations de mise à niveau. Algérie."
     },
     "crossPromo": { "badge": "Outil complémentaire", "title": "Estimez les FPS de votre configuration", "subtitle": "Sélectionnez un jeu et obtenez une estimation FPS pour votre setup." }

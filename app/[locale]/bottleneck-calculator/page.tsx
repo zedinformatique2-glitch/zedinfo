@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { BottleneckCalculator } from "@/components/bottleneck/BottleneckCalculator";
+import { buildAlternates } from "@/lib/seo";
+import type { Locale } from "@/lib/i18n/config";
 
 export const revalidate = 3600;
 
@@ -14,14 +16,7 @@ export async function generateMetadata({
   return {
     title: t("title"),
     description: t("description"),
-    alternates: {
-      canonical: `/${locale}/bottleneck-calculator`,
-      languages: {
-        fr: "/fr/bottleneck-calculator",
-        ar: "/ar/bottleneck-calculator",
-        en: "/en/bottleneck-calculator",
-      },
-    },
+    alternates: buildAlternates(locale as Locale, "/bottleneck-calculator"),
   };
 }
 

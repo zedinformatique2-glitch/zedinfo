@@ -297,6 +297,10 @@
     "error": "Sorry, an error occurred. Please try again."
   },
   "fpsEstimator": {
+    "meta": {
+      "title": "FPS Estimator — Calculate Your FPS Per Game",
+      "description": "Estimate your FPS from your CPU and graphics card, game by game and per resolution. Free and instant. Algeria."
+    },
     "badge": "Free tool",
     "title": "Estimate Your FPS",
     "subtitle": "Enter your CPU and GPU — even hardware we don't sell — and get an AI-estimated FPS for your favorite games.",
@@ -371,7 +375,7 @@
     "balancedCta": "Want more performance? Aim for a higher resolution.",
     "balancedCtaLink": "Browse graphics cards",
     "meta": {
-      "title": "PC Bottleneck Calculator — CPU GPU | ZED Informatique",
+      "title": "PC Bottleneck Calculator — CPU GPU",
       "description": "Calculate CPU/GPU bottleneck. Free, fast, with tailored upgrade picks. Algeria."
     },
     "crossPromo": { "badge": "Companion tool", "title": "Estimate FPS for your build", "subtitle": "Pick a game and get an FPS estimate for your setup." }
