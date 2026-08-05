@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { fbTrack, FB_CURRENCY } from "@/lib/fb-pixel";
 
 export type CartItemColor = {
   hex: string;
@@ -27,9 +28,17 @@ export function cartItemKey(item: Pick<CartItem, "slug" | "selectedColor">): str
   return item.selectedColor?.hex ? `${item.slug}::${item.selectedColor.hex}` : item.slug;
 }
 
+type AddOptions = {
+  /**
+   * Skip the Meta `AddToCart` event for this line. Used by the configurator,
+   * which adds ~8 components at once and fires a single aggregate event instead.
+   */
+  silent?: boolean;
+};
+
 type CartState = {
   items: CartItem[];
-  add: (item: Omit<CartItem, "qty">, qty?: number) => void;
+  add: (item: Omit<CartItem, "qty">, qty?: number, opts?: AddOptions) => void;
   remove: (key: string) => void;
   updateQty: (key: string, qty: number) => void;
   clear: () => void;
@@ -41,7 +50,18 @@ export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      add: (item, qty = 1) =>
+      add: (item, qty = 1, opts) => {
+        if (!opts?.silent) {
+          fbTrack("AddToCart", {
+            content_type: "product",
+            content_ids: [item.slug],
+            content_name: item.nameFr,
+            contents: [{ id: item.slug, quantity: qty, item_price: item.priceDzd }],
+            num_items: qty,
+            value: item.priceDzd * qty,
+            currency: FB_CURRENCY,
+          });
+        }
         set((state) => {
           const key = cartItemKey(item);
           const existing = state.items.find((i) => cartItemKey(i) === key);
@@ -53,7 +73,8 @@ export const useCart = create<CartState>()(
             };
           }
           return { items: [...state.items, { ...item, qty }] };
-        }),
+        });
+      },
       remove: (key) =>
         set((state) => ({ items: state.items.filter((i) => cartItemKey(i) !== key) })),
       updateQty: (key, qty) =>

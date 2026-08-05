@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/lib/cart-store";
+import { fbTrack, fbContents, FB_CURRENCY } from "@/lib/fb-pixel";
 import { formatDzd, localizedName } from "@/lib/format";
 import {
   CONFIG_SLOTS,
@@ -187,16 +188,31 @@ export default function ConfiguratorPage() {
       ...(selection.cooler ?? []),
     ].filter((c): c is ConfigComponent => !!c);
     comps.forEach((c) => {
-      addToCart({
-        productId: c._id,
-        slug: c.slug,
-        nameFr: c.nameFr,
-        nameAr: c.nameAr,
-        priceDzd: c.priceDzd,
-        image: "",
-        fromBuild: true,
-      });
+      addToCart(
+        {
+          productId: c._id,
+          slug: c.slug,
+          nameFr: c.nameFr,
+          nameAr: c.nameAr,
+          priceDzd: c.priceDzd,
+          image: "",
+          fromBuild: true,
+        },
+        1,
+        // One aggregate AddToCart is fired below for the whole build instead of
+        // ~8 separate events, which would wreck the ads reporting.
+        { silent: true },
+      );
     });
+
+    if (comps.length > 0) {
+      fbTrack("AddToCart", {
+        ...fbContents(comps.map((c) => ({ slug: c.slug, priceDzd: c.priceDzd, qty: 1 }))),
+        content_name: "Custom PC build",
+        value: comps.reduce((sum, c) => sum + c.priceDzd, 0),
+        currency: FB_CURRENCY,
+      });
+    }
   }
 
   const slotComponent = (key: SlotKey): ConfigComponent | undefined => {

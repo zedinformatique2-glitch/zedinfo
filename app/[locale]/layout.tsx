@@ -11,6 +11,7 @@ import Script from "next/script";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { PixelPageView } from "@/components/analytics/PixelPageView";
 
 const FB_PIXEL_ID = "929394893194723";
 const GTM_ID = "GTM-P8R9ZP5B";
@@ -146,6 +147,8 @@ export default async function LocaleLayout({
             alt=""
           />
         </noscript>
+        {/* Re-fires PageView on client-side navigations (the snippet above only fires once). */}
+        <PixelPageView />
         <NextIntlClientProvider locale={loc} messages={messages}>
           <ConvexClientProvider>
             <Header locale={loc} />

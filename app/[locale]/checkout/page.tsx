@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@/lib/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost, getWilayaNumb
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { formatDzd } from "@/lib/format";
 import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
+import { fbTrack, fbContents, FB_CURRENCY } from "@/lib/fb-pixel";
 import type { Locale } from "@/lib/i18n/config";
 
 const schema = z.object({
@@ -131,6 +132,19 @@ export default function CheckoutPage() {
   const shipping = dynamicShipping ?? (wilaya ? getShippingCost(wilaya) : 800);
   const total = subtotal + shipping;
 
+  // Meta InitiateCheckout — once, after the localStorage cart has hydrated.
+  // Value is the subtotal: shipping isn't known until a wilaya is picked.
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    if (!mounted || checkoutTracked.current || items.length === 0) return;
+    checkoutTracked.current = true;
+    fbTrack("InitiateCheckout", {
+      ...fbContents(items),
+      value: subtotal,
+      currency: FB_CURRENCY,
+    });
+  }, [mounted, items, subtotal]);
+
   async function onSubmit(data: FormData) {
     if (items.length === 0) return;
     setSubmitting(true);
@@ -162,6 +176,18 @@ export default function CheckoutPage() {
         stationCode: data.deliveryType === "stopdesk" ? data.stationCode : undefined,
       });
 
+      // Meta Purchase — fires at order-placed for both COD and WhatsApp.
+      // orderNumber doubles as the dedup key for a future Conversions API rollout.
+      fbTrack(
+        "Purchase",
+        {
+          ...fbContents(items),
+          value: total,
+          currency: FB_CURRENCY,
+        },
+        result.orderNumber,
+      );
+
       if (data.paymentMethod === "whatsapp") {
         const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "213663287772";
         const url = buildWhatsAppUrl({
@@ -183,7 +209,10 @@ export default function CheckoutPage() {
         });
         setSubmitted(true);
         clear();
-        window.location.href = url;
+        // Small delay so the Purchase pixel beacon lands before the page unloads.
+        setTimeout(() => {
+          window.location.href = url;
+        }, 300);
         return;
       }
 

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
+import { TrackViewContent } from "@/components/analytics/TrackViewContent";
 import type { Metadata } from "next";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
@@ -67,6 +68,11 @@ export default async function PrebuiltPage({
 
   return (
     <article>
+      <TrackViewContent
+        id={pb.slug}
+        name={localizedName(pb, loc)}
+        value={pb.priceDzd}
+      />
       <section className="bg-slate-950 text-white py-16 lg:py-24">
         <div className="container-zed grid lg:grid-cols-2 gap-12 items-center">
           <div className="relative aspect-square bg-slate-900 rounded-3xl ring-1 ring-white/10 shadow-card overflow-hidden">

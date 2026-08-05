@@ -21,6 +21,7 @@ import {
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { formatDzd, localizedName } from "@/lib/format";
 import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
+import { fbTrack, fbContents, FB_CURRENCY } from "@/lib/fb-pixel";
 import type { Locale } from "@/lib/i18n/config";
 
 const schema = z.object({
@@ -163,6 +164,12 @@ export function DirectBuyForm({ product }: { product: Product }) {
         selectedColor,
       };
 
+      fbTrack("InitiateCheckout", {
+        ...fbContents([item]),
+        value: subtotal,
+        currency: FB_CURRENCY,
+      });
+
       const result = await createOrder({
         items: [item],
         shippingDzd: shipping,
@@ -179,6 +186,16 @@ export function DirectBuyForm({ product }: { product: Product }) {
         deliveryType: data.deliveryType,
         stationCode: data.deliveryType === "stopdesk" ? data.stationCode : undefined,
       });
+
+      fbTrack(
+        "Purchase",
+        {
+          ...fbContents([item]),
+          value: total,
+          currency: FB_CURRENCY,
+        },
+        result.orderNumber,
+      );
 
       if (data.paymentMethod === "whatsapp") {
         const phone =
@@ -200,7 +217,10 @@ export function DirectBuyForm({ product }: { product: Product }) {
           },
           locale: locale as "ar" | "fr",
         });
-        window.location.href = url;
+        // Small delay so the Purchase pixel beacon lands before the page unloads.
+        setTimeout(() => {
+          window.location.href = url;
+        }, 300);
         return;
       }
 

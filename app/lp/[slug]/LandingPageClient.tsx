@@ -7,12 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost, getWilayaNumber } from "@/lib/wilayas";
 import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
-
-declare global {
-  interface Window {
-    fbq?: (...args: any[]) => void;
-  }
-}
+import { fbTrack, FB_CURRENCY } from "@/lib/fb-pixel";
 
 type Lang = "ar" | "fr" | "en";
 
@@ -223,15 +218,13 @@ export function LandingPageClient({ page }: { page: any }) {
 
   useEffect(() => {
     incView({ id: page._id as Id<"landingPages"> });
-    if (typeof window !== "undefined" && window.fbq) {
-      window.fbq("track", "ViewContent", {
-        content_ids: [product.slug],
-        content_name: product.nameFr,
-        content_type: "product",
-        value: price,
-        currency: "DZD",
-      });
-    }
+    fbTrack("ViewContent", {
+      content_ids: [product.slug],
+      content_name: product.nameFr,
+      content_type: "product",
+      value: price,
+      currency: FB_CURRENCY,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -276,13 +269,11 @@ export function LandingPageClient({ page }: { page: any }) {
     const normalizedPhone = normalizeDzPhone(phone);
     setSubmitting(true);
     try {
-      if (typeof window !== "undefined" && window.fbq) {
-        window.fbq("track", "InitiateCheckout", {
-          content_ids: [product.slug],
-          value: price * qty,
-          currency: "DZD",
-        });
-      }
+      fbTrack("InitiateCheckout", {
+        content_ids: [product.slug],
+        value: price * qty,
+        currency: FB_CURRENCY,
+      });
       const shipping = dynamicShipping ?? getShippingCost(wilaya);
       const res = await createOrder({
         items: [
@@ -310,13 +301,15 @@ export function LandingPageClient({ page }: { page: any }) {
         stationCode: deliveryType === "stopdesk" ? stationCode : undefined,
       });
       await incOrder({ id: page._id as Id<"landingPages"> });
-      if (typeof window !== "undefined" && window.fbq) {
-        window.fbq("track", "Purchase", {
+      fbTrack(
+        "Purchase",
+        {
           content_ids: [product.slug],
           value: price * qty + shipping,
-          currency: "DZD",
-        });
-      }
+          currency: FB_CURRENCY,
+        },
+        res.orderNumber,
+      );
       setOrderNumber(res.orderNumber);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });

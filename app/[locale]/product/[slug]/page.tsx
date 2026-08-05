@@ -5,6 +5,7 @@ import { DirectBuyForm } from "@/components/product/DirectBuyForm";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { RequiresBuildBanner } from "@/components/shop/RequiresBuildBanner";
+import { TrackViewContent } from "@/components/analytics/TrackViewContent";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
@@ -147,6 +148,7 @@ export default async function ProductPage({
 
   return (
     <article className="bg-surface">
+      <TrackViewContent id={product.slug} name={name} value={product.priceDzd} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
