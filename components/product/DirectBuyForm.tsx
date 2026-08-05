@@ -86,6 +86,7 @@ export function DirectBuyForm({ product }: { product: Product }) {
   });
 
   const wilaya = watch("wilaya");
+  const commune = watch("commune");
   const deliveryType = watch("deliveryType");
   const communes = wilaya ? getCommunesForWilaya(wilaya) : [];
 
@@ -107,9 +108,15 @@ export function DirectBuyForm({ product }: { product: Product }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultApiCarrier?.slug]);
 
+  // Reset commune/station on wilaya change, separately from the fee fetch
+  // below — that one depends on `commune` and would otherwise clear it.
   useEffect(() => {
     setValue("commune", "");
     setValue("stationCode", "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wilaya]);
+
+  useEffect(() => {
     setDynamicShipping(null);
 
     if (!wilaya) return;
@@ -126,6 +133,7 @@ export function DirectBuyForm({ product }: { product: Product }) {
       fromWilaya: 17,
       toWilaya: wilayaNum,
       stopDesk: deliveryType === "stopdesk",
+      commune: commune || undefined,
     })
       .then((result: any) => {
         if (!cancelled && result.fee > 0) {
@@ -141,7 +149,7 @@ export function DirectBuyForm({ product }: { product: Product }) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wilaya, deliveryType, defaultApiCarrier?.slug]);
+  }, [wilaya, deliveryType, commune, defaultApiCarrier?.slug]);
 
   const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
   const desksForWilaya = wilayaNumForDesks ? desks.filter((d) => d.wilayaId === wilayaNumForDesks) : [];

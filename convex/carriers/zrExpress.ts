@@ -10,9 +10,11 @@ const BASE = "https://api.zrexpress.app/api/v1";
 const MAX_AMOUNT = 150000;
 
 function headers(creds: CarrierCredentials): Record<string, string> {
+  // Trim: values are pasted by hand in /admin/delivery and a stray space or
+  // newline in a header value is rejected outright.
   return {
-    "X-Tenant": creds.apiId ?? "",
-    "X-Api-Key": creds.apiToken ?? "",
+    "X-Tenant": (creds.apiId ?? "").trim(),
+    "X-Api-Key": (creds.apiToken ?? "").trim(),
     Accept: "application/json",
   };
 }
@@ -51,6 +53,15 @@ async function call(
     data = text ? JSON.parse(text) : null;
   } catch {
     data = text;
+  }
+  if (res.status === 401) {
+    // ZR answers "Invalid API Key" on every endpoint when the key itself is
+    // rejected (revoked/regenerated in the portal), so point at the real fix.
+    throw new Error(
+      "ZR Express refuse la clé API (401). Régénère le token dans le portail ZR " +
+        "(API Rest > Token API), colle-le dans Livraison > ZR Express > API Key, " +
+        "puis clique « Tester la connexion » avant de recréer l'expédition.",
+    );
   }
   if (!res.ok) {
     throw new Error(`ZR Express ${res.status}: ${formatError(data)}`);
@@ -100,6 +111,8 @@ type Commune = { id: string; parentId: string; canSend: boolean };
 type TerritoryIndex = {
   // normalized wilaya name (FR or AR) -> wilaya UUID
   wilayaByName: Map<string, string>;
+  // official wilaya code (1..58) -> wilaya UUID
+  wilayaByCode: Map<number, string>;
   // wilaya UUID -> (normalized commune name -> commune)
   communesByWilaya: Map<string, Map<string, Commune>>;
   // normalized commune name -> commune (global; for daïra-as-wilaya fallback)
@@ -123,6 +136,7 @@ async function loadTerritories(creds: CarrierCredentials): Promise<TerritoryInde
   if (cached && Date.now() - cached.at < TERRITORY_TTL) return cached.idx;
 
   const wilayaByName = new Map<string, string>();
+  const wilayaByCode = new Map<number, string>();
   const communesByWilaya = new Map<string, Map<string, Commune>>();
   const communeByName = new Map<string, Commune>();
 
@@ -138,6 +152,7 @@ async function loadTerritories(creds: CarrierCredentials): Promise<TerritoryInde
       if (t.level === "wilaya") {
         if (t.name) wilayaByName.set(norm(t.name), t.id);
         if (t.nameArabic) wilayaByName.set(norm(t.nameArabic), t.id);
+        if (typeof t.code === "number") wilayaByCode.set(t.code, t.id);
       } else if (t.level === "commune" && t.parentId) {
         let m = communesByWilaya.get(t.parentId);
         if (!m) {
@@ -159,7 +174,7 @@ async function loadTerritories(creds: CarrierCredentials): Promise<TerritoryInde
     if (!data?.hasNext) break;
   }
 
-  const idx: TerritoryIndex = { wilayaByName, communesByWilaya, communeByName };
+  const idx: TerritoryIndex = { wilayaByName, wilayaByCode, communesByWilaya, communeByName };
   territoryCache.set(key, { at: Date.now(), idx });
   return idx;
 }
@@ -191,12 +206,49 @@ export function createZrExpressAdapter(creds: CarrierCredentials): CarrierAdapte
       const data = await call("GET", "/delivery-pricing/rates", creds);
       const rates: any[] = data?.rates ?? [];
       const wanted = opts?.stopDesk ? "pickup-point" : "home";
-      const row = rates.find(
-        (r) => r.toTerritoryLevel === "wilaya" && Number(r.toTerritoryCode) === Number(toWilaya),
+      const priceOf = (row: any): number => {
+        const p = (row?.deliveryPrices ?? []).find((x: any) => x.deliveryType === wanted);
+        return Number(p?.discountedPrice ?? p?.price ?? 0) || 0;
+      };
+
+      const wilayaFee = priceOf(
+        rates.find(
+          (r) => r.toTerritoryLevel === "wilaya" && Number(r.toTerritoryCode) === Number(toWilaya),
+        ),
       );
-      if (!row) return 0;
-      const price = (row.deliveryPrices ?? []).find((p: any) => p.deliveryType === wanted);
-      return Number(price?.discountedPrice ?? price?.price ?? 0) || 0;
+      if (wilayaFee > 0) return wilayaFee;
+
+      // No wilaya-level rate. ZR prices some wilayas per commune instead —
+      // notably Djelfa, where the shop is, at 500 home / 370 pickup. Without
+      // this branch those fall through to the flat 800 in lib/wilayas.ts.
+      //
+      // The commune rows in /delivery-pricing/rates carry no wilaya code, so
+      // match them by territory UUID: resolving the wilaya code through the
+      // territory directory avoids picking a same-named commune in another
+      // wilaya (Algeria has plenty).
+      const idx = await loadTerritories(creds);
+      const wilayaId = idx.wilayaByCode.get(Number(toWilaya));
+      if (!wilayaId) return 0;
+      const communes = idx.communesByWilaya.get(wilayaId);
+      if (!communes) return 0;
+
+      if (opts?.commune) {
+        const hit = communes.get(norm(opts.commune));
+        if (hit) {
+          const fee = priceOf(rates.find((r) => r.toTerritoryId === hit.id));
+          if (fee > 0) return fee;
+        }
+      }
+
+      // Commune not chosen yet (the checkout resets it when the wilaya
+      // changes) or not priced individually: quote the wilaya's highest
+      // commune rate so we never under-quote, then refine once it's picked.
+      const ids = new Set([...communes.values()].map((c) => c.id));
+      const fees = rates
+        .filter((r) => ids.has(r.toTerritoryId))
+        .map(priceOf)
+        .filter((f) => f > 0);
+      return fees.length > 0 ? Math.max(...fees) : 0;
     },
 
     async createShipment(order: ShipmentData) {

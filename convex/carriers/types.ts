@@ -29,7 +29,11 @@ export interface Desk {
 
 export interface CarrierAdapter {
   testConnection(): Promise<boolean>;
-  getFees(fromWilaya: number, toWilaya: number, opts?: { stopDesk?: boolean; weight?: number }): Promise<number>;
+  getFees(
+    fromWilaya: number,
+    toWilaya: number,
+    opts?: { stopDesk?: boolean; weight?: number; commune?: string },
+  ): Promise<number>;
   createShipment(order: ShipmentData): Promise<{ tracking: string; label?: string }>;
   getTrackingUrl(tracking: string): string;
   getDesks?(): Promise<Desk[]>;

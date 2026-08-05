@@ -185,13 +185,17 @@ export const getFees = action({
     fromWilaya: v.number(),
     toWilaya: v.number(),
     stopDesk: v.optional(v.boolean()),
+    commune: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
     const adapter = getAdapter(args.slug, args.credentials);
     if (!adapter) return { fee: 0, error: "No adapter" };
 
     try {
-      const fee = await adapter.getFees(args.fromWilaya, args.toWilaya, { stopDesk: args.stopDesk });
+      const fee = await adapter.getFees(args.fromWilaya, args.toWilaya, {
+        stopDesk: args.stopDesk,
+        commune: args.commune,
+      });
       return { fee, error: undefined };
     } catch (e: any) {
       return { fee: 0, error: e.message };

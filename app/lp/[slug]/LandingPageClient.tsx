@@ -197,9 +197,9 @@ export function LandingPageClient({ page }: { page: any }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultApiCarrier?.slug]);
 
-  // Reset station when wilaya/deliveryType changes; fetch live fee
+  // Fetch the live fee. `commune` matters because ZR prices some wilayas
+  // (Djelfa among them) per commune rather than per wilaya.
   useEffect(() => {
-    setStationCode("");
     setDynamicShipping(null);
     if (!wilaya || !defaultApiCarrier) return;
     const wilayaNum = getWilayaNumber(wilaya);
@@ -211,12 +211,13 @@ export function LandingPageClient({ page }: { page: any }) {
       fromWilaya: 17,
       toWilaya: wilayaNum,
       stopDesk: deliveryType === "stopdesk",
+      commune: commune || undefined,
     }).then((res: any) => {
       if (!cancelled && res.fee > 0) setDynamicShipping(res.fee);
     }).catch(() => {});
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wilaya, deliveryType, defaultApiCarrier?.slug]);
+  }, [wilaya, deliveryType, commune, defaultApiCarrier?.slug]);
 
   const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
   const desksForWilaya = wilayaNumForDesks ? desks.filter((d) => d.wilayaId === wilayaNumForDesks) : [];
@@ -255,6 +256,10 @@ export function LandingPageClient({ page }: { page: any }) {
   useEffect(() => {
     setCommune("");
   }, [wilaya]);
+
+  useEffect(() => {
+    setStationCode("");
+  }, [wilaya, deliveryType]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

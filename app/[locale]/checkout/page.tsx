@@ -77,6 +77,7 @@ export default function CheckoutPage() {
   });
 
   const wilaya = watch("wilaya");
+  const commune = watch("commune");
   const deliveryType = watch("deliveryType");
   const communes = wilaya ? getCommunesForWilaya(wilaya) : [];
 
@@ -98,10 +99,18 @@ export default function CheckoutPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultApiCarrier?.slug]);
 
-  // Reset commune/station when wilaya changes, and fetch real shipping fees
+  // Reset commune/station when the wilaya changes. Kept separate from the fee
+  // fetch below: that one depends on `commune`, so clearing it here would wipe
+  // the customer's pick the moment they made it.
   useEffect(() => {
     setValue("commune", "");
     setValue("stationCode", "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wilaya]);
+
+  // Fetch real shipping fees. `commune` matters because ZR prices some wilayas
+  // (Djelfa among them) per commune rather than per wilaya.
+  useEffect(() => {
     setDynamicShipping(null);
 
     if (!wilaya) return;
@@ -118,6 +127,7 @@ export default function CheckoutPage() {
       fromWilaya: 17,
       toWilaya: wilayaNum,
       stopDesk: deliveryType === "stopdesk",
+      commune: commune || undefined,
     }).then((result: any) => {
       if (!cancelled && result.fee > 0) setDynamicShipping(result.fee);
     }).catch(() => {}).finally(() => {
@@ -126,7 +136,7 @@ export default function CheckoutPage() {
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wilaya, deliveryType, defaultApiCarrier?.slug]);
+  }, [wilaya, deliveryType, commune, defaultApiCarrier?.slug]);
 
   const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
   const desksForWilaya = wilayaNumForDesks
