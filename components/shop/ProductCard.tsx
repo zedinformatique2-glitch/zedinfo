@@ -29,12 +29,14 @@ export function ProductCard({
   product,
   locale,
   label,
+  outOfStockLabel,
   addLabel,
   requiresBuildLabels,
 }: {
   product: ProductCardData;
   locale: Locale;
   label: string;
+  outOfStockLabel?: string;
   addLabel: string;
   requiresBuildLabels?: {
     badge: string;
@@ -98,7 +100,7 @@ export function ProductCard({
               </span>
             ) : (
               <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur px-2 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-on-surface-variant shadow-sm">
-                —
+                {outOfStockLabel ?? "—"}
               </span>
             )}
           </div>
@@ -146,13 +148,23 @@ export function ProductCard({
           </h3>
         </Link>
 
-        <div className="mt-2 sm:mt-3 flex items-baseline gap-2">
-          <span className="text-primary text-base sm:text-xl md:text-2xl font-black tracking-tight">
-            {formatDzd(product.priceDzd, locale)}
-          </span>
-          {hasPromo && (
-            <span className="text-on-surface-variant/70 text-[11px] sm:text-xs md:text-sm line-through">
-              {formatDzd(product.comparePriceDzd!, locale)}
+        {/* Price — hidden entirely when out of stock; we no longer advertise a
+            price for something we can't sell. */}
+        <div className="mt-2 sm:mt-3 flex items-baseline gap-2 min-h-[1.75rem] sm:min-h-[2rem]">
+          {inStock ? (
+            <>
+              <span className="text-primary text-base sm:text-xl md:text-2xl font-black tracking-tight">
+                {formatDzd(product.priceDzd, locale)}
+              </span>
+              {hasPromo && (
+                <span className="text-on-surface-variant/70 text-[11px] sm:text-xs md:text-sm line-through">
+                  {formatDzd(product.comparePriceDzd!, locale)}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-on-surface-variant text-sm sm:text-base font-bold uppercase tracking-wide">
+              {outOfStockLabel ?? ""}
             </span>
           )}
         </div>

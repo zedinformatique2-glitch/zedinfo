@@ -5,6 +5,7 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import { api } from "@/convex/_generated/api";
 import { ProductCard } from "./ProductCard";
+import { sortOutOfStockLast } from "@/lib/product-sort";
 import { Icon } from "@/components/ui/Icon";
 import { formatDzd } from "@/lib/format";
 import { useSearchParams } from "next/navigation";
@@ -32,6 +33,7 @@ type Translations = {
   priceRange: string;
   availability: string;
   inStock: string;
+  outOfStock: string;
   addToCart: string;
 };
 
@@ -97,7 +99,8 @@ export function ShopAllProducts({
       sorted.sort((a, b) => b.priceDzd - a.priceDzd);
     else sorted.sort((a, b) => b.createdAt - a.createdAt);
 
-    return sorted;
+    // Always last pass: unavailable products go to the bottom of the grid
+    return sortOutOfStockLast(sorted);
   }, [baseResults, inStockOnly, minPrice, maxPrice, sort]);
 
   const hasActiveFilters =
@@ -337,6 +340,7 @@ export function ShopAllProducts({
                       product={product}
                       locale={locale}
                       label={t.inStock}
+                      outOfStockLabel={t.outOfStock}
                       addLabel={t.addToCart}
                       requiresBuildLabels={requiresBuildLabels}
                     />

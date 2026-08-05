@@ -26,8 +26,12 @@ export function PromoSection({
   addLabel: string;
   viewAllLabel: string;
 }) {
-  const products = useQuery(api.products.listPromo, { limit: 8 });
+  const products = useQuery(api.products.listPromo, {
+    limit: 8,
+    inStockOnly: true,
+  });
   const tp = useTranslations("product");
+  const tc = useTranslations("common");
   const requiresBuildLabels = buildRequiresBuildLabels(tp);
 
   if (products && products.length === 0) return null;
@@ -79,6 +83,7 @@ export function PromoSection({
                 product={p}
                 locale={locale}
                 label={inStockLabel}
+                outOfStockLabel={tc("outOfStock")}
                 addLabel={addLabel}
                 requiresBuildLabels={requiresBuildLabels}
               />

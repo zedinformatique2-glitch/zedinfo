@@ -24,8 +24,13 @@ export function FeaturedProducts({
   addLabel: string;
   viewAllLabel: string;
 }) {
-  const products = useQuery(api.products.list, { featured: true, limit: 8 });
+  const products = useQuery(api.products.list, {
+    featured: true,
+    limit: 8,
+    inStockOnly: true,
+  });
   const tp = useTranslations("product");
+  const tc = useTranslations("common");
   const requiresBuildLabels = buildRequiresBuildLabels(tp);
 
   // products === undefined means still loading; [] means no featured products
@@ -75,6 +80,7 @@ export function FeaturedProducts({
                 product={p}
                 locale={locale}
                 label={inStockLabel}
+                outOfStockLabel={tc("outOfStock")}
                 addLabel={addLabel}
                 requiresBuildLabels={requiresBuildLabels}
               />

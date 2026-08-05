@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { sortOutOfStockLast } from "@/lib/product-sort";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
@@ -81,10 +82,12 @@ export default async function CategoryPage({
   const tp = await getTranslations({ locale, namespace: "product" });
   const requiresBuildLabels = buildRequiresBuildLabels(tp);
 
-  const [catDoc, products] = await Promise.all([
+  const [catDoc, allProducts] = await Promise.all([
     safeFetch(() => fetchQuery(api.categories.bySlug, { slug: category }), null),
     safeFetch(() => fetchQuery(api.products.list, { categorySlug: category }), []),
   ]);
+  // Out-of-stock products stay listed, but at the bottom of the grid
+  const products = sortOutOfStockLast(allProducts);
 
   if (!catDoc && process.env.NEXT_PUBLIC_CONVEX_URL) notFound();
 
@@ -227,6 +230,7 @@ export default async function CategoryPage({
                   product={p}
                   locale={loc}
                   label={tc("inStock")}
+                  outOfStockLabel={tc("outOfStock")}
                   addLabel={tc("addToCart")}
                   requiresBuildLabels={requiresBuildLabels}
                 />

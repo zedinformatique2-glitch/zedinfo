@@ -4,6 +4,7 @@ import { AddToCartBar } from "@/components/product/AddToCartBar";
 import { DirectBuyForm } from "@/components/product/DirectBuyForm";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { sortOutOfStockLast } from "@/lib/product-sort";
 import { RequiresBuildBanner } from "@/components/shop/RequiresBuildBanner";
 import { TrackViewContent } from "@/components/analytics/TrackViewContent";
 import { fetchQuery } from "convex/nextjs";
@@ -96,9 +97,10 @@ export default async function ProductPage({
         []
       )
     : [];
-  const related = relatedRaw
-    .filter((p: any) => p._id !== product._id)
-    .slice(0, 4);
+  // In-stock siblings win the 4 slots
+  const related = sortOutOfStockLast(
+    relatedRaw.filter((p: any) => p._id !== product._id)
+  ).slice(0, 4);
 
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
@@ -253,6 +255,7 @@ export default async function ProductPage({
                   product={p}
                   locale={loc}
                   label={tc("inStock")}
+                  outOfStockLabel={tc("outOfStock")}
                   addLabel={tc("addToCart")}
                   requiresBuildLabels={requiresBuildLabels}
                 />

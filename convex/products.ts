@@ -7,8 +7,9 @@ export const list = query({
     categorySlug: v.optional(v.string()),
     featured: v.optional(v.boolean()),
     limit: v.optional(v.number()),
+    inStockOnly: v.optional(v.boolean()),
   },
-  handler: async (ctx, { categorySlug, featured, limit }) => {
+  handler: async (ctx, { categorySlug, featured, limit, inStockOnly }) => {
     let products;
     if (categorySlug) {
       const category = await ctx.db
@@ -49,6 +50,8 @@ export const list = query({
     } else {
       products = await ctx.db.query("products").collect();
     }
+    // Filter before slicing, so `limit` isn't spent on unavailable products
+    if (inStockOnly) products = products.filter((p) => p.stock > 0);
     return limit ? products.slice(0, limit) : products;
   },
 });
@@ -70,11 +73,17 @@ export const listPaginated = query({
 });
 
 export const listPromo = query({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, { limit }) => {
+  args: {
+    limit: v.optional(v.number()),
+    inStockOnly: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { limit, inStockOnly }) => {
     const all = await ctx.db.query("products").collect();
     const promo = all.filter(
-      (p) => p.comparePriceDzd !== undefined && p.comparePriceDzd > p.priceDzd
+      (p) =>
+        p.comparePriceDzd !== undefined &&
+        p.comparePriceDzd > p.priceDzd &&
+        (!inStockOnly || p.stock > 0)
     );
     return limit ? promo.slice(0, limit) : promo;
   },

@@ -45,6 +45,7 @@ export default async function ShopIndexPage({
     priceRange: tShop("priceRange"),
     availability: tShop("availability"),
     inStock: tCommon("inStock"),
+    outOfStock: tCommon("outOfStock"),
     addToCart: tCommon("addToCart"),
   };
 
