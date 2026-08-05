@@ -70,7 +70,10 @@ export default async function SupportPage({
               <Button type="submit">Envoyer</Button>
             </form>
           </div>
-          <div className="space-y-4">
+          <div id="contact" className="space-y-4 scroll-mt-28">
+            <h2 className="font-black uppercase tracking-tight text-2xl mb-2">
+              {t("contactTitle")}
+            </h2>
             {[
               {
                 icon: "call",

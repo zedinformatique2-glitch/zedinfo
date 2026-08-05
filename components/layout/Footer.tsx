@@ -49,9 +49,10 @@ export async function Footer({ locale }: { locale: Locale }) {
               <li><Link href="/" className="text-gray-600 hover:text-primary transition-colors">{tn("home")}</Link></li>
               <li><Link href="/shop" className="text-gray-600 hover:text-primary transition-colors">{tn("products")}</Link></li>
               <li><Link href="/configurator" className="text-gray-600 hover:text-primary transition-colors">{tn("buildPc")}</Link></li>
-              <li><Link href="/track-order" className="text-gray-600 hover:text-primary transition-colors">{tn("trackOrder")}</Link></li>
+              <li><Link href="/track" className="text-gray-600 hover:text-primary transition-colors">{tn("trackOrder")}</Link></li>
               <li><Link href="/support" className="text-gray-600 hover:text-primary transition-colors">{tn("services")}</Link></li>
-              <li><Link href="/contact" className="text-gray-600 hover:text-primary transition-colors">{tn("contact")}</Link></li>
+              <li><Link href="/support#contact" className="text-gray-600 hover:text-primary transition-colors">{tn("contact")}</Link></li>
+              <li><Link href="/return-policy" className="text-gray-600 hover:text-primary transition-colors">{locale === "ar" ? "سياسة الإرجاع" : locale === "en" ? "Return policy" : "Politique de retour"}</Link></li>
             </ul>
           </div>
 
