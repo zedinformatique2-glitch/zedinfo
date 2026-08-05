@@ -49,6 +49,25 @@ export const create = mutation({
     stationCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Products flagged `requiresBuild` may only be ordered as part of a
+    // configurator build (`fromBuild`). The client blocks this too, but carts
+    // live in localStorage and can predate the flag — so reject here, before
+    // any stock is touched.
+    const blocked: string[] = [];
+    for (const item of args.items) {
+      if (item.fromBuild) continue;
+      const product = item.productId
+        ? await ctx.db.get(item.productId)
+        : await ctx.db
+            .query("products")
+            .withIndex("by_slug", (q) => q.eq("slug", item.slug))
+            .unique();
+      if (product?.requiresBuild) blocked.push(item.slug);
+    }
+    if (blocked.length > 0) {
+      throw new Error(`REQUIRES_BUILD:${blocked.join(",")}`);
+    }
+
     const subtotal = args.items.reduce((s, i) => s + i.priceDzd * i.qty, 0);
     const total = subtotal + args.shippingDzd;
     const now = Date.now();

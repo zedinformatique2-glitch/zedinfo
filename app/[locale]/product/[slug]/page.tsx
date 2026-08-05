@@ -199,17 +199,21 @@ export default async function ProductPage({
             </div>
             <p className="text-on-surface-variant leading-relaxed mb-8">{desc}</p>
 
-            {product.requiresBuild && (
+            {/* Build-only products lose both buy paths — the banner above
+                carries the WhatsApp / configurator CTAs instead. */}
+            {product.requiresBuild ? (
               <RequiresBuildBanner product={product} locale={loc} />
+            ) : (
+              <>
+                <AddToCartBar
+                  product={product}
+                  addLabel={tc("addToCart")}
+                  qtyLabel={tc("quantity")}
+                />
+
+                {inStock && <DirectBuyForm product={product} />}
+              </>
             )}
-
-            <AddToCartBar
-              product={product}
-              addLabel={tc("addToCart")}
-              qtyLabel={tc("quantity")}
-            />
-
-            {inStock && <DirectBuyForm product={product} />}
 
             {/* Specs */}
             <div className="mt-12">

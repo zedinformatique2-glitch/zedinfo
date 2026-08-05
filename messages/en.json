@@ -171,12 +171,16 @@
     "requiresBuildBody": "This product cannot be sold on its own — it must be included in a complete PC build assembled by our team. Contact us on WhatsApp or use the configurator to prepare your PC.",
     "requiresBuildContactCta": "Contact on WhatsApp",
     "requiresBuildConfigureCta": "Configure a PC",
-    "requiresBuildClose": "Close"
+    "requiresBuildClose": "Close",
+    "requiresBuildInfoCta": "Learn more"
   },
   "cart": {
     "title": "Your cart",
     "empty": "Your cart is empty",
     "emptyCta": "Continue shopping",
+    "requiresBuildTitle": "Item sold only as part of a full PC build",
+    "requiresBuildBody": "This item cannot be ordered on its own. Remove it from your cart to continue, or contact us to prepare a complete PC build.",
+    "requiresBuildRemove": "Remove this item",
     "remove": "Remove",
     "orderSummary": "Order summary",
     "checkout": "Checkout",

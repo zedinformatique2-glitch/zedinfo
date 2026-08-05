@@ -102,6 +102,26 @@ export const bySlug = query({
   },
 });
 
+/**
+ * Which of `slugs` belong to products flagged `requiresBuild` — i.e. that may
+ * not be sold on their own. The cart and checkout call this to block lines that
+ * were added to localStorage before the flag was set on the product.
+ */
+export const requiresBuildSlugs = query({
+  args: { slugs: v.array(v.string()) },
+  handler: async (ctx, { slugs }) => {
+    const blocked: string[] = [];
+    for (const slug of Array.from(new Set(slugs))) {
+      const product = await ctx.db
+        .query("products")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .unique();
+      if (product?.requiresBuild) blocked.push(slug);
+    }
+    return blocked;
+  },
+});
+
 export const byIds = query({
   args: { ids: v.array(v.id("products")) },
   handler: async (ctx, { ids }) => {

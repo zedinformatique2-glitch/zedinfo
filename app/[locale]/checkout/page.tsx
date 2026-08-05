@@ -15,6 +15,8 @@ import { Icon } from "@/components/ui/Icon";
 import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost, getWilayaNumber } from "@/lib/wilayas";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { formatDzd } from "@/lib/format";
+import { useRequiresBuildBlock } from "@/lib/use-requires-build-block";
+import { RequiresBuildNotice } from "@/components/cart/RequiresBuildNotice";
 import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
 import { fbTrack, fbContents, FB_CURRENCY } from "@/lib/fb-pixel";
 import type { Locale } from "@/lib/i18n/config";
@@ -46,10 +48,12 @@ export default function CheckoutPage() {
   const router = useRouter();
   const t = useTranslations("checkout");
   const tc = useTranslations("common");
+  const tcart = useTranslations("cart");
 
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const subtotal = useCart((s) => s.subtotal());
+  const requiresBuild = useRequiresBuildBlock();
   const createOrder = useMutation(api.orders.create);
   const enabledCarriers = useQuery(api.delivery.getEnabledCarriers);
   const getCarrierFees = useAction(api.delivery.getFees);
@@ -147,6 +151,9 @@ export default function CheckoutPage() {
 
   async function onSubmit(data: FormData) {
     if (items.length === 0) return;
+    // Belt and braces: the submit button is already disabled in this state, and
+    // `orders.create` rejects it server-side too.
+    if (requiresBuild.blocked || requiresBuild.loading) return;
     setSubmitting(true);
     try {
       const result = await createOrder({
@@ -220,7 +227,14 @@ export default function CheckoutPage() {
       clear();
       router.push(`/order/${result.id}`);
     } catch (err) {
-      alert(tc("error"));
+      // `orders.create` tags build-only rejections so we can explain them
+      // instead of showing the generic failure alert.
+      const message = err instanceof Error ? err.message : String(err);
+      alert(
+        message.includes("REQUIRES_BUILD")
+          ? tcart("requiresBuildBody")
+          : tc("error")
+      );
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -246,6 +260,11 @@ export default function CheckoutPage() {
       <h1 className="text-xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-4 sm:mb-10">
         {t("title")}
       </h1>
+      <RequiresBuildNotice
+        items={requiresBuild.blockedItems}
+        locale={locale}
+        onRemove={requiresBuild.removeBlocked}
+      />
       <form onSubmit={handleSubmit(onSubmit)} className="grid lg:grid-cols-3 gap-4 sm:gap-12">
         <div className="lg:col-span-2 space-y-4 sm:space-y-8 min-w-0">
           <section>
@@ -423,7 +442,11 @@ export default function CheckoutPage() {
                 </span>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={submitting || requiresBuild.blocked || requiresBuild.loading}
+            >
               {submitting ? tc("loading") : t("placeOrder")}
             </Button>
           </div>

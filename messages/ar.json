@@ -171,12 +171,16 @@
     "requiresBuildBody": "لا يمكن بيع هذا المنتج منفردًا — يجب تضمينه في تجميعة كمبيوتر كاملة يُجمّعها فريقنا. تواصل معنا عبر واتساب أو استخدم أداة التجميع لإعداد جهازك.",
     "requiresBuildContactCta": "تواصل عبر واتساب",
     "requiresBuildConfigureCta": "إعداد تجميعة",
-    "requiresBuildClose": "إغلاق"
+    "requiresBuildClose": "إغلاق",
+    "requiresBuildInfoCta": "معرفة المزيد"
   },
   "cart": {
     "title": "سلة التسوق",
     "empty": "سلتك فارغة",
     "emptyCta": "متابعة التسوق",
+    "requiresBuildTitle": "منتج يُباع فقط ضمن تجميعة كاملة",
+    "requiresBuildBody": "لا يمكن طلب هذا المنتج منفردًا. أزله من السلة للمتابعة، أو تواصل معنا لإعداد تجميعة كمبيوتر كاملة.",
+    "requiresBuildRemove": "إزالة هذا المنتج",
     "remove": "إزالة",
     "orderSummary": "ملخص الطلب",
     "checkout": "إتمام الطلب",

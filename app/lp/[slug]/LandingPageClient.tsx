@@ -167,6 +167,11 @@ export function LandingPageClient({ page }: { page: any }) {
     secured: tr("طلب آمن", "Commande sécurisée", "Secure order"),
     required: tr("يرجى ملء الحقول المطلوبة.", "Veuillez remplir les champs requis.", "Please fill in the required fields."),
     errGeneric: tr("حدث خطأ", "Erreur lors de la commande", "An error occurred"),
+    errRequiresBuild: tr(
+      "لا يمكن بيع هذا المنتج منفردًا — يجب تضمينه في تجميعة كمبيوتر كاملة. تواصل معنا لإعداد تجميعتك.",
+      "Ce produit ne peut pas être vendu seul — il doit être inclus dans une configuration PC complète. Contactez-nous pour préparer votre PC.",
+      "This product cannot be sold on its own — it must be part of a complete PC build. Contact us to prepare your PC."
+    ),
     footerRights: tr("جميع الحقوق محفوظة", "Tous droits réservés", "All rights reserved"),
     footerCountry: tr("الجزائر", "Algérie", "Algeria"),
     brandLine: tr("متجر إلكتروني", "Boutique en ligne", "Online store"),
@@ -254,6 +259,12 @@ export function LandingPageClient({ page }: { page: any }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    // Build-only products can't be ordered on their own — `orders.create`
+    // rejects them too, this just gives the buyer a readable reason.
+    if (product.requiresBuild) {
+      setError(mc.errRequiresBuild);
+      return;
+    }
     if (!fullName.trim() || !phone.trim() || !wilaya) {
       setError(mc.required);
       return;
@@ -314,7 +325,12 @@ export function LandingPageClient({ page }: { page: any }) {
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
-      setError(err.message || mc.errGeneric);
+      const message = String(err?.message ?? "");
+      setError(
+        message.includes("REQUIRES_BUILD")
+          ? mc.errRequiresBuild
+          : message || mc.errGeneric
+      );
     } finally {
       setSubmitting(false);
     }

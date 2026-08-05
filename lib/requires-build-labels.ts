@@ -7,6 +7,8 @@ export type RequiresBuildLabels = {
   contactCta: string;
   configureCta: string;
   close: string;
+  /** Label for the button that replaces "add to cart" on a build-only product. */
+  infoCta: string;
 };
 
 export function buildRequiresBuildLabels(t: ProductT): RequiresBuildLabels {
@@ -17,5 +19,6 @@ export function buildRequiresBuildLabels(t: ProductT): RequiresBuildLabels {
     contactCta: t("requiresBuildContactCta"),
     configureCta: t("requiresBuildConfigureCta"),
     close: t("requiresBuildClose"),
+    infoCta: t("requiresBuildInfoCta"),
   };
 }

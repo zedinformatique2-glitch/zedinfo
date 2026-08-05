@@ -8,6 +8,8 @@ import { useCart, cartItemKey } from "@/lib/cart-store";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { formatDzd, localizedName } from "@/lib/format";
+import { useRequiresBuildBlock } from "@/lib/use-requires-build-block";
+import { RequiresBuildNotice } from "@/components/cart/RequiresBuildNotice";
 import type { Locale } from "@/lib/i18n/config";
 
 export default function CartPage() {
@@ -20,6 +22,7 @@ export default function CartPage() {
   const updateQty = useCart((s) => s.updateQty);
   const remove = useCart((s) => s.remove);
   const subtotal = useCart((s) => s.subtotal());
+  const requiresBuild = useRequiresBuildBlock();
 
   if (!mounted) {
     return <div className="container-zed py-24 text-center">{tc("loading")}</div>;
@@ -45,6 +48,11 @@ export default function CartPage() {
       <h1 className="text-xl sm:text-4xl lg:text-6xl font-black tracking-tighter uppercase mb-4 sm:mb-10">
         {t("title")}
       </h1>
+      <RequiresBuildNotice
+        items={requiresBuild.blockedItems}
+        locale={locale}
+        onRemove={requiresBuild.removeBlocked}
+      />
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-12">
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 min-w-0">
           {items.map((item) => {
@@ -144,9 +152,15 @@ export default function CartPage() {
                 </span>
               </div>
             </div>
-            <Link href="/checkout" className="block">
-              <Button className="w-full">{t("checkout")}</Button>
-            </Link>
+            {requiresBuild.blocked ? (
+              <Button className="w-full" disabled>
+                {t("checkout")}
+              </Button>
+            ) : (
+              <Link href="/checkout" className="block">
+                <Button className="w-full">{t("checkout")}</Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
