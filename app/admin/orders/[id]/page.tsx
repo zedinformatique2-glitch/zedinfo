@@ -29,15 +29,20 @@ export default function AdminOrderDetailPage() {
   const [creatingShipment, setCreatingShipment] = useState(false);
   const [shipmentError, setShipmentError] = useState("");
 
-  if (!order) return <div className="p-8">{ar.dashboard.loading}</div>;
+  // Both queries must have resolved before seeding the tracking form. Seeding while
+  // enabledCarriers is still undefined would set state during render without ever
+  // flipping trackingInited — an infinite render loop (React error #301).
+  if (!order || enabledCarriers === undefined) {
+    return <div className="p-8">{ar.dashboard.loading}</div>;
+  }
 
   if (!trackingInited) {
     setTrackingNumber(order.trackingNumber ?? "");
-    const defaultApi = (enabledCarriers ?? []).find((c: any) => c.isDefault && c.hasApi && c.credentials);
+    const defaultApi = enabledCarriers.find((c: any) => c.isDefault && c.hasApi && c.credentials);
     setCarrier(order.carrier ?? defaultApi?.slug ?? "");
     setCarrierTrackingUrl(order.carrierTrackingUrl ?? "");
     setEstimatedDelivery(order.estimatedDelivery ?? "");
-    if (enabledCarriers !== undefined) setTrackingInited(true);
+    setTrackingInited(true);
   }
 
   const phoneE164 = order.customer.phone.replace(/[^0-9+]/g, "");
