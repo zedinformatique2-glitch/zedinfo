@@ -13,8 +13,12 @@ declare global {
 
 export const FB_CURRENCY = "DZD";
 
-/** Identical events fired inside this window are treated as an accidental repeat. */
-const DEDUPE_MS = 1500;
+/**
+ * Identical events fired inside this window are treated as an accidental repeat.
+ * Matches the 2s window Meta Pixel Helper uses to flag duplicates, so anything
+ * it would complain about is collapsed before it is sent.
+ */
+const DEDUPE_MS = 2000;
 const lastFired = new Map<string, number>();
 
 function randomEventId(prefix: string): string {
