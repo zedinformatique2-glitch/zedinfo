@@ -64,6 +64,7 @@ export default function CheckoutPage() {
   const [dynamicShipping, setDynamicShipping] = useState<number | null>(null);
   const [fetchingFees, setFetchingFees] = useState(false);
   const [desks, setDesks] = useState<{ code: string; name: string; address?: string; wilayaId?: number }[]>([]);
+  const [desksLoaded, setDesksLoaded] = useState(false);
 
   const {
     register,
@@ -87,14 +88,15 @@ export default function CheckoutPage() {
 
   // Load desks once when an API carrier is available
   useEffect(() => {
-    if (!defaultApiCarrier) { setDesks([]); return; }
+    if (!defaultApiCarrier) { setDesks([]); setDesksLoaded(false); return; }
     let cancelled = false;
+    setDesksLoaded(false);
     getCarrierDesks({
       slug: defaultApiCarrier.slug,
       credentials: defaultApiCarrier.credentials!,
     }).then((res: any) => {
-      if (!cancelled && res.desks) setDesks(res.desks);
-    }).catch(() => {});
+      if (!cancelled) { setDesks(res.desks ?? []); setDesksLoaded(true); }
+    }).catch(() => { if (!cancelled) setDesksLoaded(true); });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultApiCarrier?.slug]);
@@ -142,6 +144,18 @@ export default function CheckoutPage() {
   const desksForWilaya = wilayaNumForDesks
     ? desks.filter((d) => d.wilayaId === wilayaNumForDesks)
     : [];
+
+  // If the carrier exposes no pickup points at all, don't offer stop desk —
+  // otherwise every wilaya reads "no desk here" and the customer is stuck.
+  const stopDeskAvailable = !desksLoaded || desks.length > 0;
+
+  useEffect(() => {
+    if (!stopDeskAvailable && deliveryType === "stopdesk") {
+      setValue("deliveryType", "home");
+      setValue("stationCode", "");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopDeskAvailable, deliveryType]);
 
   const shipping = dynamicShipping ?? (wilaya ? getShippingCost(wilaya) : 800);
   const total = subtotal + shipping;
@@ -359,12 +373,14 @@ export default function CheckoutPage() {
                 <Icon name="home" className="text-primary" />
                 <span className="font-bold uppercase text-[11px] sm:text-sm truncate min-w-0">{t("homeDelivery")}</span>
               </label>
-              <label className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all min-w-0">
-                <input type="radio" value="stopdesk" {...register("deliveryType")} />
-                <Icon name="storefront" className="text-primary" />
-                <span className="font-bold uppercase text-[11px] sm:text-sm truncate min-w-0">{t("stopDesk")}</span>
-              </label>
-              {deliveryType === "stopdesk" && (
+              {stopDeskAvailable && (
+                <label className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white ring-1 ring-outline-variant/60 shadow-card cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 transition-all min-w-0">
+                  <input type="radio" value="stopdesk" {...register("deliveryType")} />
+                  <Icon name="storefront" className="text-primary" />
+                  <span className="font-bold uppercase text-[11px] sm:text-sm truncate min-w-0">{t("stopDesk")}</span>
+                </label>
+              )}
+              {stopDeskAvailable && deliveryType === "stopdesk" && (
                 <div>
                   <Label>{t("station")}</Label>
                   <Select {...register("stationCode")} disabled={!wilaya || desksForWilaya.length === 0}>

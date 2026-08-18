@@ -73,6 +73,7 @@ export function DirectBuyForm({ product }: { product: Product }) {
   const selectedColor = useProductVariant((s) => s.selected[product.slug]);
 
   const [desks, setDesks] = useState<{ code: string; name: string; address?: string; wilayaId?: number }[]>([]);
+  const [desksLoaded, setDesksLoaded] = useState(false);
 
   const {
     register,
@@ -96,14 +97,15 @@ export function DirectBuyForm({ product }: { product: Product }) {
 
   // Load desks once when carrier ready
   useEffect(() => {
-    if (!defaultApiCarrier) { setDesks([]); return; }
+    if (!defaultApiCarrier) { setDesks([]); setDesksLoaded(false); return; }
     let cancelled = false;
+    setDesksLoaded(false);
     getCarrierDesks({
       slug: defaultApiCarrier.slug,
       credentials: defaultApiCarrier.credentials!,
     }).then((res: any) => {
-      if (!cancelled && res.desks) setDesks(res.desks);
-    }).catch(() => {});
+      if (!cancelled) { setDesks(res.desks ?? []); setDesksLoaded(true); }
+    }).catch(() => { if (!cancelled) setDesksLoaded(true); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultApiCarrier?.slug]);
@@ -153,6 +155,18 @@ export function DirectBuyForm({ product }: { product: Product }) {
 
   const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
   const desksForWilaya = wilayaNumForDesks ? desks.filter((d) => d.wilayaId === wilayaNumForDesks) : [];
+
+  // No pickup points from the carrier at all: hide the option rather than
+  // showing "no desk here" on every wilaya.
+  const stopDeskAvailable = !desksLoaded || desks.length > 0;
+
+  useEffect(() => {
+    if (!stopDeskAvailable && deliveryType === "stopdesk") {
+      setValue("deliveryType", "home");
+      setValue("stationCode", "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopDeskAvailable, deliveryType]);
 
   const shipping = dynamicShipping ?? (wilaya ? getShippingCost(wilaya) : 800);
   const subtotal = product.priceDzd;
@@ -350,13 +364,15 @@ export function DirectBuyForm({ product }: { product: Product }) {
                   <Icon name="home" className="text-primary text-xl" />
                   <span className="font-bold uppercase text-[10px] leading-tight">{t("homeDelivery")}</span>
                 </label>
-                <label className="flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary transition-all">
-                  <input type="radio" value="stopdesk" {...register("deliveryType")} className="sr-only" />
-                  <Icon name="storefront" className="text-primary text-xl" />
-                  <span className="font-bold uppercase text-[10px] leading-tight">{t("stopDesk")}</span>
-                </label>
+                {stopDeskAvailable && (
+                  <label className="flex flex-col items-center justify-center gap-1.5 p-3 text-center rounded-xl bg-surface ring-1 ring-outline-variant/60 cursor-pointer hover:ring-primary/40 has-[:checked]:ring-2 has-[:checked]:ring-primary has-[:checked]:bg-primary-fixed/20 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary transition-all">
+                    <input type="radio" value="stopdesk" {...register("deliveryType")} className="sr-only" />
+                    <Icon name="storefront" className="text-primary text-xl" />
+                    <span className="font-bold uppercase text-[10px] leading-tight">{t("stopDesk")}</span>
+                  </label>
+                )}
               </div>
-              {deliveryType === "stopdesk" && (
+              {stopDeskAvailable && deliveryType === "stopdesk" && (
                 <div>
                   <Label>{t("station")}</Label>
                   <Select {...register("stationCode")} disabled={!wilaya || desksForWilaya.length === 0}>

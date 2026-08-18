@@ -1,4 +1,4 @@
-import { CarrierAdapter, CarrierCredentials, ShipmentData } from "./types";
+import { CarrierAdapter, CarrierCredentials, Desk, ShipmentData } from "./types";
 
 // New ZR Express API (api.zrexpress.app), NOT the old procolis.com one.
 // Auth: two headers — X-Tenant (tenant UUID) + X-Api-Key (secret API key).
@@ -251,48 +251,94 @@ export function createZrExpressAdapter(creds: CarrierCredentials): CarrierAdapte
       return fees.length > 0 ? Math.max(...fees) : 0;
     },
 
+    // ZR calls its stop desks "hubs". Only those flagged `isPickupPoint` can
+    // receive a parcel for customer collection; the rest are sorting centres.
+    // The hub's address carries `cityTerritoryId`, i.e. the wilaya UUID, so the
+    // 1-58 code comes straight from the territory directory — no name matching.
+    async getDesks(): Promise<Desk[]> {
+      const idx = await loadTerritories(creds);
+      const codeByWilayaId = new Map<string, number>();
+      for (const [code, id] of idx.wilayaByCode) codeByWilayaId.set(id, code);
+
+      const out: Desk[] = [];
+      for (let page = 1; page <= 10; page++) {
+        const data = await call("POST", "/hubs/search", creds, {
+          pageNumber: page,
+          pageSize: 200,
+        });
+        const items: any[] = data?.items ?? [];
+        for (const h of items) {
+          if (!h?.isPickupPoint) continue;
+          const a = h.address ?? {};
+          out.push({
+            // The parcel payload wants the hub UUID, so that is what we store
+            // as the order's stationCode.
+            code: h.id,
+            name: h.name || a.district || a.city || h.id,
+            address: [a.street, a.district, a.city].filter(Boolean).join(", ") || undefined,
+            wilayaId: codeByWilayaId.get(a.cityTerritoryId),
+          });
+        }
+        if (!data?.hasNext) break;
+      }
+      return out;
+    },
+
     async createShipment(order: ShipmentData) {
       if (!creds.apiId) throw new Error("ZR Express: Tenant ID manquant dans les identifiants");
       if (!creds.apiToken) throw new Error("ZR Express: API Key manquante dans les identifiants");
 
-      const idx = await loadTerritories(creds);
-
-      // Resolve wilaya -> city UUID (with spelling aliases).
-      let wn = norm(order.wilaya);
-      if (WILAYA_ALIAS[wn]) wn = WILAYA_ALIAS[wn];
-      let cityId = idx.wilayaByName.get(wn);
-      let district: Commune | undefined;
-
-      if (!cityId) {
-        // The site lists some daïras/communes as "wilayas" (Aflou, Barika,
-        // Bou Saâda, ...). Fall back to treating it as a commune.
-        const asCommune = idx.communeByName.get(wn);
-        if (asCommune) {
-          cityId = asCommune.parentId;
-          district = asCommune;
-        }
-      }
-      if (!cityId) {
+      // Pickup-point parcels are addressed by hub, not by commune: ZR wants
+      // `hubId` and ignores deliveryAddress, so skip the territory lookup (and
+      // its commune requirement) entirely for them.
+      const isPickup = order.deliveryType === "stopdesk";
+      if (isPickup && !order.stationCode) {
         throw new Error(
-          `ZR Express: wilaya « ${order.wilaya} » non desservie ou non reconnue. Crée l'expédition manuellement.`,
+          "ZR Express: point de retrait manquant sur la commande. Choisis un bureau ou repasse la livraison en domicile.",
         );
       }
 
-      if (!district) {
-        if (!order.commune || order.commune.trim().length === 0) {
+      const idx = isPickup ? null : await loadTerritories(creds);
+      let cityId: string | undefined;
+      let district: Commune | undefined;
+
+      if (idx) {
+        // Resolve wilaya -> city UUID (with spelling aliases).
+        let wn = norm(order.wilaya);
+        if (WILAYA_ALIAS[wn]) wn = WILAYA_ALIAS[wn];
+        cityId = idx.wilayaByName.get(wn);
+
+        if (!cityId) {
+          // The site lists some daïras/communes as "wilayas" (Aflou, Barika,
+          // Bou Saâda, ...). Fall back to treating it as a commune.
+          const asCommune = idx.communeByName.get(wn);
+          if (asCommune) {
+            cityId = asCommune.parentId;
+            district = asCommune;
+          }
+        }
+        if (!cityId) {
           throw new Error(
-            "ZR Express: commune requise. Ouvre la commande et choisis une commune avant de créer l'expédition.",
+            `ZR Express: wilaya « ${order.wilaya} » non desservie ou non reconnue. Crée l'expédition manuellement.`,
           );
         }
-        district = idx.communesByWilaya.get(cityId)?.get(norm(order.commune));
+
         if (!district) {
-          throw new Error(
-            `ZR Express: commune introuvable chez ZR pour ${order.wilaya} « ${order.commune} ». Choisis une autre commune sur la commande.`,
-          );
+          if (!order.commune || order.commune.trim().length === 0) {
+            throw new Error(
+              "ZR Express: commune requise. Ouvre la commande et choisis une commune avant de créer l'expédition.",
+            );
+          }
+          district = idx.communesByWilaya.get(cityId)?.get(norm(order.commune));
+          if (!district) {
+            throw new Error(
+              `ZR Express: commune introuvable chez ZR pour ${order.wilaya} « ${order.commune} ». Choisis une autre commune sur la commande.`,
+            );
+          }
         }
-      }
-      if (!district.canSend) {
-        throw new Error(`ZR Express ne livre pas vers « ${order.commune || order.wilaya} ».`);
+        if (!district.canSend) {
+          throw new Error(`ZR Express ne livre pas vers « ${order.commune || order.wilaya} ».`);
+        }
       }
 
       // COD over the 150k cap is sent as amount 0 (treated as prepaid/deposit).
@@ -306,13 +352,17 @@ export function createZrExpressAdapter(creds: CarrierCredentials): CarrierAdapte
           name: order.customerName.slice(0, 100),
           phone: { number1: toIntlPhone(order.phone) },
         },
-        deliveryAddress: {
-          cityTerritoryId: cityId,
-          districtTerritoryId: district.id,
-          ...(order.address && order.address.trim()
-            ? { street: order.address.trim().slice(0, 250) }
-            : {}),
-        },
+        ...(isPickup
+          ? { hubId: order.stationCode }
+          : {
+              deliveryAddress: {
+                cityTerritoryId: cityId,
+                districtTerritoryId: district!.id,
+                ...(order.address && order.address.trim()
+                  ? { street: order.address.trim().slice(0, 250) }
+                  : {}),
+              },
+            }),
         orderedProducts: [
           {
             productName: description.slice(0, 200) || order.orderNumber,
@@ -323,7 +373,7 @@ export function createZrExpressAdapter(creds: CarrierCredentials): CarrierAdapte
         ],
         amount,
         description: description.length >= 2 ? description : `Commande ${order.orderNumber}`,
-        deliveryType: "home",
+        deliveryType: isPickup ? "pickup-point" : "home",
         externalId: order.orderNumber.slice(0, 100),
       };
 

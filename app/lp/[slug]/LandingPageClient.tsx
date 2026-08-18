@@ -71,6 +71,7 @@ export function LandingPageClient({ page }: { page: any }) {
   const [deliveryType, setDeliveryType] = useState<"home" | "stopdesk">("home");
   const [stationCode, setStationCode] = useState("");
   const [desks, setDesks] = useState<{ code: string; name: string; address?: string; wilayaId?: number }[]>([]);
+  const [desksLoaded, setDesksLoaded] = useState(false);
   const [dynamicShipping, setDynamicShipping] = useState<number | null>(null);
 
   const createOrder = useMutation(api.orders.create);
@@ -188,11 +189,12 @@ export function LandingPageClient({ page }: { page: any }) {
 
   // Load desks once
   useEffect(() => {
-    if (!defaultApiCarrier) { setDesks([]); return; }
+    if (!defaultApiCarrier) { setDesks([]); setDesksLoaded(false); return; }
     let cancelled = false;
+    setDesksLoaded(false);
     getCarrierDesks({ slug: defaultApiCarrier.slug, credentials: defaultApiCarrier.credentials! })
-      .then((res: any) => { if (!cancelled && res.desks) setDesks(res.desks); })
-      .catch(() => {});
+      .then((res: any) => { if (!cancelled) { setDesks(res.desks ?? []); setDesksLoaded(true); } })
+      .catch(() => { if (!cancelled) setDesksLoaded(true); });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultApiCarrier?.slug]);
@@ -221,6 +223,17 @@ export function LandingPageClient({ page }: { page: any }) {
 
   const wilayaNumForDesks = wilaya ? getWilayaNumber(wilaya) : 0;
   const desksForWilaya = wilayaNumForDesks ? desks.filter((d) => d.wilayaId === wilayaNumForDesks) : [];
+
+  // Carrier exposes no pickup points at all: hide the option instead of showing
+  // "no desk here" on every wilaya.
+  const stopDeskAvailable = !desksLoaded || desks.length > 0;
+
+  useEffect(() => {
+    if (!stopDeskAvailable && deliveryType === "stopdesk") {
+      setDeliveryType("home");
+      setStationCode("");
+    }
+  }, [stopDeskAvailable, deliveryType]);
 
   useEffect(() => {
     incView({ id: page._id as Id<"landingPages"> });
@@ -861,7 +874,9 @@ export function LandingPageClient({ page }: { page: any }) {
                     <div className="grid grid-cols-2 gap-2">
                       {([
                         { v: "home" as const, label: mc.homeDelivery, icon: "home" },
-                        { v: "stopdesk" as const, label: mc.stopDesk, icon: "storefront" },
+                        ...(stopDeskAvailable
+                          ? [{ v: "stopdesk" as const, label: mc.stopDesk, icon: "storefront" }]
+                          : []),
                       ]).map((opt) => {
                         const checked = deliveryType === opt.v;
                         return (
@@ -884,7 +899,7 @@ export function LandingPageClient({ page }: { page: any }) {
                     </div>
                   </div>
 
-                  {deliveryType === "stopdesk" && (
+                  {stopDeskAvailable && deliveryType === "stopdesk" && (
                     <LabeledSelect
                       label={mc.station}
                       icon="storefront"
