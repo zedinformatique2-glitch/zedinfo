@@ -85,8 +85,8 @@ export default function AdminProductsPage() {
         </Link>
       </div>
       <div className="relative mb-4">
-        <span className="material-symbols-outlined absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant/60 text-lg pointer-events-none">
-          search
+        <span className="absolute inset-y-0 start-0 flex w-11 items-center justify-center text-on-surface-variant/60 pointer-events-none">
+          <span className="material-symbols-outlined text-[20px]">search</span>
         </span>
         <input
           type="search"
@@ -100,10 +100,10 @@ export default function AdminProductsPage() {
           <button
             type="button"
             onClick={() => setSearch("")}
-            className="absolute end-3 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-on-surface"
+            className="absolute inset-y-0 end-0 flex w-10 items-center justify-center text-on-surface-variant/60 hover:text-on-surface"
             aria-label="مسح"
           >
-            <span className="material-symbols-outlined text-lg">close</span>
+            <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         )}
       </div>
