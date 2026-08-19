@@ -118,6 +118,10 @@ export const ar = {
     noProducts: "لا توجد منتجات بعد",
     deleteConfirm: "هل أنت متأكد من الحذف؟",
     image: "الصورة",
+    search: "بحث",
+    searchPlaceholder: "ابحث بالاسم أو العلامة التجارية...",
+    searchResults: "نتيجة",
+    noSearchResults: "لا توجد منتجات مطابقة للبحث",
   },
 
   // Product form

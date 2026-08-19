@@ -63,10 +63,16 @@ export default function AdminProductsPage() {
   const categories = useQuery(api.categories.list);
   const remove = useMutation(api.products.remove);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
-  const filtered = products?.filter((p: any) =>
-    categoryFilter === "all" ? true : p.categoryId === categoryFilter
-  );
+  const q = search.trim().toLowerCase();
+  const filtered = products?.filter((p: any) => {
+    if (categoryFilter !== "all" && p.categoryId !== categoryFilter) return false;
+    if (!q) return true;
+    return [p.nameFr, p.nameAr, p.brand, p.slug]
+      .filter(Boolean)
+      .some((field: string) => field.toLowerCase().includes(q));
+  });
 
   return (
     <div className="p-4 md:p-8">
@@ -78,7 +84,30 @@ export default function AdminProductsPage() {
           <Button size="sm">{ar.productsList.newProduct}</Button>
         </Link>
       </div>
-      <div className="flex items-center gap-3 mb-6">
+      <div className="relative mb-4">
+        <span className="material-symbols-outlined absolute start-3 top-1/2 -translate-y-1/2 text-on-surface-variant/60 text-lg pointer-events-none">
+          search
+        </span>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={ar.productsList.searchPlaceholder}
+          autoFocus
+          className="w-full rounded-2xl border border-outline-variant/60 bg-white ps-11 pe-10 py-3 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="absolute end-3 top-1/2 -translate-y-1/2 text-on-surface-variant/60 hover:text-on-surface"
+            aria-label="مسح"
+          >
+            <span className="material-symbols-outlined text-lg">close</span>
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
         <label className="text-sm font-bold text-on-surface-variant">{ar.productForm.category}:</label>
         <select
           value={categoryFilter}
@@ -102,6 +131,11 @@ export default function AdminProductsPage() {
           >
             إعادة التعيين
           </button>
+        )}
+        {q && (
+          <span className="text-xs font-bold text-on-surface-variant">
+            {filtered?.length ?? 0} {ar.productsList.searchResults}
+          </span>
         )}
       </div>
       <div className="bg-white rounded-2xl shadow-card ring-1 ring-outline-variant/40 overflow-hidden overflow-x-auto">
@@ -158,7 +192,7 @@ export default function AdminProductsPage() {
         </table>
         {filtered?.length === 0 && (
           <div className="p-12 text-center text-on-surface-variant">
-            {ar.productsList.noProducts}
+            {q ? ar.productsList.noSearchResults : ar.productsList.noProducts}
           </div>
         )}
       </div>
