@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import type { Id } from "./_generated/dataModel";
 
 export const list = query({
   args: {
@@ -92,10 +94,15 @@ export const listPromo = query({
 export const bySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, { slug }) => {
+    // `.first()`, not `.unique()`: slugs are entered by hand in the admin panel
+    // and are not enforced unique by the schema, so a collision is possible on
+    // existing data. `.unique()` throws on a collision, which the product page
+    // turns into a 404 — taking down BOTH products instead of one. Serving the
+    // oldest match keeps the page alive; `create`/`update` now block new dupes.
     const product = await ctx.db
       .query("products")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .unique();
+      .first();
     if (!product) return null;
     const category = await ctx.db.get(product.categoryId);
     return { ...product, category };
@@ -112,10 +119,12 @@ export const requiresBuildSlugs = query({
   handler: async (ctx, { slugs }) => {
     const blocked: string[] = [];
     for (const slug of Array.from(new Set(slugs))) {
+      // `.first()` for the same reason as `bySlug` — this runs on the cart and
+      // checkout path, where a throw would block the customer from ordering.
       const product = await ctx.db
         .query("products")
         .withIndex("by_slug", (q) => q.eq("slug", slug))
-        .unique();
+        .first();
       if (product?.requiresBuild) blocked.push(slug);
     }
     return blocked;
@@ -196,6 +205,31 @@ export const searchByType = query({
   },
 });
 
+/**
+ * The product URL is `/product/<slug>`, so two products sharing a slug make one
+ * of them unreachable. The slug is a free-text field in the admin form, and
+ * duplicating an existing product without editing the slug is an easy mistake —
+ * it has already happened on prod. Reject it at write time with a message the
+ * admin can act on.
+ */
+async function assertSlugFree(
+  ctx: MutationCtx,
+  slug: string,
+  ignoreId?: Id<"products">
+) {
+  const clash = await ctx.db
+    .query("products")
+    .withIndex("by_slug", (q) => q.eq("slug", slug))
+    .collect();
+  const other = clash.find((p) => p._id !== ignoreId);
+  if (other) {
+    throw new Error(
+      `Le slug "${slug}" est deja utilise par le produit "${other.nameFr}". ` +
+        `Choisissez un slug unique (l'URL du produit en depend).`
+    );
+  }
+}
+
 export const create = mutation({
   args: {
     slug: v.string(),
@@ -227,6 +261,7 @@ export const create = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertSlugFree(ctx, args.slug);
     return await ctx.db.insert("products", {
       ...args,
       createdAt: Date.now(),
@@ -240,6 +275,9 @@ export const update = mutation({
     patch: v.any(),
   },
   handler: async (ctx, { id, patch }) => {
+    if (typeof patch?.slug === "string") {
+      await assertSlugFree(ctx, patch.slug, id);
+    }
     await ctx.db.patch(id, patch);
   },
 });

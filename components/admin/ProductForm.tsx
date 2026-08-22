@@ -198,6 +198,12 @@ export function ProductForm({ initial }: { initial?: InitialProduct }) {
         });
       }
       router.push("/admin/products");
+    } catch (err) {
+      // Without this the mutation error (e.g. a duplicate slug) is swallowed and
+      // the form just sits there looking like nothing happened.
+      const raw = err instanceof Error ? err.message : String(err);
+      const clean = raw.replace(/^\[.*?\]\s*/, "").split("\n")[0];
+      alert(clean);
     } finally {
       setSaving(false);
     }

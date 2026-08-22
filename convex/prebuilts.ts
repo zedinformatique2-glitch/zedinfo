@@ -11,10 +11,11 @@ export const list = query({
 export const bySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, { slug }) => {
+    // `.first()`, not `.unique()` — see the note on `products.bySlug`.
     const pb = await ctx.db
       .query("prebuilts")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .unique();
+      .first();
     if (!pb) return null;
     const components = await Promise.all(pb.componentIds.map((id) => ctx.db.get(id)));
     return { ...pb, components: components.filter((c) => c !== null) };

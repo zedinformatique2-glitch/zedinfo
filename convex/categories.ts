@@ -12,10 +12,12 @@ export const list = query({
 export const bySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, { slug }) => {
+    // `.first()`, not `.unique()`: a duplicate slug would otherwise throw and
+    // 404 the whole category listing. See the note on `products.bySlug`.
     return await ctx.db
       .query("categories")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .unique();
+      .first();
   },
 });
 
