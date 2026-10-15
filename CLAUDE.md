@@ -79,7 +79,9 @@ Do **not** add `app/layout.tsx` — it will conflict with the two locale/admin r
 - Notifications on new orders: `convex/telegram.ts` and `convex/email.ts` (no-ops when their env vars are unset).
 - Backups: `convex/backup.ts` + `convex/backupActions.ts`, scheduled in `convex/crons.ts`, UI at `/admin/backups`.
 - Promotions: `convex/promotions.ts` + `convex/promotionActions.ts` (image generation, posting to Meta), UI at `/admin/promotions`.
-- OpenRouter-powered tools: `convex/aiChat.ts`. The OpenRouter account ran out of credits in Oct 2026, so it fails until it is topped up.
+- Configurator AI sales assistant: `convex/aiChat.ts` calls Claude Haiku 5.5 (`claude-haiku-5-5`) **directly through the Anthropic SDK** with `ANTHROPIC_API_KEY` (Convex env), not OpenRouter. It never sees the raw catalog: it gets a per-category overview and calls tools (`search_parts`, `propose_build`, `propose_products`) backed by the pure, tested `lib/ai-builder.ts`. Every offer is validated server-side (stock, `checkCompatibility`, essential slots) before the customer gets the "Commander ce PC" button, which fills the cart and opens `/checkout` (custom builds plus ready-made PCs/accessories). Each round logs token usage (`aiChat round N: …`) in the Convex logs. The action is public and unauthenticated (capped at 20 history messages, 2,000 chars each, 6 model rounds).
+- OpenRouter-powered tools: `convex/fpsEstimate.ts` (configurator FPS box) and promotion images. The OpenRouter account ran out of credits in Oct 2026, so they fail until it is topped up.
+- Product data gap seen on prod (Oct 2026): some real parts have `specs.type` set to a category name ("Cartes graphiques", "SSD", "Boîtiers", "Alimentations", "Refroidissement CPU", "Cartes mères") instead of the engine's slot type, so the configurator and the assistant's builds can't use them (the assistant can still sell them as standalone products).
 - `/bottleneck-calculator` uses **no AI**: `lib/balance-engine.ts` (tested) works on the same data as the FPS estimator — CPU score the GPU needs in the median game vs the real CPU score, per-game limiter, PSU sizing from `watts`, and shop upgrades matched by product name (`matchHardware`) with socket awareness. `convex/bottleneckAi.ts`, `convex/bottleneck.ts` and `lib/bottleneck-engine.ts` are no longer used by the page (kept, not deleted).
 - `/fps-estimator` uses **no AI**: `lib/fps-data.ts` (built-in GPU/CPU scores and per-game reference FPS, from public benchmarks) + `lib/fps-engine.ts` (pure formula, tested). Visitors pick hardware from the built-in list only. To add a card, processor or game, add a row to `lib/fps-data.ts` and run `npm test`. `convex/fpsEstimate.ts` is no longer used by the public page; `components/configurator/FpsEstimator.tsx` (the configurator) still calls it.
 - Order tracking page `/track` and trilingual `/return-policy`. Locales are `fr`, `ar` **and `en`** (en falls back to French product names).
@@ -163,7 +165,8 @@ Or persist it once: `git config --global http.version HTTP/1.1`.
 ### Secrets — never commit, never paste in chat
 
 Live secrets live ONLY in the Convex env store and Vercel env store:
-- `OPENROUTER_API_KEY` (Convex, used by FPS estimator / AI chat / promo gen)
+- `OPENROUTER_API_KEY` (Convex, used by the configurator FPS box / promo gen)
+- `ANTHROPIC_API_KEY` (Convex, used by the configurator AI assistant — must be set on prod before that change ships)
 - `ADMIN_PASSWORD` (both Convex and Vercel, kept in sync)
 - `CONVEX_DEPLOY_KEY` (Vercel only — used by the build command)
 

@@ -292,7 +292,8 @@
     "title": "AI PC Assistant",
     "welcome": "Tell me what you need (gaming, office, budget…) and I'll suggest the best configuration!",
     "placeholder": "E.g.: Gaming PC for CS2, budget 150,000 DZD",
-    "apply": "Apply this config",
+    "apply": "Edit in the configurator",
+    "order": "Order this PC",
     "send": "Send",
     "error": "Sorry, an error occurred. Please try again."
   },

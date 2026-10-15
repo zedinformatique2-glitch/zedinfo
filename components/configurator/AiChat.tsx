@@ -7,22 +7,29 @@ import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
 import type { ConfigComponent, ConfigSelection } from "@/lib/configurator-engine";
 import type { Locale } from "@/lib/i18n/config";
+import { formatDzd } from "@/lib/format";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
   build?: Record<string, string | string[]> | null;
+  products?: { slug: string; qty: number }[] | null;
+  totalDzd?: number | null;
 };
+
+export type OrderExtra = { product: any; qty: number };
 
 type Props = {
   onApplyBuild: (selection: ConfigSelection) => void;
+  /** Puts the offer (custom build and/or standalone products) in the cart and opens checkout. */
+  onOrderBuild: (selection: ConfigSelection, extras: OrderExtra[]) => void;
   allProducts: any[];
   locale: Locale;
   open: boolean;
   onClose: () => void;
 };
 
-export function AiChat({ onApplyBuild, allProducts, locale, open, onClose }: Props) {
+export function AiChat({ onApplyBuild, onOrderBuild, allProducts, locale, open, onClose }: Props) {
   const t = useTranslations("aiChat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -46,12 +53,17 @@ export function AiChat({ onApplyBuild, allProducts, locale, open, onClose }: Pro
 
     try {
       const res = await chatAction({
-        messages: next.map((m) => ({ role: m.role, content: m.content })),
+        messages: next.map((m) => ({
+          role: m.role,
+          content: m.content,
+          build: m.build ?? null,
+          products: m.products ?? null,
+        })),
         locale,
       });
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: res.text, build: res.build },
+        { role: "assistant", content: res.text, build: res.build, products: res.products, totalDzd: res.totalDzd },
       ]);
     } catch {
       setMessages((prev) => [
@@ -63,7 +75,7 @@ export function AiChat({ onApplyBuild, allProducts, locale, open, onClose }: Pro
     }
   }
 
-  function applyBuild(build: Record<string, string | string[]>) {
+  function toSelection(build: Record<string, string | string[]>): ConfigSelection {
     const sel: ConfigSelection = {};
     const bySlug = new Map(allProducts.map((p: any) => [p.slug, p]));
 
@@ -79,7 +91,7 @@ export function AiChat({ onApplyBuild, allProducts, locale, open, onClose }: Pro
     }
 
     for (const [key, val] of Object.entries(build)) {
-      if (key === "ram" || key === "storage") {
+      if (key === "ram" || key === "storage" || key === "cooler") {
         const slugs = Array.isArray(val) ? val : [val];
         const comps = slugs.map((s) => bySlug.get(s)).filter(Boolean).map(toComp);
         if (comps.length) (sel as any)[key] = comps;
@@ -89,7 +101,15 @@ export function AiChat({ onApplyBuild, allProducts, locale, open, onClose }: Pro
       }
     }
 
-    onApplyBuild(sel);
+    return sel;
+  }
+
+  function order(m: Message) {
+    const bySlug = new Map(allProducts.map((p: any) => [p.slug, p]));
+    const extras: OrderExtra[] = (m.products ?? [])
+      .map((l) => ({ product: bySlug.get(l.slug), qty: l.qty }))
+      .filter((e) => !!e.product);
+    onOrderBuild(m.build ? toSelection(m.build) : {}, extras);
   }
 
   if (!open) return null;
@@ -129,14 +149,26 @@ export function AiChat({ onApplyBuild, allProducts, locale, open, onClose }: Pro
                   >
                     {m.content}
                   </div>
-                  {m.build && (
-                    <button
-                      onClick={() => applyBuild(m.build!)}
-                      className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-colors"
-                    >
-                      <Icon name="check_circle" className="text-[16px]" />
-                      {t("apply")}
-                    </button>
+                  {(m.build || m.products?.length) && (
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => order(m)}
+                        className="w-full flex items-center justify-center gap-1.5 text-sm font-bold text-white bg-primary hover:bg-primary/90 px-3 py-2.5 rounded-xl shadow-card transition-all hover:-translate-y-0.5"
+                      >
+                        <Icon name="shopping_cart_checkout" className="text-[18px]" />
+                        {t("order")}
+                        {m.totalDzd ? ` · ${formatDzd(m.totalDzd, locale)}` : ""}
+                      </button>
+                      {m.build && (
+                        <button
+                          onClick={() => onApplyBuild(toSelection(m.build!))}
+                          className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-colors"
+                        >
+                          <Icon name="tune" className="text-[16px]" />
+                          {t("apply")}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

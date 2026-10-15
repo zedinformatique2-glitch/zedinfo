@@ -292,7 +292,8 @@
     "title": "Assistant PC IA",
     "welcome": "Décrivez-moi votre besoin (gaming, bureautique, budget…) et je vous proposerai la meilleure configuration !",
     "placeholder": "Ex: PC gaming pour CS2, budget 150 000 DZD",
-    "apply": "Appliquer cette config",
+    "apply": "Modifier dans le configurateur",
+    "order": "Commander ce PC",
     "send": "Envoyer",
     "error": "Désolé, une erreur est survenue. Réessayez."
   },
