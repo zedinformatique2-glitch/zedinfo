@@ -19,8 +19,9 @@ Convex agent skills for common tasks can be installed by running `npx convex ai-
 ```bash
 npm run dev              # Next.js dev server (Turbopack)
 npx convex dev           # Convex function watcher — run in a SECOND terminal during dev
-npm run build            # Production build (runs typecheck + static generation)
-npm run lint             # ESLint
+npm run build            # Production build (runs typecheck + static generation; lint is skipped)
+npm run lint             # ESLint CLI (flat config in eslint.config.mjs) — 0 errors expected, warnings OK
+npm test                 # Vitest unit tests in tests/ (pure lib/ logic only)
 npx convex run seed:default      # Seed 11 categories + 18 mockup products
 npx convex run seedReal:default  # Seed 11 categories + 58 real products (from competitors)
 node scripts/upload-images.mjs   # Upload external product images to Convex storage
@@ -28,7 +29,7 @@ npx convex env set KEY VALUE     # Set Convex deployment env vars
 npx convex deploy        # Deploy Convex functions to production
 ```
 
-There are no tests. Dev requires **both** `npm run dev` and `npx convex dev` running. Admin login uses `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env.local`.
+Tests cover `lib/configurator-engine.ts`, `lib/phone.ts` and `lib/format.ts` only — no backend tests yet. `next.config.ts` sets `eslint.ignoreDuringBuilds: true` so lint can never block a Vercel deploy; run `npm run lint` yourself. Dev requires **both** `npm run dev` and `npx convex dev` running. Admin login uses `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env.local`.
 
 ## Architecture
 
@@ -60,7 +61,15 @@ Do **not** add `app/layout.tsx` — it will conflict with the two locale/admin r
 
 - Cart state is Zustand + `persist` middleware (localStorage), in `lib/cart-store.ts`. Client-only. Anything that reads it must gate on a `mounted` boolean to avoid hydration mismatch (`cart/page.tsx` and `checkout/page.tsx` show the pattern).
 - Checkout is a single server-action-free client form: `react-hook-form` + `zod` → `useMutation(api.orders.create)` → on success, either redirect to `/order/[id]` (COD) or build a WhatsApp URL via `lib/whatsapp.ts` and `window.location.href` to it.
-- Shipping cost comes from `lib/wilayas.ts` (`getShippingCost(wilaya)`). Currently a flat 800 DZD — upgrade here when per-wilaya rates are known.
+- Shipping cost comes from the enabled delivery carrier (`api.delivery.getFees`, ZR Express commune-level rates, home or stop-desk via `api.delivery.getDesks`). `lib/wilayas.ts` `getShippingCost()` is only the flat 800 DZD fallback when no carrier quote is available. Carriers are managed at `/admin/delivery`; adapters live in `convex/carriers/`.
+
+### Other backend features (not covered elsewhere)
+
+- Notifications on new orders: `convex/telegram.ts` and `convex/email.ts` (no-ops when their env vars are unset).
+- Backups: `convex/backup.ts` + `convex/backupActions.ts`, scheduled in `convex/crons.ts`, UI at `/admin/backups`.
+- Promotions: `convex/promotions.ts` + `convex/promotionActions.ts` (image generation, posting to Meta), UI at `/admin/promotions`.
+- OpenRouter-powered tools: `convex/aiChat.ts`, `convex/fpsEstimate.ts` (`/fps-estimator`), `convex/bottleneckAi.ts` + `lib/bottleneck-engine.ts` (`/bottleneck-calculator`).
+- Order tracking page `/track` and trilingual `/return-policy`. Locales are `fr`, `ar` **and `en`** (en falls back to French product names).
 
 ### Configurator compatibility engine
 
@@ -190,9 +199,17 @@ A site-speed pass landed in commits `1390301` (safer-scope wins) and `6b81b21` (
 - `loading="lazy"` on `components/shop/ProductCard.tsx` — likely lazy-loaded above-the-fold featured products on the home page, regressing LCP.
 
 **Still open if you want more wins on mobile:**
-- Arabic Cairo font (`fonts.googleapis.com`) ships a ~444 KB woff2 that costs ~2.9s on slow 4G. Preload it, or trim weights to the ones actually used (`400` and `700` cover most of the site).
+- The Cairo font is no longer loaded by the public layout (only by `app/admin/layout.tsx` and the `/lp` landing pages, which load 6 Cairo weights + Plus Jakarta Sans + Outfit — trimming those weights would help ad-traffic pages).
 - ~14 KiB of CSS is render-blocking (Tailwind output + a small chunk). Inlining critical CSS or splitting per-route would shave ~350-500ms.
-- `lh3.googleusercontent.com` `preconnect` in `app/[locale]/layout.tsx` is unused since product images moved to Convex storage — safe to remove.
+- Done (Oct 2026): the unused `lh3.googleusercontent.com` preconnect was replaced by a preconnect to the Convex deployment (product images).
+
+## Dependencies (Oct 2026)
+
+Next.js is on 15.5.28 (latest 15.5 patch). Remaining `npm audit` items need major upgrades — Next 16, Tailwind 4, next-intl 4 — and were deliberately not done; each is a real migration, not a bump.
+
+## Known open security items (owner deferred, Oct 2026)
+
+The admin cookie gate in `middleware.ts` has no secret (the hash cookie is just sha256 of the token cookie, so it can be forged), and no Convex function checks for an admin — admin queries/mutations (orders with customer data, products, delivery carrier API tokens, backups) are callable by anyone with the public Convex URL. `orders.create` also trusts client-sent prices and shipping. Raise with the owner before touching admin or order code.
 
 **Permanent constraint:** `next.config.ts` has `images.unoptimized: true` — set in commit `29a7e56` to stay inside Vercel's free image-optimization quota on Convex-hosted product images. Don't flip it back unless the quota issue is resolved. All optimization must happen at the source (WebP encoding, compressing JPGs before checkin, proper `sizes` attribute on `<Image>`).
 
@@ -210,7 +227,7 @@ The HTML mockups in `D:/ZED INFORMA/stitch/stitch/` are the design reference:
 | Mockup folder | Ported to |
 |---|---|
 | `zed_informatique_home_full_hero` | `app/[locale]/page.tsx` |
-| `about_us_deep_navy_update` | `app/[locale]/about/page.tsx` |
+| `about_us_deep_navy_update` | *(not ported — no about route exists)* |
 | `category_listing_graphics_cards` | `app/[locale]/shop/[category]/page.tsx` |
 | `zed_informatique_product_details` | `app/[locale]/product/[slug]/page.tsx` |
 | `ready_to_go_pc_details` | `app/[locale]/prebuilt/[slug]/page.tsx` |
