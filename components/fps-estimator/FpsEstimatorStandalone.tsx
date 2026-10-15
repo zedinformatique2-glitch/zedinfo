@@ -1,337 +1,522 @@
 "use client";
 
-import { useState } from "react";
-import { useAction } from "convex/react";
-import { useTranslations, useLocale } from "next-intl";
+import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
+import { Link } from "@/lib/i18n/routing";
 import { ToolCrossPromo } from "@/components/bottleneck/ToolCrossPromo";
+import { CPUS, GPUS, FPS_GAMES, type Cpu, type Gpu, type FpsGame, type FpsResolution, type Preset } from "@/lib/fps-data";
+import { estimateFps, findCpu, findGpu, type FpsEstimate } from "@/lib/fps-engine";
+import { HardwareInput } from "./HardwareInput";
+import { FpsGauge, fpsTier } from "./FpsGauge";
+import { StickyResultBar } from "./StickyResultBar";
 
-const GAMES = [
-  { id: "cs2", name: "Counter-Strike 2", img: "/games/cs2.jpg" },
-  { id: "valorant", name: "Valorant", img: "/games/valorant.jpg" },
-  { id: "gtav", name: "GTA V", img: "/games/gtav.jpg" },
-  { id: "cyberpunk", name: "Cyberpunk 2077", img: "/games/cyberpunk.jpg" },
-  { id: "fortnite", name: "Fortnite", img: "/games/fortnite.jpg" },
-  { id: "eldenring", name: "Elden Ring", img: "/games/eldenring.jpg" },
-  { id: "warzone", name: "COD Warzone", img: "/games/warzone.jpg" },
-  { id: "minecraft", name: "Minecraft", img: "/games/minecraft.jpg" },
+const RESOLUTIONS: FpsResolution[] = ["1080p", "1440p", "4K"];
+const RAM_OPTIONS = [8, 16, 32, 64] as const;
+const PRESET_ORDER: Preset[] = ["low", "medium", "high", "ultra"];
+
+const FEATURED_GAMES = FPS_GAMES.filter((g) => g.img);
+const MORE_GAMES = FPS_GAMES.filter((g) => !g.img);
+
+const BUILDS = [
+  { cpu: "i3-12100f", gpu: "gtx-1650" },
+  { cpu: "i5-12400f", gpu: "rtx-3060" },
+  { cpu: "r5-5600", gpu: "rx-6600" },
+  { cpu: "r7-7800x3d", gpu: "rtx-4070-super" },
 ];
 
-const RESOLUTIONS = ["1080p", "1440p", "4K"] as const;
-
-function fpsColor(fps: number) {
-  if (fps < 30) return "text-red-500";
-  if (fps < 60) return "text-amber-500";
-  return "text-green-500";
-}
-
-function fpsBarColor(fps: number) {
-  if (fps < 30) return "bg-red-500";
-  if (fps < 60) return "bg-amber-500";
-  return "bg-green-500";
-}
-
-function qualityColor(q: string) {
-  switch (q.toLowerCase()) {
-    case "ultra": return "bg-purple-100 text-purple-700";
-    case "high": return "bg-green-100 text-green-700";
-    case "medium": return "bg-amber-100 text-amber-700";
-    default: return "bg-red-100 text-red-700";
-  }
-}
+const shortCpu = (name: string) => name.replace(/^(Intel Core|AMD) /, "");
 
 export function FpsEstimatorStandalone() {
   const t = useTranslations("fpsEstimator");
-  const locale = useLocale();
-  const estimate = useAction(api.fpsEstimate.estimateFps);
 
-  const [cpuName, setCpuName] = useState("");
-  const [gpuName, setGpuName] = useState("");
-  const [ramInfo, setRamInfo] = useState("");
-  const [resolution, setResolution] = useState<string>("1080p");
-  const [selectedGame, setSelectedGame] = useState<string | null>(null);
-  const [customGame, setCustomGame] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [shakeInputs, setShakeInputs] = useState(false);
-  const [result, setResult] = useState<{
-    fps: number; quality: string; confidence: string; tip: string;
-  } | null>(null);
+  const [cpu, setCpu] = useState<Cpu | null>(null);
+  const [gpu, setGpu] = useState<Gpu | null>(null);
+  const [ram, setRam] = useState<number>(16);
+  const [resolution, setResolution] = useState<FpsResolution>("1080p");
+  const [game, setGame] = useState<FpsGame | null>(null);
+  const [nudge, setNudge] = useState(false);
 
-  const hasBoth = cpuName.trim().length > 0 && gpuName.trim().length > 0;
+  const hasHardware = !!cpu && !!gpu;
 
-  function triggerShake() {
-    setShakeInputs(true);
-    setTimeout(() => setShakeInputs(false), 600);
+  const result = useMemo(
+    () =>
+      cpu && gpu && game
+        ? estimateFps({ cpuId: cpu.id, gpuId: gpu.id, gameId: game.id, resolution, ramGb: ram })
+        : null,
+    [cpu, gpu, game, resolution, ram]
+  );
+
+  function scrollTo(id: string, block: ScrollLogicalPosition = "start") {
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block }));
   }
 
-  async function run(game: string) {
-    if (!hasBoth) {
-      triggerShake();
+  function chooseGame(g: FpsGame) {
+    setGame(g);
+    if (!hasHardware) {
+      setNudge(true);
+      scrollTo("fps-step-1", "center");
       return;
     }
-    if (!game) return;
-    setLoading(true);
-    setResult(null);
-    try {
-      const r = await estimate({
-        cpuName: cpuName.trim(),
-        gpuName: gpuName.trim(),
-        ramInfo: ramInfo.trim() || undefined,
-        game,
-        resolution,
-        locale,
-      });
-      setResult(r);
-    } catch {
-      setResult({ fps: 0, quality: "?", confidence: "low", tip: "Erreur lors de l'estimation." });
-    } finally {
-      setLoading(false);
-    }
+    if (window.innerWidth < 1024) scrollTo("fps-result");
   }
 
-  function onGameClick(game: typeof GAMES[number]) {
-    setSelectedGame(game.id);
-    setCustomGame("");
-    run(game.name);
+  function applyBuild(b: (typeof BUILDS)[number]) {
+    setCpu(findCpu(b.cpu) ?? null);
+    setGpu(findGpu(b.gpu) ?? null);
+    setNudge(false);
   }
 
-  function onCustomSubmit() {
-    if (!customGame.trim()) return;
-    setSelectedGame("custom");
-    run(customGame.trim());
+  function shareUrl(r: FpsEstimate) {
+    const text = t("shareText", {
+      fps: r.fps,
+      game: game!.name,
+      resolution,
+      cpu: shortCpu(cpu!.name),
+      gpu: gpu!.name,
+    });
+    const url = typeof window !== "undefined" ? window.location.href.split("?")[0] : "";
+    return `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`;
   }
 
-  function onResolutionChange(res: string) {
-    setResolution(res);
-    if (!hasBoth) return;
-    const gameName = selectedGame === "custom"
-      ? customGame
-      : GAMES.find((g) => g.id === selectedGame)?.name;
-    if (gameName) {
-      setResult(null);
-      setLoading(true);
-      estimate({
-        cpuName: cpuName.trim(),
-        gpuName: gpuName.trim(),
-        ramInfo: ramInfo.trim() || undefined,
-        game: gameName,
-        resolution: res,
-        locale,
-      })
-        .then(setResult)
-        .catch(() => setResult({ fps: 0, quality: "?", confidence: "low", tip: "Erreur." }))
-        .finally(() => setLoading(false));
-    }
-  }
-
-  const fpsPercent = result ? Math.min((result.fps / 144) * 100, 100) : 0;
+  const stepDone = [hasHardware, !!game, !!result];
+  const buildActive = (b: (typeof BUILDS)[number]) => cpu?.id === b.cpu && gpu?.id === b.gpu;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+    // -mt-20 pulls the dark page up under the layout's top padding (no white band below the header).
+    <div className="-mt-20 min-h-screen bg-slate-950 relative overflow-hidden">
+      {/* Backdrop glow (static) */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[520px] w-[900px] max-w-[160vw] rounded-full bg-primary/30 blur-[120px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
+
       {/* Hero */}
-      <section className="pt-20 pb-10 text-center px-4">
-        <div className="inline-flex items-center gap-2 bg-primary/20 text-primary-200 px-4 py-1.5 rounded-full text-sm font-medium mb-6">
-          <Icon name="speed" className="text-[18px]" />
-          <span className="text-blue-300">{t("badge")}</span>
+      <section className="relative pt-8 sm:pt-12 pb-6 sm:pb-8 text-center px-4">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/5 ring-1 ring-white/10 px-3.5 py-1 text-[11px] sm:text-xs font-bold text-primary-fixed-dim mb-4">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          {t("badge")}
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white mb-4">
-          {t("title")}
+        <h1 className="text-[34px] leading-[1.08] sm:text-6xl font-black text-white tracking-tight mb-3 [text-wrap:balance]">
+          {t("titleLead")}{" "}
+          <span className="bg-gradient-to-r from-primary-fixed-dim via-sky-300 to-violet-300 bg-clip-text text-transparent">
+            {t("titleAccent")}
+          </span>
         </h1>
-        <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">
-          {t("subtitle")}
-        </p>
-      </section>
+        <p className="text-slate-400 text-sm sm:text-lg max-w-2xl mx-auto [text-wrap:pretty]">{t("subtitle")}</p>
 
-      {/* Main content */}
-      <div className="max-w-4xl mx-auto px-4 pb-20">
-        {/* Hardware inputs */}
-        <div className={`rounded-2xl bg-white/5 backdrop-blur ring-1 ring-white/10 p-5 sm:p-6 mb-6 transition-all ${shakeInputs ? "animate-shake ring-red-500/60" : ""}`}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
-                {t("cpuLabel")} *
-              </label>
-              <input
-                type="text"
-                value={cpuName}
-                onChange={(e) => setCpuName(e.target.value)}
-                placeholder={t("cpuPlaceholder")}
-                className="w-full rounded-xl bg-white/10 ring-1 ring-white/20 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
-                {t("gpuLabel")} *
-              </label>
-              <input
-                type="text"
-                value={gpuName}
-                onChange={(e) => setGpuName(e.target.value)}
-                placeholder={t("gpuPlaceholder")}
-                className="w-full rounded-xl bg-white/10 ring-1 ring-white/20 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
-                {t("ramLabel")}
-              </label>
-              <input
-                type="text"
-                value={ramInfo}
-                onChange={(e) => setRamInfo(e.target.value)}
-                placeholder={t("ramPlaceholder")}
-                className="w-full rounded-xl bg-white/10 ring-1 ring-white/20 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-          </div>
-
-          {!hasBoth && shakeInputs && (
-            <p className="text-red-400 text-sm mt-3 text-center">{t("needCpuGpu")}</p>
-          )}
-        </div>
-
-        {/* Resolution picker */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <span className="text-sm font-medium text-slate-400">{t("resolution")}:</span>
-          <div className="flex gap-1.5">
-            {RESOLUTIONS.map((res) => (
-              <button
-                key={res}
-                onClick={() => onResolutionChange(res)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  resolution === res
-                    ? "bg-primary text-white shadow-lg shadow-primary/30"
-                    : "bg-white/10 text-slate-300 hover:bg-white/20"
+        <ol className="mt-6 flex items-center justify-center gap-1.5 sm:gap-3 text-[11px] sm:text-sm">
+          {(["stepPc", "stepGame", "stepResult"] as const).map((k, i) => (
+            <li key={k} className="flex items-center gap-2 sm:gap-3">
+              <span
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 font-semibold ring-1 transition-colors ${
+                  stepDone[i] ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30" : "bg-white/5 text-slate-400 ring-white/10"
                 }`}
               >
-                {res}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Game grid */}
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 text-center">
-          {t("selectGame")}
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {GAMES.map((game) => (
-            <button
-              key={game.id}
-              onClick={() => onGameClick(game)}
-              disabled={loading}
-              className={`group relative overflow-hidden rounded-2xl transition-all ${
-                selectedGame === game.id
-                  ? "ring-2 ring-primary shadow-lg shadow-primary/20 scale-[1.02]"
-                  : "ring-1 ring-white/10 hover:ring-primary/40 hover:shadow-md hover:scale-[1.01]"
-              } disabled:opacity-50`}
-            >
-              <div className="relative aspect-[460/215]">
-                <Image
-                  src={game.img}
-                  alt={game.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 50vw, 25vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                <span className="absolute bottom-2 inset-x-0 text-center text-xs font-bold text-white drop-shadow-lg px-1 truncate">
-                  {game.name}
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-black ${
+                    stepDone[i] ? "bg-emerald-400 text-slate-950" : "bg-white/10 text-slate-300"
+                  }`}
+                >
+                  {stepDone[i] ? <Icon name="check" className="text-[14px]" /> : i + 1}
                 </span>
-              </div>
-            </button>
+                {t(k)}
+              </span>
+              {i < 2 && <span className="hidden sm:block h-px w-6 bg-white/15" />}
+            </li>
           ))}
-        </div>
+        </ol>
+      </section>
 
-        {/* Custom game input */}
-        <div className="flex gap-2 mb-8 max-w-lg mx-auto">
-          <input
-            type="text"
-            value={customGame}
-            onChange={(e) => setCustomGame(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onCustomSubmit()}
-            placeholder={t("customGame")}
-            className="flex-1 rounded-xl bg-white/10 ring-1 ring-white/20 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <button
-            onClick={onCustomSubmit}
-            disabled={loading || !customGame.trim()}
-            className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-lg shadow-primary/20"
+      <div className="relative max-w-6xl mx-auto px-4 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-6 items-start">
+        {/* ───────── Left: configuration ───────── */}
+        <div className="space-y-6 min-w-0">
+          {/* Step 1 — hardware */}
+          <section
+            id="fps-step-1"
+            className={`rounded-3xl bg-white/[0.04] ring-1 p-5 sm:p-6 transition-colors ${
+              nudge && !hasHardware ? "ring-red-500/50" : "ring-white/10"
+            }`}
           >
-            {t("estimate")}
-          </button>
-        </div>
+            <StepHeading n={1} title={t("step1Title")} hint={t("step1Hint")} />
 
-        {/* Loading */}
-        {loading && (
-          <div className="rounded-2xl bg-white/5 backdrop-blur ring-1 ring-white/10 p-8 text-center">
-            <div className="animate-spin inline-block w-10 h-10 border-3 border-primary border-t-transparent rounded-full mb-3" />
-            <p className="text-sm text-slate-400">{t("estimating")}</p>
-          </div>
-        )}
-
-        {/* Result */}
-        {result && !loading && (
-          <div className="rounded-2xl bg-white/5 backdrop-blur ring-1 ring-white/10 p-6 sm:p-8 space-y-5">
-            {/* FPS display */}
-            <div className="text-center">
-              <div className={`text-6xl sm:text-7xl font-black ${fpsColor(result.fps)}`}>
-                {result.fps}
-              </div>
-              <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mt-1">
-                {t("fpsLabel")}
-              </div>
-            </div>
-
-            {/* FPS bar */}
-            <div className="w-full bg-white/10 rounded-full h-3.5 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ease-out ${fpsBarColor(result.fps)}`}
-                style={{ width: `${fpsPercent}%` }}
+            <div className="grid sm:grid-cols-2 gap-3">
+              <HardwareInput
+                items={CPUS}
+                icon="memory"
+                label={t("cpuLabel")}
+                placeholder={t("cpuPlaceholder")}
+                selected={cpu}
+                onSelect={setCpu}
+                invalid={nudge}
+                noMatch={t("noMatch")}
+                popularLabel={t("popularLabel")}
+                meta={(c) => c.socket}
+              />
+              <HardwareInput
+                items={GPUS}
+                meta={(g) => t("ramValue", { gb: g.vram })}
+                icon="developer_board"
+                label={t("gpuLabel")}
+                placeholder={t("gpuPlaceholder")}
+                selected={gpu}
+                onSelect={setGpu}
+                invalid={nudge}
+                noMatch={t("noMatch")}
+                popularLabel={t("popularLabel")}
               />
             </div>
-            <div className="flex justify-between text-[10px] text-slate-500 -mt-3">
-              <span>0</span><span>30</span><span>60</span><span>144+</span>
-            </div>
 
-            {/* Quality & confidence */}
-            <div className="flex items-center justify-center gap-3">
-              <span className={`px-3 py-1 rounded-lg text-xs font-bold ${qualityColor(result.quality)}`}>
-                {result.quality}
-              </span>
-              <span className="text-xs text-slate-400">
-                {t("confidence")}: {result.confidence}
-              </span>
-            </div>
-
-            {/* Tip */}
-            {result.tip && (
-              <div className="flex items-start gap-2 bg-white/5 rounded-xl p-4">
-                <Icon name="lightbulb" className="text-amber-500 text-[18px] shrink-0 mt-0.5" />
-                <p className="text-sm text-slate-300">{result.tip}</p>
-              </div>
+            {nudge && !hasHardware && (
+              <p className="mt-3 flex items-center gap-1.5 text-sm text-red-400">
+                <Icon name="error" className="text-[18px]" />
+                {t("needCpuGpu")}
+              </p>
             )}
+
+            <div className="mt-4 grid sm:grid-cols-[auto_1fr] gap-x-4 gap-y-2 items-center">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t("ramLabel")}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {RAM_OPTIONS.map((r) => (
+                  <Chip key={r} active={ram === r} onClick={() => setRam(r)}>
+                    {t("ramValue", { gb: r })}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-white/10">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("presetsLabel")}</div>
+              <div className="flex gap-2 overflow-x-auto snap-x -mx-5 px-5 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none]">
+                {BUILDS.map((b) => (
+                  <button
+                    key={b.gpu}
+                    type="button"
+                    onClick={() => applyBuild(b)}
+                    aria-pressed={buildActive(b)}
+                    className={`shrink-0 snap-start rounded-xl px-3 py-2 text-start ring-1 transition-all ${
+                      buildActive(b)
+                        ? "bg-primary/30 ring-primary-fixed-dim"
+                        : "bg-white/[0.04] ring-white/10 hover:ring-primary-container/60 hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    <div className="text-xs font-bold text-white">{findGpu(b.gpu)?.name}</div>
+                    <div className="text-[11px] text-slate-400">{shortCpu(findCpu(b.cpu)?.name ?? "")}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Step 2 — game & resolution */}
+          <section className="rounded-3xl bg-white/[0.04] ring-1 ring-white/10 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <StepHeading n={2} title={t("step2Title")} hint={t("step2Hint")} flush />
+              <div className="inline-flex rounded-xl bg-black/30 ring-1 ring-white/10 p-1">
+                {RESOLUTIONS.map((res) => (
+                  <button
+                    key={res}
+                    type="button"
+                    onClick={() => setResolution(res)}
+                    aria-pressed={resolution === res}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      resolution === res ? "bg-primary text-white shadow-lg shadow-primary/40" : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {res}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {FEATURED_GAMES.map((g) => {
+                const active = game?.id === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => chooseGame(g)}
+                    aria-pressed={active}
+                    className={`group relative overflow-hidden rounded-2xl text-start transition-all duration-200 ${
+                      active ? "ring-2 ring-primary-fixed-dim shadow-xl shadow-primary/30" : "ring-1 ring-white/10 hover:ring-white/30 hover:-translate-y-0.5"
+                    }`}
+                  >
+                    <div className="relative aspect-[460/215]">
+                      <Image
+                        src={g.img!}
+                        alt={g.name}
+                        fill
+                        className={`object-cover transition-transform duration-300 ${active ? "scale-105" : "group-hover:scale-105"}`}
+                        sizes="(max-width: 640px) 50vw, 200px"
+                      />
+                      <div className={`absolute inset-0 bg-gradient-to-t ${active ? "from-primary/90 via-primary/30" : "from-black/85 via-black/30"} to-transparent`} />
+                      <span className="absolute bottom-2 start-2.5 end-2.5 text-xs font-bold text-white drop-shadow truncate">{g.name}</span>
+                      {active && (
+                        <span className="absolute top-2 end-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-primary shadow">
+                          <Icon name="check" className="text-[16px]" />
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("moreGames")}</div>
+              <div className="flex flex-wrap gap-2">
+                {MORE_GAMES.map((g) => (
+                  <Chip key={g.id} active={game?.id === g.id} onClick={() => chooseGame(g)}>
+                    {g.name}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* ───────── Right: result panel ───────── */}
+        <aside id="fps-result" className="min-w-0 lg:sticky lg:top-24 scroll-mt-24">
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900/80 ring-1 ring-white/10 shadow-2xl">
+            {result && game?.img && (
+              <>
+                <Image src={game.img} alt="" fill className="object-cover opacity-20" sizes="400px" />
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/90 to-slate-900" />
+              </>
+            )}
+            <div className="relative p-6">
+              {result && game && cpu && gpu ? (
+                <ResultView
+                  key={`${game.id}-${cpu.id}-${gpu.id}`}
+                  result={result}
+                  game={game}
+                  cpu={cpu}
+                  gpu={gpu}
+                  resolution={resolution}
+                  onResolution={setResolution}
+                  t={t}
+                  shareHref={shareUrl(result)}
+                />
+              ) : (
+                <EmptyState t={t} />
+              )}
+            </div>
           </div>
-        )}
+        </aside>
       </div>
 
-      <ToolCrossPromo target="bottleneck" />
+      <div className="relative px-4 pb-16">
+        <ToolCrossPromo target="bottleneck" />
+      </div>
 
-      {/* Shake animation */}
-      <style jsx>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-6px); }
-          40% { transform: translateX(6px); }
-          60% { transform: translateX(-4px); }
-          80% { transform: translateX(4px); }
-        }
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-      `}</style>
+      {result && game && (
+        <StickyResultBar targetId="fps-result" cta={t("barView")}>
+          <span className="block text-[11px] text-slate-400 truncate">
+            {game.name} · {resolution}
+          </span>
+          <span className="block text-base font-black tabular-nums" style={{ color: fpsTier(result.fps).color }}>
+            {t("barFps", { fps: result.fps })}
+          </span>
+        </StickyResultBar>
+      )}
+    </div>
+  );
+}
+
+/* ───────────────────────── pieces ───────────────────────── */
+
+type T = ReturnType<typeof useTranslations<"fpsEstimator">>;
+
+function StepHeading({ n, title, hint, flush }: { n: number; title: string; hint: string; flush?: boolean }) {
+  return (
+    <div className={`flex items-start gap-3 ${flush ? "" : "mb-4"}`}>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/25 ring-1 ring-primary-container/50 text-sm font-black text-primary-fixed-dim">
+        {n}
+      </span>
+      <div>
+        <h2 className="text-base sm:text-lg font-bold text-white leading-tight">{title}</h2>
+        <p className="text-xs sm:text-sm text-slate-400">{hint}</p>
+      </div>
+    </div>
+  );
+}
+
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+        active ? "bg-primary text-white shadow-lg shadow-primary/30" : "bg-white/[0.06] text-slate-300 ring-1 ring-white/10 hover:bg-white/10"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+const TIER_KEYS = ["unplayable", "playable", "smooth", "competitive"] as const;
+const TIER_COLORS = { unplayable: "#ef4444", playable: "#f59e0b", smooth: "#22c55e", competitive: "#a78bfa" };
+
+function EmptyState({ t }: { t: T }) {
+  return (
+    <div className="py-6 text-center">
+      <svg viewBox="0 0 220 120" className="w-full max-w-[240px] mx-auto opacity-40">
+        <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="14" strokeLinecap="round" strokeDasharray="2 6" />
+        <text x="110" y="100" textAnchor="middle" fontSize="40" fontWeight="900" fill="rgba(255,255,255,0.5)">--</text>
+      </svg>
+      <h3 className="mt-4 text-lg font-bold text-white">{t("emptyTitle")}</h3>
+      <p className="mt-1 text-sm text-slate-400 max-w-[280px] mx-auto">{t("emptyText")}</p>
+      <ul className="mt-5 grid grid-cols-2 gap-2 text-start">
+        {TIER_KEYS.map((k) => (
+          <li key={k} className="flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2">
+            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: TIER_COLORS[k] }} />
+            <span className="text-[11px] leading-tight">
+              <span className="block font-bold text-white">{t(`tiers.${k}`)}</span>
+              <span className="text-slate-500">{t(`tierRanges.${k}`)}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ResultView({
+  result,
+  game,
+  cpu,
+  gpu,
+  resolution,
+  onResolution,
+  t,
+  shareHref,
+}: {
+  result: FpsEstimate;
+  game: FpsGame;
+  cpu: Cpu;
+  gpu: Gpu;
+  resolution: FpsResolution;
+  onResolution: (r: FpsResolution) => void;
+  t: T;
+  shareHref: string;
+}) {
+  const tier = fpsTier(result.fps);
+  const upgradeHint = result.fps < 60 && result.limitedBy !== "engine";
+  const maxPresetFps = Math.max(...PRESET_ORDER.map((p) => result.byPreset[p]), 1);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="min-w-0">
+          <div className="text-base font-black text-white truncate">{game.name}</div>
+          <div className="text-[11px] text-slate-400 truncate">
+            {shortCpu(cpu.name)} · {gpu.name}
+          </div>
+        </div>
+        <span className="shrink-0 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-bold text-white">
+          {resolution} · {t(`qualities.${result.preset}`)}
+        </span>
+      </div>
+
+      <div className="px-3">
+        <FpsGauge fps={result.fps} label={t("fpsLabel")} />
+      </div>
+
+      <div className="mt-5 flex justify-center">
+        <span
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-black"
+          style={{ color: tier.color, background: `${tier.color}1a`, boxShadow: `inset 0 0 0 1px ${tier.color}55` }}
+        >
+          <span className="h-2 w-2 rounded-full" style={{ background: tier.color }} />
+          {t(`tiers.${tier.key}`)}
+        </span>
+      </div>
+      <p className="mt-2 text-center text-xs text-slate-400">{t(`tierDesc.${tier.key}`)}</p>
+
+      {/* FPS per preset */}
+      <div className="mt-5 rounded-2xl bg-white/[0.04] ring-1 ring-white/10 p-3.5">
+        <div className="mb-2.5">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("byPresetTitle")}</div>
+          <div className="mt-0.5 text-[11px] text-slate-400">
+            {t("limitedByLabel")} <span className="font-bold text-slate-200">{t(`limitedBy.${result.limitedBy}`)}</span>
+          </div>
+        </div>
+        <ul className="space-y-1.5">
+          {PRESET_ORDER.map((p) => {
+            const v = result.byPreset[p];
+            const rec = p === result.preset;
+            return (
+              <li key={p} className="flex items-center gap-2.5 text-xs">
+                <span className={`w-14 shrink-0 font-semibold ${rec ? "text-white" : "text-slate-400"}`}>{t(`qualities.${p}`)}</span>
+                <span className="flex-1 h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                  <span
+                    className="block h-full rounded-full transition-[width] duration-700 ease-out"
+                    style={{ width: `${(v / maxPresetFps) * 100}%`, background: fpsTier(v).color, opacity: rec ? 1 : 0.55 }}
+                  />
+                </span>
+                <span className={`w-9 text-end tabular-nums font-black ${rec ? "text-white" : "text-slate-400"}`}>{v}</span>
+                {rec ? (
+                  <Icon name="star" filled className="text-[14px] text-amber-300" />
+                ) : (
+                  <span className="w-[14px]" />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* FPS per resolution */}
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {RESOLUTIONS.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => onResolution(r)}
+            className={`rounded-xl px-2 py-2 text-center ring-1 transition-colors ${
+              r === resolution ? "bg-white/10 ring-white/25" : "bg-white/[0.03] ring-white/10 hover:bg-white/[0.07]"
+            }`}
+          >
+            <div className="text-[10px] font-bold text-slate-500">{r}</div>
+            <div className="text-sm font-black tabular-nums" style={{ color: fpsTier(result.byResolution[r]).color }}>
+              {result.byResolution[r]}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Tips */}
+      <ul className="mt-3 space-y-2">
+        {result.tips.slice(0, 3).map((tip) => (
+          <li key={tip.key} className="flex items-start gap-2.5 rounded-xl bg-amber-400/10 ring-1 ring-amber-400/20 p-3">
+            <Icon name="lightbulb" className="text-amber-300 text-[18px] shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-50/90 leading-snug">{t(`tips.${tip.key}`, tip.values ?? {})}</p>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-5 grid gap-2">
+        <Link
+          href={upgradeHint ? "/shop/graphics-cards" : "/configurator"}
+          className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-primary hover:bg-primary-fixed transition-colors"
+        >
+          <Icon name={upgradeHint ? "upgrade" : "build"} className="text-[18px]" />
+          {upgradeHint ? t("ctaUpgrade") : t("ctaBuild")}
+        </Link>
+        <a
+          href={shareHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#25D366]/15 ring-1 ring-[#25D366]/40 px-4 py-2.5 text-sm font-bold text-[#4ee68a] hover:bg-[#25D366]/25 transition-colors"
+        >
+          <Icon name="share" className="text-[18px]" />
+          {t("share")}
+        </a>
+      </div>
+
+      <p className="mt-4 text-center text-[10px] text-slate-500">{t("disclaimer")}</p>
     </div>
   );
 }

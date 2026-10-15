@@ -297,27 +297,51 @@
     "error": "Sorry, an error occurred. Please try again."
   },
   "fpsEstimator": {
+    "barFps": "{fps} FPS",
+    "barView": "View",
     "meta": {
       "title": "FPS Estimator — Calculate Your FPS Per Game",
       "description": "Estimate your FPS from your CPU and graphics card, game by game and per resolution. Free and instant. Algeria."
     },
     "badge": "Free tool",
     "title": "Estimate Your FPS",
-    "subtitle": "Enter your CPU and GPU — even hardware we don't sell — and get an AI-estimated FPS for your favorite games.",
+    "subtitle": "Pick your processor, graphics card and a game: your FPS shows instantly, for every settings level. Free, no sign-up.",
     "cpuLabel": "Processor",
     "gpuLabel": "Graphics card",
-    "ramLabel": "RAM (optional)",
-    "cpuPlaceholder": "E.g.: i5-12400F, Ryzen 5 5600X",
-    "gpuPlaceholder": "E.g.: RTX 3060, RX 6700 XT",
-    "ramPlaceholder": "E.g.: 16 GB DDR4 3200",
+    "ramLabel": "RAM",
+    "cpuPlaceholder": "e.g. i5-12400F",
+    "gpuPlaceholder": "e.g. RTX 3060",
     "needCpuGpu": "Please enter a CPU and GPU",
-    "resolution": "Resolution",
-    "selectGame": "Choose a game",
-    "customGame": "Other game...",
-    "estimate": "Estimate",
-    "estimating": "Estimating...",
     "fpsLabel": "Estimated FPS",
-    "confidence": "Confidence",
+    "titleLead": "How many FPS",
+    "titleAccent": "will you get?",
+    "stepPc": "Your PC",
+    "stepGame": "The game",
+    "stepResult": "Your FPS",
+    "step1Title": "Your setup",
+    "step1Hint": "Search for your model or pick a popular build.",
+    "step2Title": "Game and resolution",
+    "step2Hint": "Tap a game: the result shows right away.",
+    "presetsLabel": "Popular builds",
+    "emptyTitle": "Your FPS will appear here",
+    "emptyText": "Pick your PC and a game: the result appears here instantly.",
+    "qualities": { "low": "Low", "medium": "Medium", "high": "High", "ultra": "Ultra" },
+    "tiers": { "unplayable": "Choppy", "playable": "Playable", "smooth": "Smooth", "competitive": "Competitive" },
+    "tierRanges": { "unplayable": "under 30 FPS", "playable": "30 to 59 FPS", "smooth": "60 to 143 FPS", "competitive": "144 FPS and up" },
+    "tierDesc": { "unplayable": "It will be a struggle. An upgrade would change everything.", "playable": "It runs, but lower a few settings for a better feel.", "smooth": "A smooth, enjoyable experience.", "competitive": "Great for competitive play and 144 Hz monitors." },
+    "ctaUpgrade": "Browse graphics cards",
+    "ctaBuild": "Build my next PC",
+    "share": "Share on WhatsApp",
+    "shareText": "My PC ({cpu} + {gpu}) gets {fps} FPS in {game} at {resolution}! Test yours:",
+    "disclaimer": "Estimate based on public benchmarks (in-game average, recent drivers). Your real FPS may vary by about 15%.",
+    "noMatch": "Model not found. Try a shorter name, e.g. \"3060\".",
+    "popularLabel": "Most common",
+    "ramValue": "{gb} GB",
+    "moreGames": "More games",
+    "byPresetTitle": "FPS by settings",
+    "limitedByLabel": "Limited by",
+    "limitedBy": { "gpu": "graphics card", "cpu": "processor", "engine": "the game" },
+    "tips": { "engineCap": "This game is capped at {cap} FPS: your PC reaches the maximum possible.", "cpuBound": "Your processor ({cpu}) is holding back your graphics card in this game. A faster processor would give more FPS.", "upscaleDlss": "Turn on DLSS Quality: roughly +30–40% FPS with nearly the same image.", "upscaleFsr": "Turn on FSR Quality: roughly +30% FPS with nearly the same image.", "vram": "Your card has {have} GB of video memory; this game wants about {need} GB on High at this resolution. Lower the texture quality.", "ram": "With 8 GB of RAM this game can stutter. Going to 16 GB is the cheapest upgrade.", "highRefresh": "Enough FPS to make full use of a 144 Hz monitor.", "balanced": "A well-balanced setup for this game." },
     "crossPromo": { "badge": "Companion tool", "title": "Try the bottleneck calculator", "subtitle": "Check CPU/GPU balance and get tailored upgrade picks." }
   },
   "footer": {
@@ -328,57 +352,103 @@
     "rights": "© 2025–2026 ZED INFORMATIQUE. ENGINEERING PRECISION."
   },
   "bottleneck": {
+    "barView": "View",
     "badge": "Bottleneck",
     "title": "PC Bottleneck Calculator",
-    "subtitle": "Check whether your CPU and GPU are balanced. Upgrade picks tailored to your build.",
-    "cpuLabel": "Processor (CPU)",
-    "cpuPlaceholder": "e.g. Ryzen 7 5800X3D",
-    "gpuLabel": "Graphics card (GPU)",
-    "gpuPlaceholder": "e.g. RTX 4070 SUPER",
-    "resolution": "Resolution",
-    "task": "Workload",
-    "tasks": { "gaming": "Gaming", "streaming": "Streaming", "content": "Content creation" },
-    "ramLabel": "RAM (GB) — optional",
-    "ramPlaceholder": "e.g. 16",
-    "psuLabel": "PSU (W) — optional",
-    "psuPlaceholder": "e.g. 650",
-    "calculate": "Calculate",
-    "calculating": "Calculating...",
-    "needCpuGpu": "Please pick a CPU and a GPU.",
-    "invalidHardware": "We didn't recognize those parts. Try picking from the dropdown.",
-    "error": "Something went wrong.",
-    "componentLabels": { "cpu": "CPU bottleneck", "gpu": "GPU bottleneck", "balanced": "Balanced build" },
-    "verdicts": {
-      "cpu": "Your CPU is holding back your GPU by {percent}% at this resolution.",
-      "gpu": "Your GPU is holding back your CPU by {percent}% at this resolution.",
-      "balanced": "Your build is well balanced."
-    },
-    "explanations": {
-      "cpu": "The CPU can't feed the GPU enough data per second. You're losing potential FPS the GPU could otherwise produce.",
-      "gpu": "The GPU is the weak link. The CPU could sustain higher framerates if you paired it with a stronger card.",
-      "balanced": "CPU and GPU are well matched for this resolution and workload."
-    },
-    "confidence": "Confidence",
-    "confidenceLabels": { "high": "high", "medium": "medium", "low": "low" },
-    "sourceLabels": { "catalog": "Catalog data", "ai": "AI estimate" },
-    "warnings": {
-      "ram": {
-        "below16": "You have {ramGb} GB of RAM. 16 GB is the minimum we'd recommend for modern gaming.",
-        "contentNeeds32": "You have {ramGb} GB of RAM. Content creation really needs 32 GB or more."
-      },
-      "psu": { "under": "PSU {current}W is undersized. Recommended: {recommended}W minimum." }
-    },
-    "upgrades": {
-      "heading": "Recommended upgrades",
-      "socketMismatch": "These upgrades require a new motherboard (different socket)."
-    },
-    "balancedCta": "Want more performance? Aim for a higher resolution.",
-    "balancedCtaLink": "Browse graphics cards",
     "meta": {
       "title": "PC Bottleneck Calculator — CPU GPU",
       "description": "Calculate CPU/GPU bottleneck. Free, fast, with tailored upgrade picks. Algeria."
     },
-    "crossPromo": { "badge": "Companion tool", "title": "Estimate FPS for your build", "subtitle": "Pick a game and get an FPS estimate for your setup." }
+    "crossPromo": {
+      "badge": "Companion tool",
+      "title": "Estimate FPS for your build",
+      "subtitle": "Pick a game and get an FPS estimate for your setup."
+    },
+    "subtitle": "Is your processor holding back your graphics card? Instant answer, game by game, with the right power supply and upgrades we have in stock.",
+    "stepPc": "Your PC",
+    "stepUse": "Your use",
+    "stepResult": "The verdict",
+    "step1Title": "Your processor and graphics card",
+    "step1Hint": "Search for your models, or try an example.",
+    "step2Title": "How you use your PC",
+    "step2Hint": "The result updates with every change.",
+    "cpuLabel": "Processor",
+    "gpuLabel": "Graphics card",
+    "cpuPlaceholder": "e.g. i5-12400F",
+    "gpuPlaceholder": "e.g. RTX 3060",
+    "noMatch": "Model not found. Try a shorter name, e.g. \"3060\".",
+    "popularLabel": "Most common",
+    "examplesLabel": "Examples",
+    "seeResult": "See the verdict",
+    "resolution": "Resolution",
+    "task": "Use",
+    "tasks": {
+      "gaming": "Gaming",
+      "streaming": "Gaming + stream",
+      "content": "Creation"
+    },
+    "ramLabel": "RAM",
+    "ramValue": "{gb} GB",
+    "psuLabel": "Power supply",
+    "psuUnknown": "Not sure",
+    "emptyTitle": "The verdict will appear here",
+    "emptyText": "Pick your processor and graphics card.",
+    "empty": {
+      "what1": "Which part holds the other back, in percent",
+      "what2": "The breakdown across 16 popular games",
+      "what3": "The right power supply and useful upgrades"
+    },
+    "meter": {
+      "cpu": "CPU limits",
+      "balanced": "Balanced",
+      "gpu": "GPU limits"
+    },
+    "verdictTitle": {
+      "balanced": "Well-balanced setup",
+      "cpu": "The processor holds the card back",
+      "gpu": "The graphics card is the weak spot"
+    },
+    "verdictText": {
+      "balanced": "Your {cpu} and {gpu} are a good match at this resolution. Neither part wastes the other.",
+      "cpu": "Your {cpu} can't keep up: about {percent}% of your {gpu}'s power is lost. A higher resolution or a faster processor would fix it.",
+      "gpu": "Your {cpu} could do much more: your {gpu} is what limits FPS. A new graphics card is the upgrade that pays off most."
+    },
+    "verdictShort": {
+      "balanced": "Balanced",
+      "cpu": "CPU −{percent}%",
+      "gpu": "GPU −{percent}%"
+    },
+    "gamesTitle": "Game by game (High settings)",
+    "gamesSummary": "The processor limits {count} of {total} games.",
+    "limiter": {
+      "cpu": "Processor",
+      "gpu": "Card",
+      "engine": "Game cap"
+    },
+    "showAll": "Show all {total} games",
+    "showLess": "Show less",
+    "gamesNote": "Being limited by the graphics card is normal and healthy: it's the part that should be working hardest.",
+    "psu": {
+      "unknown": "Recommended power supply: at least {recommended} W (good quality, 80+ Bronze or better).",
+      "ok": "Your {current} W power supply is enough (recommended minimum: {recommended} W).",
+      "low": "Your {current} W power supply is too weak: plan for at least {recommended} W.",
+      "shop": "See power supplies"
+    },
+    "warn": {
+      "ram8": "8 GB of RAM is too little in 2026: expect stutter in recent games. Go to 16 GB.",
+      "ram16content": "For creation work (editing, 3D), 32 GB of RAM is recommended."
+    },
+    "upgrades": {
+      "cpuHeading": "Processors that will keep up with your card, in stock",
+      "gpuHeading": "Faster cards your processor can keep up with, in stock",
+      "newBoard": "Needs a new motherboard",
+      "browseCpu": "See our processors",
+      "browseGpu": "See our graphics cards"
+    },
+    "ctaFps": "See my FPS",
+    "share": "Share",
+    "shareText": "My PC ({cpu} + {gpu}): {verdict}. Test yours:",
+    "disclaimer": "Based on public benchmarks. A guide only: real results vary by game and settings."
   },
   "notFound": {
     "eyebrow": "Error 404",

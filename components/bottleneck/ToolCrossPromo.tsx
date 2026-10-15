@@ -16,10 +16,10 @@ export function ToolCrossPromo({ target }: { target: "fps" | "bottleneck" }) {
     >
       <div className="flex items-center gap-4">
         <div className="rounded-xl bg-primary/20 p-3 shrink-0">
-          <Icon name={icon} className="text-primary-200 text-[24px]" />
+          <Icon name={icon} className="text-primary-fixed-dim text-[24px]" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-bold uppercase tracking-wider text-primary-200 mb-1">
+          <div className="text-xs font-bold uppercase tracking-wider text-primary-fixed-dim mb-1">
             {t("badge")}
           </div>
           <div className="text-base font-bold text-white">{t("title")}</div>
