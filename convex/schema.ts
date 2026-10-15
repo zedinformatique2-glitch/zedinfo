@@ -169,6 +169,11 @@ export default defineSchema({
     componentIds: v.array(v.id("products")),
     totalDzd: v.number(),
     createdAt: v.number(),
+    // Which configurator slot each part goes in (one entry per unit). Builds saved
+    // before Oct 2026 don't have it; their slots are worked out from the category.
+    items: v.optional(
+      v.array(v.object({ slot: v.string(), productId: v.id("products") }))
+    ),
   }).index("by_shareCode", ["shareCode"]),
 
   landingPages: defineTable({

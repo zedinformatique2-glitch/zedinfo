@@ -87,6 +87,13 @@ Do **not** add `app/layout.tsx` — it will conflict with the two locale/admin r
 - `/fps-estimator` uses **no AI**: `lib/fps-data.ts` (built-in GPU/CPU scores and per-game reference FPS, from public benchmarks) + `lib/fps-engine.ts` (pure formula, tested). Visitors pick hardware from the built-in list only. To add a card, processor or game, add a row to `lib/fps-data.ts` and run `npm test`. `convex/fpsEstimate.ts` is no longer used by the public page; `components/configurator/FpsEstimator.tsx` (the configurator) still calls it.
 - Order tracking page `/track` and trilingual `/return-policy`. Locales are `fr`, `ar` **and `en`** (en falls back to French product names).
 
+### Saved builds (configurator)
+
+- The build in progress is remembered in the visitor's browser (`localStorage` key `zed-configurator-build-v1`, a list of `{slot, productId}`), so leaving and coming back restores it. Only ids are stored; prices and stock always come from the live catalog when it is restored.
+- "Enregistrer la configuration" calls `configurator.saveBuild`, which stores the parts with their slot (optional `items` field on `savedBuilds`) and computes the total from catalog prices server-side. The visitor gets a link `/{locale}/configurator?build=CODE` with Copy and WhatsApp buttons; opening it on any device reloads the build (the link wins over the browser copy).
+- `configurator.byCode` works for codes saved before Oct 2026 too (no `items`): slots are worked out from each product's category.
+- Conversion and validation live in `lib/saved-build.ts` (tested). Parts gone or out of stock when a build is reopened are left out with a notice.
+
 ### Configurator compatibility engine
 
 `lib/configurator-engine.ts` is a pure-TS function `checkCompatibility(selection)` returning `{ compatible, errors, warnings, estimatedWattage, recommendedPsu, totalPrice }`. It validates socket match, RAM type/slots/capacity, motherboard/case form factor, GPU length, cooler height/socket/TDP, and PSU wattage with 30% headroom. The configurator page (`app/[locale]/configurator/page.tsx`) and any save/share code must pass the full selection object into it — do not re-implement checks inline.
