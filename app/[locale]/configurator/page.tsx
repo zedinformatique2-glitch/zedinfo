@@ -21,6 +21,7 @@ import {
 import { AiChat } from "@/components/configurator/AiChat";
 import { FpsEstimator } from "@/components/configurator/FpsEstimator";
 import type { Locale } from "@/lib/i18n/config";
+import { useRouter } from "@/lib/i18n/routing";
 
 
 const SLOT_ICONS: Record<string, string> = {
@@ -47,6 +48,7 @@ export default function ConfiguratorPage() {
   const allProducts = useQuery(api.products.list, {});
   const saveBuild = useMutation(api.configurator.saveBuild);
   const addToCart = useCart((s) => s.add);
+  const router = useRouter();
 
   const openSlotMeta = openSlot
     ? CONFIG_SLOTS.find((s) => s.key === openSlot)
@@ -176,16 +178,16 @@ export default function ConfiguratorPage() {
     setShareCode(res.shareCode);
   }
 
-  function addAllToCart() {
+  function addAllToCart(sel: ConfigSelection = selection) {
     const comps = [
-      selection.cpu,
-      selection.motherboard,
-      ...(selection.ram ?? []),
-      selection.gpu,
-      ...(selection.storage ?? []),
-      selection.psu,
-      selection.case,
-      ...(selection.cooler ?? []),
+      sel.cpu,
+      sel.motherboard,
+      ...(sel.ram ?? []),
+      sel.gpu,
+      ...(sel.storage ?? []),
+      sel.psu,
+      sel.case,
+      ...(sel.cooler ?? []),
     ].filter((c): c is ConfigComponent => !!c);
     comps.forEach((c) => {
       addToCart(
@@ -296,7 +298,7 @@ export default function ConfiguratorPage() {
                 <Button
                   className="w-full"
                   size="sm"
-                  onClick={addAllToCart}
+                  onClick={() => addAllToCart()}
                   disabled={selectedCount === 0}
                 >
                   {tc("addToCart")}
@@ -523,6 +525,27 @@ export default function ConfiguratorPage() {
         allProducts={allProducts ?? []}
         locale={locale}
         onApplyBuild={(sel) => setSelection(sel)}
+        onOrderBuild={(sel, extras) => {
+          if (Object.keys(sel).length > 0) {
+            setSelection(sel);
+            addAllToCart(sel);
+          }
+          // Ready-made PCs and accessories go in as normal products (they fire their own AddToCart).
+          extras.forEach(({ product: p, qty }) =>
+            addToCart(
+              {
+                productId: p._id,
+                slug: p.slug,
+                nameFr: p.nameFr,
+                nameAr: p.nameAr,
+                priceDzd: p.priceDzd,
+                image: p.images?.[0] ?? "",
+              },
+              qty
+            )
+          );
+          router.push("/checkout");
+        }}
         open={aiChatOpen}
         onClose={() => setAiChatOpen(false)}
       />

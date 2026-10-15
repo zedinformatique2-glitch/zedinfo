@@ -1,54 +1,119 @@
 "use node";
 
+import Anthropic from "@anthropic-ai/sdk";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
 import {
-  checkCompatibility,
-  type ConfigComponent,
-  type ConfigSelection,
-} from "../lib/configurator-engine";
+  catalogOverview,
+  reviewBuild,
+  reviewProducts,
+  searchParts,
+  type BuildSlugs,
+  type CatalogProduct,
+  type ProductLine,
+} from "../lib/ai-builder";
 
-type BuildTag = Record<string, string | string[]>;
+const MODEL = "claude-haiku-5-5";
+const EFFORT = "low" as const;
+const MAX_TOOL_ROUNDS = 6;
+const MAX_HISTORY = 20;
+const MAX_MESSAGE_CHARS = 2000;
 
-function resolveBuild(build: BuildTag, products: any[]): ConfigSelection {
-  const bySlug = new Map(products.map((p) => [p.slug, p]));
-  const toComp = (slug: string): ConfigComponent | undefined => {
-    const p = bySlug.get(slug);
-    if (!p) return undefined;
-    return {
-      _id: p._id,
-      slug: p.slug,
-      nameFr: p.nameFr,
-      nameAr: p.nameAr,
-      priceDzd: p.priceDzd,
-      specs: p.specs,
-    };
-  };
-  const sel: ConfigSelection = {};
-  const single = (k: "cpu" | "motherboard" | "gpu" | "psu" | "case") => {
-    const s = build[k];
-    if (typeof s === "string") {
-      const c = toComp(s);
-      if (c) (sel as any)[k] = c;
-    }
-  };
-  const multi = (k: "ram" | "storage" | "cooler") => {
-    const s = build[k];
-    const slugs = Array.isArray(s) ? s : typeof s === "string" ? [s] : [];
-    const comps = slugs.map(toComp).filter((c): c is ConfigComponent => !!c);
-    if (comps.length) (sel as any)[k] = comps;
-  };
-  single("cpu");
-  single("motherboard");
-  single("gpu");
-  single("psu");
-  single("case");
-  multi("ram");
-  multi("storage");
-  multi("cooler");
-  return sel;
-}
+const SYSTEM_PROMPT = `You are the sales advisor of Zed Informatique, an Algerian PC and IT shop. You work inside the shop's PC configurator. Your job is to turn a customer's need into one concrete offer from our catalog and get them to order it.
+
+How you work
+- The catalog overview below lists every in-stock category with its price range. Use it to plan, then look up exact products with search_parts. Run independent searches in the same turn.
+- Never name, price or promise a product you did not get from a tool in this conversation. Prices and stock change, so trust the tool, not memory.
+- Two ways to make an offer, and every offer goes through one of them:
+  • propose_build: a custom PC from parts (cpu, motherboard, ram, storage, psu, case, optional gpu and cooler). It checks compatibility, stock and the total with the shop's own engine. If it returns errors, fix the parts and call it again.
+  • propose_products: ready-made PCs (category "PC Gaming" and similar), monitors, peripherals or any other product, as they are.
+  Only an accepted offer reaches the customer, with a button that puts it in the cart and opens checkout. You may use both in one answer (a build plus a monitor).
+- Always end with an offer when anything in the catalog fits the budget. If a custom build does not fit, offer a ready-made PC, a build with integrated graphics, or the closest option. Do not stop at "the budget is not enough".
+- If the customer asks to change something, call the tool again with the full updated offer.
+- Ask at most one short question, and only when you truly cannot choose (no usage and no budget at all). Otherwise assume sensible defaults (gaming at 1080p, 16 GB RAM minimum, SSD) and propose.
+
+Budget
+- Prices are in DZD. Aim for 85–100% of the budget, upper end of a range. Never exceed it. If parts are left over, upgrade GPU first, then CPU, then RAM, then storage.
+- Balance a gaming build: the GPU takes the largest share (around 40%), and the CPU should not cost much more than the GPU. Higher resolutions need a stronger GPU, not a stronger CPU. For editing and work, favour CPU cores, 32 GB RAM and a fast NVMe.
+- Algerian usage: "million" / "مليون" means a million centimes = 10,000 DZD. "15 مليون" = 150,000 DZD, "20 ل 25 مليون" = 200,000–250,000 DZD. Convert silently, never mention the conversion. Treat a number as plain DZD only when written with DA, DZD, دج or دينار.
+- "ميكرو" / "micro" means a PC, not a microphone.
+- If the budget is above what a PC needs, use the rest for a monitor or peripherals through propose_products.
+
+Replies
+- The customer sees only your final message, written after your last tool call. Put the whole reply there, complete on its own; text written next to a tool call is never shown. Once an offer is accepted, do not call more tools just to double-check.
+- Write in the customer's language and dialect (French, Arabic, Darija or English); if unclear, use the page language given below.
+- Be short: a one-line intro at most, the offer, the closing line. No long explanations, no greetings, no markdown headers or bold.
+- For an offer, list each item as "Item — price" on its own line, then the total. End with one line that closes: payment is cash on delivery, and the button below adds it to the cart. If a tool reports low stock, say so plainly (only then).
+- Shipping cost depends on the wilaya and is shown at checkout. Do not invent warranty, delivery times or discounts; for those, point to WhatsApp support.
+- Stay on topic: PCs, parts and our products.`;
+
+const LOCALE_NAMES = { fr: "French", ar: "Arabic", en: "English" } as const;
+
+const tools: Anthropic.Tool[] = [
+  {
+    name: "search_parts",
+    description:
+      "Search in-stock products, most expensive first. type is a category from the catalog overview: a PC slot (cpu, gpu, motherboard, ram, storage, psu, case, cooler) or any other category such as \"PC Gaming\" or \"Moniteurs\". Add socket/ramType to keep parts compatible, query to match words in the name. Returns slug, name, price in DZD, stock and specs.",
+    input_schema: {
+      type: "object",
+      properties: {
+        type: { type: "string", description: "Category from the catalog overview, case-insensitive." },
+        query: { type: "string", description: "Words that must appear in the product name, e.g. 'rtx 4060' or 'ecran'." },
+        minPriceDzd: { type: "number" },
+        maxPriceDzd: { type: "number" },
+        socket: { type: "string", description: "CPU/motherboard socket, e.g. AM5, AM4, LGA1700." },
+        ramType: { type: "string", description: "DDR4 or DDR5 (RAM and motherboards)." },
+        limit: { type: "number", description: "Max results, default 8, max 30." },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "propose_build",
+    description:
+      "Check and present a PC build to the customer. Validates socket, RAM type, form factor, clearances and PSU wattage, checks stock, and computes the total. Requires at least cpu, motherboard, ram, storage, psu and case. Use product slugs from search_parts; ram, storage and cooler accept an array (repeat a slug for two identical sticks).",
+    input_schema: {
+      type: "object",
+      properties: {
+        cpu: { type: "string" },
+        motherboard: { type: "string" },
+        ram: { type: "array", items: { type: "string" } },
+        gpu: { type: "string" },
+        storage: { type: "array", items: { type: "string" } },
+        psu: { type: "string" },
+        case: { type: "string" },
+        cooler: { type: "array", items: { type: "string" } },
+      },
+      required: ["cpu", "motherboard", "ram", "storage", "psu", "case"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "propose_products",
+    description:
+      "Present products sold as they are (ready-made PCs, monitors, keyboards, mice, headsets, any other item) to the customer. Checks that each slug exists and is in stock in the requested quantity, and computes the total.",
+    input_schema: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { slug: { type: "string" }, qty: { type: "number" } },
+            required: ["slug", "qty"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["items"],
+      additionalProperties: false,
+    },
+  },
+];
+
+const buildValidator = v.record(v.string(), v.union(v.string(), v.array(v.string())));
+const productsValidator = v.array(v.object({ slug: v.string(), qty: v.number() }));
 
 export const chat = action({
   args: {
@@ -56,126 +121,159 @@ export const chat = action({
       v.object({
         role: v.union(v.literal("user"), v.literal("assistant")),
         content: v.string(),
+        build: v.optional(v.union(buildValidator, v.null())),
+        products: v.optional(v.union(productsValidator, v.null())),
       })
     ),
     locale: v.union(v.literal("fr"), v.literal("ar"), v.literal("en")),
   },
   handler: async (ctx, { messages, locale }) => {
-    const products: any[] = await ctx.runQuery(api.products.list, {});
-    const inStock = products.filter((p) => p.stock > 0 && p.specs?.type);
-
-    const catalog = inStock
-      .map(
-        (p) =>
-          `- slug:"${p.slug}" | ${p.nameFr} | ${p.priceDzd} DZD | type:${p.specs.type} | specs:${JSON.stringify(p.specs)}`
-      )
-      .join("\n");
-
-    const lang = locale === "ar" ? "Arabic" : "French";
-
-    const systemPrompt = `You are the AI PC builder assistant for Zed Informatique, an Algerian PC/IT shop. Help users build compatible PCs from the available catalog.
-
-RULES:
-1. Reply in ${lang}. Be concise, friendly, and helpful.
-2. Only recommend products from the catalog below. Never invent products.
-3. STRICT compatibility rules — NEVER violate these:
-   a. CPU socket MUST match motherboard socket exactly (e.g. AM5↔AM5, LGA1700↔LGA1700).
-   b. RAM type MUST match motherboard ramType (e.g. DDR5↔DDR5). Never pair DDR4 RAM with a DDR5 board.
-   c. Motherboard formFactor MUST be in the case's supportedFormFactors list.
-   d. GPU lengthMm MUST be ≤ case maxGpuLengthMm.
-   e. Cooler socket list MUST include the CPU socket.
-   f. Cooler heightMm MUST be ≤ case maxCoolerHeightMm.
-   g. PSU wattage MUST be ≥ ceil((cpuTDP + gpuTDP + 100) × 1.3 / 50) × 50.
-   h. If motherboard m2Slots is 0, do NOT recommend NVMe storage.
-   i. Total RAM sticks MUST be ≤ motherboard ramSlots. Total RAM GB MUST be ≤ motherboard maxRam.
-   Before outputting a build, mentally verify ALL rules above. If a rule would be violated, pick a different part or warn the user.
-4. Respect budget constraints AND USE THE BUDGET. Prices are in DZD (Algerian Dinar).
-   BUDGET TARGETING (critical):
-   - Aim to spend 80–100% of the user's budget (or the upper end of a range). Never deliver a build that costs less than 70% of the budget if better parts exist in the catalog.
-   - When the user gives a range like "15 to 20 million" (= 150,000–200,000 DZD after darija conversion), target the UPPER end of that range, not the lower.
-   - After picking parts, sum the total. If total < 70% of budget, UPGRADE parts (better GPU first, then CPU, then more RAM, then better cooler/case/PSU/storage) until you are inside the target band.
-   - If the user's budget exceeds what the catalog offers, say so explicitly and recommend the best build possible plus accessories (monitor, keyboard, mouse, headset) to use the remaining budget.
-   - Reverse rule: do not blow past the user's budget. A "20 million" / 200,000 DZD ask must NOT receive a 2,000,000 DZD build.
-   ALGERIAN DARIJA BUDGET CONVENTION (very important):
-   - In Algerian darija/colloquial speech, "million" / "مليون" refers to centimes, NOT dinars. 1 dinar = 100 centimes, so 1 million centimes = 10,000 DZD.
-   - "1 million" / "1 مليون" = 10,000 DZD.
-   - "10 million" / "10 مليون" = 100,000 DZD.
-   - "20 million" / "20 مليون" = 200,000 DZD.
-   - "25 million" / "25 مليون" = 250,000 DZD.
-   - "50 million" = 500,000 DZD. "100 million" = 1,000,000 DZD. "200 million" = 2,000,000 DZD.
-   - Formula: spoken_millions × 10,000 = budget in DZD.
-   - Range example: "20 ل 25 مليون" = 200,000 to 250,000 DZD (NOT 2,000,000 to 2,500,000).
-   - Only treat the number as literal DZD if the user explicitly writes "DA", "DZD", "dinars", or "دج/دينار" after it (e.g. "1000000 DZD" is literal).
-   - This is the STANDARD convention for ALL Algerian users. Apply it silently. DO NOT ask the user to clarify or confirm the conversion. DO NOT explain "حسب اتفاقية الدارجة" or "according to darija convention" — just use the converted DZD value internally and move on.
-   ALGERIAN DARIJA VOCABULARY:
-   - "ميكرو" / "micro" in Algerian darija means PC / computer (NOT microphone). "خصتي ميكرو" = "I need a PC". Only treat it as microphone if the user clearly says "ميكروفون" / "microphone" / "mic for streaming" etc.
-5. When recommending a full or partial build, embed a hidden build tag at the END of your message in this exact format:
-   <!--BUILD:{"cpu":"slug","motherboard":"slug","ram":"slug","gpu":"slug","storage":"slug","psu":"slug","case":"slug","cooler":"slug"}-->
-   Only include slots you are recommending. Use the exact product slug from the catalog.
-   For ram and storage, if recommending one item, use a string. For multiple, use an array: "ram":["slug1","slug2"]
-6. If the user asks to change one part, re-emit the full build tag with the updated selection.
-7. If no products match the user's needs, say so honestly.
-
-AVAILABLE PRODUCTS:
-${catalog}`;
-
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
-
-    const callLlm = async (msgs: { role: "system" | "user" | "assistant"; content: string }[]) => {
-      const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "anthropic/claude-haiku-4-5",
-          max_tokens: 1024,
-          messages: msgs,
-        }),
-      });
-      if (!r.ok) throw new Error(`OpenRouter error ${r.status}: ${await r.text()}`);
-      const j = await r.json();
-      return (j.choices?.[0]?.message?.content ?? "") as string;
-    };
-
-    const conversation: { role: "system" | "user" | "assistant"; content: string }[] = [
-      { role: "system", content: systemPrompt },
-      ...messages.map((m) => ({ role: m.role, content: m.content })),
-    ];
-
-    let text = await callLlm(conversation);
-
-    const parseBuild = (s: string): BuildTag | null => {
-      const m = s.match(/<!--BUILD:(.*?)-->/);
-      if (!m) return null;
-      try {
-        return JSON.parse(m[1]);
-      } catch {
-        return null;
-      }
-    };
-
-    let build = parseBuild(text);
-
-    // Server-side compatibility validation with one retry
-    if (build) {
-      const sel = resolveBuild(build, inStock);
-      const result = checkCompatibility(sel);
-      if (result.errors.length > 0) {
-        conversation.push({ role: "assistant", content: text });
-        conversation.push({
-          role: "user",
-          content: `Your build has compatibility errors. Fix them and re-emit the full build tag:\n${result.errors
-            .map((e) => `- ${e}`)
-            .join("\n")}\n\nDouble-check rule 3 (sockets, RAM type, form factor, GPU/cooler clearance, PSU wattage) before answering.`,
-        });
-        text = await callLlm(conversation);
-        build = parseBuild(text);
-      }
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("The assistant is not configured (ANTHROPIC_API_KEY is not set).");
+    if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
+      throw new Error("The last message must come from the customer.");
+    }
+    if (messages.some((m) => m.content.length > MAX_MESSAGE_CHARS)) {
+      throw new Error(`Messages are limited to ${MAX_MESSAGE_CHARS} characters.`);
     }
 
-    return { text: text.replace(/<!--BUILD:.*?-->/, "").trim(), build };
+    const products = (await ctx.runQuery(api.products.list, {
+      inStockOnly: true,
+    })) as unknown as CatalogProduct[];
+
+    // Keep the recent history, starting on a customer message. Earlier builds are
+    // replayed as text so the model can edit "the build" the customer is looking at.
+    let recent = messages.slice(-MAX_HISTORY);
+    while (recent.length && recent[0].role !== "user") recent = recent.slice(1);
+    const history: Anthropic.MessageParam[] = recent.map((m) => {
+      if (m.role !== "assistant") return { role: m.role, content: m.content };
+      const shown = [
+        m.build ? `[build shown to the customer: ${JSON.stringify(m.build)}]` : "",
+        m.products?.length ? `[products shown to the customer: ${JSON.stringify(m.products)}]` : "",
+      ].filter(Boolean);
+      return { role: m.role, content: [m.content, ...shown].join("\n") };
+    });
+
+    const client = new Anthropic({ apiKey });
+    const system: Anthropic.TextBlockParam[] = [
+      { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+      {
+        type: "text",
+        text: `Catalog overview (in stock now):\n${catalogOverview(products)}\n\nPage language: ${LOCALE_NAMES[locale]}.`,
+      },
+    ];
+
+    let build: { slugs: BuildSlugs; totalDzd: number } | null = null;
+    let offer: { items: ProductLine[]; totalDzd: number } | null = null;
+    let text = "";
+
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      const lastRound = round === MAX_TOOL_ROUNDS - 1;
+      const response = await client.messages.create({
+        model: MODEL,
+        max_tokens: 4000,
+        output_config: { effort: EFFORT },
+        system,
+        tools,
+        // On the last round the model must answer with what it has instead of searching again.
+        ...(lastRound ? { tool_choice: { type: "none" as const } } : {}),
+        messages: history,
+      });
+      console.log(
+        `aiChat round ${round + 1}: stop=${response.stop_reason} in=${response.usage.input_tokens} cached=${response.usage.cache_read_input_tokens ?? 0} out=${response.usage.output_tokens}`
+      );
+
+      // The model often writes its answer next to its last tool call and then ends
+      // with an empty turn, so keep the latest non-empty text.
+      const roundText = response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("")
+        .trim();
+      if (roundText) text = roundText;
+
+      if (response.stop_reason !== "tool_use") break;
+
+      history.push({ role: "assistant", content: response.content });
+      const results: Anthropic.ToolResultBlockParam[] = [];
+
+      for (const block of response.content) {
+        if (block.type !== "tool_use") continue;
+        const input = (block.input ?? {}) as Record<string, unknown>;
+
+        if (block.name === "search_parts") {
+          const hits = searchParts(products, input);
+          results.push({
+            type: "tool_result",
+            tool_use_id: block.id,
+            content: hits.length ? JSON.stringify(hits) : "No in-stock product matches these filters.",
+          });
+        } else if (block.name === "propose_build") {
+          const slugs = input as BuildSlugs;
+          const review = reviewBuild(slugs, products);
+          if (review.ok) build = { slugs, totalDzd: review.totalDzd };
+          results.push({
+            type: "tool_result",
+            tool_use_id: block.id,
+            is_error: !review.ok,
+            content: JSON.stringify({
+              accepted: review.ok,
+              items: Object.entries(review.selection).flatMap(([slot, c]) =>
+                (Array.isArray(c) ? c : [c]).map((x) => ({ slot, name: x.nameFr, priceDzd: x.priceDzd }))
+              ),
+              totalDzd: review.totalDzd,
+              errors: review.errors,
+              missingSlots: review.missingSlots,
+              warnings: review.warnings,
+              recommendedPsuW: review.recommendedPsuW,
+              lowStock: review.lowStock,
+            }),
+          });
+        } else if (block.name === "propose_products") {
+          const lines = Array.isArray(input.items) ? (input.items as ProductLine[]) : [];
+          const review = reviewProducts(lines, products);
+          if (review.ok) offer = { items: review.items, totalDzd: review.totalDzd };
+          const bySlug = new Map(products.map((p) => [p.slug, p]));
+          results.push({
+            type: "tool_result",
+            tool_use_id: block.id,
+            is_error: !review.ok,
+            content: JSON.stringify({
+              accepted: review.ok,
+              items: review.items.map((i) => ({
+                ...i,
+                name: bySlug.get(i.slug)?.nameFr,
+                priceDzd: bySlug.get(i.slug)?.priceDzd,
+              })),
+              totalDzd: review.totalDzd,
+              errors: review.errors,
+              lowStock: review.items.filter((i) => (bySlug.get(i.slug)?.stock ?? 0) <= 3).map((i) => i.slug),
+            }),
+          });
+        } else {
+          results.push({ type: "tool_result", tool_use_id: block.id, is_error: true, content: "Unknown tool." });
+        }
+      }
+      const nextIsLast = round + 1 === MAX_TOOL_ROUNDS - 1;
+      history.push({
+        role: "user",
+        content: nextIsLast
+          ? [
+              ...results,
+              {
+                type: "text",
+                text: "Search limit reached. Answer the customer now with the best accepted offer, or the closest option if none fits.",
+              },
+            ]
+          : results,
+      });
+    }
+
+    return {
+      text: text || (locale === "ar" ? "عذراً، حاول مرة أخرى." : locale === "en" ? "Sorry, please try again." : "Désolé, réessayez."),
+      build: build?.slugs ?? null,
+      products: offer?.items ?? null,
+      totalDzd: build || offer ? (build?.totalDzd ?? 0) + (offer?.totalDzd ?? 0) : null,
+    };
   },
 });
