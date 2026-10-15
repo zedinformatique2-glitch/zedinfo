@@ -8,6 +8,7 @@ import { routing } from "@/lib/i18n/routing";
 import { isRtl, type Locale } from "@/lib/i18n/config";
 import { siteUrl, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { ICON_FONT_HREF } from "@/lib/icons";
+import { googleAnalyticsJs, googleTagManagerJs, metaPixelJs } from "@/lib/third-party";
 import Script from "next/script";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
 import { Header } from "@/components/layout/Header";
@@ -94,26 +95,12 @@ export default async function LocaleLayout({
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_CONVEX_URL} />
         )}
         <link href={ICON_FONT_HREF} rel="stylesheet" />
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-          strategy="afterInteractive"
-        />
+        {/* Tracker queues start now; their scripts download after load (lib/third-party.ts) */}
         <Script id="ga" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_ID}');
-          `}
+          {googleAnalyticsJs(GA_ID)}
         </Script>
         <Script id="gtm" strategy="afterInteractive">
-          {`
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${GTM_ID}');
-          `}
+          {googleTagManagerJs(GTM_ID)}
         </Script>
       </head>
       <body className="min-h-screen flex flex-col">
@@ -126,18 +113,7 @@ export default async function LocaleLayout({
           />
         </noscript>
         <Script id="fb-pixel" strategy="afterInteractive">
-          {`
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${FB_PIXEL_ID}');
-            fbq('track', 'PageView');
-          `}
+          {metaPixelJs(FB_PIXEL_ID)}
         </Script>
         <noscript>
           <img
