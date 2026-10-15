@@ -150,6 +150,13 @@ export function resolveBuild(
   for (const slot of MULTI_SLOTS) {
     const v = build[slot];
     const slugs = Array.isArray(v) ? v : v ? [v] : [];
+    // Repeated slugs mean several units (two RAM sticks): there must be enough in stock.
+    const counts = new Map<string, number>();
+    for (const s of slugs) counts.set(s, (counts.get(s) ?? 0) + 1);
+    for (const [s, n] of counts) {
+      const stock = bySlug.get(s)?.stock ?? 0;
+      if (n > 1 && stock > 0 && n > stock) problems.push(`${slot}: "${s}" ×${n} but only ${stock} in stock`);
+    }
     const comps = slugs.map((s) => pick(slot, s)).filter((c): c is ConfigComponent => !!c);
     if (comps.length) (selection as Record<string, unknown>)[slot] = comps;
   }

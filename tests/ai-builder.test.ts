@@ -158,6 +158,15 @@ describe("reviewBuild", () => {
     expect(r.missingSlots).toEqual(["psu"]);
   });
 
+  it("rejects more copies of a part than are in stock", () => {
+    const r = reviewBuild({ ...full, gpu: ["rtx-4060"], ram: ["ddr5-16", "ddr5-16"] }, [
+      ...catalog.filter((x) => x.slug !== "ddr5-16"),
+      p("ddr5-16", 9000, { type: "ram", ramType: "DDR5", sizeGb: 16, sticks: 1 }, 1),
+    ]);
+    expect(r.ok).toBe(false);
+    expect(r.errors).toContain('ram: "ddr5-16" ×2 but only 1 in stock');
+  });
+
   it("rejects a build with unknown slugs", () => {
     const r = reviewBuild({ ...full, gpu: "nope" }, catalog);
     expect(r.ok).toBe(false);
