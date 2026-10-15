@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { buildLandingPayload, type LandingFormState } from "@/lib/landing-page-payload";
 import { LivePreview } from "./LivePreview";
+import { ProductPicker } from "./ProductPicker";
 
 type Mode = { kind: "new" } | { kind: "edit"; id: Id<"landingPages">; initial: any };
 
@@ -14,8 +15,6 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const products = useQuery(api.products.list, {});
   const categories = useQuery(api.categories.list, {});
-  const [productSearch, setProductSearch] = useState("");
-  const [filterCategoryId, setFilterCategoryId] = useState<string>("");
   const create = useMutation(api.landingPages.create);
   const update = useMutation(api.landingPages.update);
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
@@ -190,65 +189,16 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       )}
 
       <Section title="الأساسيات">
-        <Field label="المنتج">
-          <div className="grid sm:grid-cols-2 gap-2 mb-2">
-            <select
-              value={filterCategoryId}
-              onChange={(e) => setFilterCategoryId(e.target.value)}
-              className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            >
-              <option value="">كل الفئات</option>
-              {categories?.map((c: any) => (
-                <option key={c._id} value={c._id}>
-                  {c.nameFr}
-                </option>
-              ))}
-            </select>
-            <input
-              type="search"
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
-              placeholder="بحث عن منتج..."
-              className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            />
-          </div>
-          <select
+        {/* Not a <label>: the picker holds several buttons. */}
+        <div>
+          <div className="text-xs font-bold mb-1.5">المنتج</div>
+          <ProductPicker
+            products={products as any[] | undefined}
+            categories={categories as any[] | undefined}
             value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            size={6}
-            required
-          >
-            <option value="">— اختر منتجًا —</option>
-            {(() => {
-              if (!products || !categories) return null;
-              const search = productSearch.trim().toLowerCase();
-              const catMap = new Map(categories.map((c: any) => [c._id, c.nameFr]));
-              const filtered = (products as any[]).filter((p) => {
-                if (filterCategoryId && p.categoryId !== filterCategoryId) return false;
-                if (search && !p.nameFr.toLowerCase().includes(search) && !(p.nameAr || "").toLowerCase().includes(search)) return false;
-                return true;
-              });
-              const groups = new Map<string, any[]>();
-              filtered.forEach((p) => {
-                const label = (catMap.get(p.categoryId) as string) || "—";
-                if (!groups.has(label)) groups.set(label, []);
-                groups.get(label)!.push(p);
-              });
-              return Array.from(groups.entries())
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([label, items]) => (
-                  <optgroup key={label} label={label}>
-                    {items.map((p: any) => (
-                      <option key={p._id} value={p._id}>
-                        {p.nameFr}
-                      </option>
-                    ))}
-                  </optgroup>
-                ));
-            })()}
-          </select>
-        </Field>
+            onChange={setProductId}
+          />
+        </div>
 
         <Field label="رابط الصفحة">
           <input
