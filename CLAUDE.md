@@ -40,7 +40,7 @@ npx convex env set KEY VALUE     # Set Convex deployment env vars
 npx convex deploy        # Deploy Convex functions to production
 ```
 
-Tests cover `lib/configurator-engine.ts`, `lib/phone.ts` and `lib/format.ts` only — no backend tests yet. `next.config.ts` sets `eslint.ignoreDuringBuilds: true` so lint can never block a Vercel deploy; run `npm run lint` yourself. Dev requires **both** `npm run dev` and `npx convex dev` running. Admin login uses `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env.local`.
+Tests cover `lib/configurator-engine.ts`, `lib/fps-engine.ts`, `lib/phone.ts` and `lib/format.ts` only — no backend tests yet. `next.config.ts` sets `eslint.ignoreDuringBuilds: true` so lint can never block a Vercel deploy; run `npm run lint` yourself. Dev requires **both** `npm run dev` and `npx convex dev` running. Admin login uses `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env.local`.
 
 ## Architecture
 
@@ -79,7 +79,8 @@ Do **not** add `app/layout.tsx` — it will conflict with the two locale/admin r
 - Notifications on new orders: `convex/telegram.ts` and `convex/email.ts` (no-ops when their env vars are unset).
 - Backups: `convex/backup.ts` + `convex/backupActions.ts`, scheduled in `convex/crons.ts`, UI at `/admin/backups`.
 - Promotions: `convex/promotions.ts` + `convex/promotionActions.ts` (image generation, posting to Meta), UI at `/admin/promotions`.
-- OpenRouter-powered tools: `convex/aiChat.ts`, `convex/fpsEstimate.ts` (`/fps-estimator`), `convex/bottleneckAi.ts` + `lib/bottleneck-engine.ts` (`/bottleneck-calculator`).
+- OpenRouter-powered tools: `convex/aiChat.ts`, `convex/bottleneckAi.ts` + `lib/bottleneck-engine.ts` (`/bottleneck-calculator`). The OpenRouter account ran out of credits in Oct 2026, so these fail until it is topped up.
+- `/fps-estimator` uses **no AI**: `lib/fps-data.ts` (built-in GPU/CPU scores and per-game reference FPS, from public benchmarks) + `lib/fps-engine.ts` (pure formula, tested). Visitors pick hardware from the built-in list only. To add a card, processor or game, add a row to `lib/fps-data.ts` and run `npm test`. `convex/fpsEstimate.ts` is no longer used by the public page; `components/configurator/FpsEstimator.tsx` (the configurator) still calls it.
 - Order tracking page `/track` and trilingual `/return-policy`. Locales are `fr`, `ar` **and `en`** (en falls back to French product names).
 
 ### Configurator compatibility engine
