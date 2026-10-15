@@ -50,9 +50,19 @@ function toSocketList(v: unknown): string[] {
   return [];
 }
 
+/** "Micro-ATX", "M-ATX", "uATX" → "MATX"; "Mini-ITX" → "ITX"; "EATX" → "E-ATX". */
+function normFormFactor(s: unknown): string {
+  const k = norm(s).replace(/[\s_-]+/g, "");
+  if (!k) return "";
+  if (k === "MATX" || k === "MICROATX" || k === "UATX") return "MATX";
+  if (k === "ITX" || k === "MINIITX") return "ITX";
+  if (k === "EATX") return "E-ATX";
+  return k;
+}
+
 function toFormFactorList(v: unknown): string[] {
-  if (Array.isArray(v)) return v.map(norm).filter(Boolean);
-  if (typeof v === "string") return v.split(/[\s,;/]+/).map(norm).filter(Boolean);
+  if (Array.isArray(v)) return v.map(normFormFactor).filter(Boolean);
+  if (typeof v === "string") return v.split(/[,;/]+|\s{2,}/).map(normFormFactor).filter(Boolean);
   return [];
 }
 
@@ -119,7 +129,7 @@ export function checkCompatibility(sel: ConfigSelection): CompatibilityResult {
   // Form factor (case ↔ motherboard)
   if (motherboard && pcCase) {
     const supported = toFormFactorList(pcCase.specs.supportedFormFactors);
-    const mbFF = norm(motherboard.specs.formFactor);
+    const mbFF = normFormFactor(motherboard.specs.formFactor);
     if (supported.length && mbFF && !supported.includes(mbFF)) {
       errors.push(
         `Format incompatible: ${motherboard.specs.formFactor} non supporté par le boîtier`
@@ -257,7 +267,7 @@ export function filterCompatibleProducts<T extends { specs: ComponentSpec }>(
         }
         if (pcCase) {
           const supported = toFormFactorList(pcCase.specs.supportedFormFactors);
-          const ff = norm(s.formFactor);
+          const ff = normFormFactor(s.formFactor);
           if (supported.length && ff && !supported.includes(ff))
             reasons.push(`${s.formFactor} non supporté par le boîtier`);
         }
@@ -300,7 +310,7 @@ export function filterCompatibleProducts<T extends { specs: ComponentSpec }>(
       case "case":
         if (motherboard) {
           const supported = toFormFactorList(s.supportedFormFactors);
-          const mbFF = norm(motherboard.specs.formFactor);
+          const mbFF = normFormFactor(motherboard.specs.formFactor);
           if (supported.length && mbFF && !supported.includes(mbFF))
             reasons.push(`${motherboard.specs.formFactor} non supporté`);
         }

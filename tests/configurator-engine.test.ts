@@ -68,6 +68,22 @@ describe("checkCompatibility", () => {
     expect(r.errors.some((e) => e.includes("Format incompatible"))).toBe(true);
   });
 
+  it("treats common spellings of the same form factor as equal", () => {
+    for (const ff of ["Micro-ATX", "micro atx", "M-ATX", "MicroATX", "uATX"]) {
+      const mb = part("mb", 1, { type: "motherboard", formFactor: ff });
+      const r = checkCompatibility({ motherboard: mb, case: caseSmall });
+      expect(r.errors, ff).toEqual([]);
+    }
+    const itx = part("itx", 1, { type: "motherboard", formFactor: "Mini-ITX" });
+    expect(checkCompatibility({ motherboard: itx, case: caseSmall }).errors).toEqual([]);
+  });
+
+  it("filters Micro-ATX boards as compatible with an mATX case", () => {
+    const mb = part("mb", 1, { type: "motherboard", formFactor: "Micro-ATX" });
+    const res = filterCompatibleProducts([mb], { case: caseSmall }, "motherboard");
+    expect(res[0].compatible).toBe(true);
+  });
+
   it("flags a GPU longer than the case allows", () => {
     const long = part("long", 1, { type: "gpu", lengthMm: 340 });
     const r = checkCompatibility({ gpu: long, case: caseSmall });
