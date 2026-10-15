@@ -119,6 +119,30 @@ export function estimateFps(input: FpsInput): FpsEstimate | null {
 const STOP_WORDS = new Set(["geforce", "nvidia", "radeon", "intel", "core", "amd", "graphics"]);
 const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
+/** The model part of a name: "Intel Core i5-12400F" → "i512400f", "RTX 3060 12GB" → "rtx3060". */
+function modelKey(name: string) {
+  return compact(name.replace(/\s\d+\s?GB$/i, "")).replace(/^(intelcore|intel|amd|nvidia|geforce)/, "");
+}
+
+/**
+ * Map a retail product name ("MSI GeForce RTX 4060 Ventus 2X 8G") to a built-in
+ * model. The longest model key found inside the name wins, so "RX 6600 XT"
+ * beats "RX 6600". Returns null when nothing matches.
+ */
+export function matchHardware<T extends { id: string; name: string }>(list: T[], productName: string): T | null {
+  const hay = compact(productName);
+  let best: T | null = null;
+  let bestLen = 0;
+  for (const item of list) {
+    const key = modelKey(item.name);
+    if (key.length > bestLen && hay.includes(key)) {
+      best = item;
+      bestLen = key.length;
+    }
+  }
+  return best;
+}
+
 /** Loose name search over a hardware list; empty query returns popular items. */
 export function searchHardware<T extends { id: string; name: string; score: number; popular?: boolean }>(
   list: T[],

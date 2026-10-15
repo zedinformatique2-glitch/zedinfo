@@ -125,7 +125,7 @@ export function FpsEstimatorStandalone() {
         </ol>
       </section>
 
-      <div className="relative max-w-6xl mx-auto px-4 pb-16 grid lg:grid-cols-[minmax(0,1fr)_400px] gap-6 items-start">
+      <div className="relative max-w-6xl mx-auto px-4 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-6 items-start">
         {/* ───────── Left: configuration ───────── */}
         <div className="space-y-6 min-w-0">
           {/* Step 1 — hardware */}
@@ -272,7 +272,7 @@ export function FpsEstimatorStandalone() {
         </div>
 
         {/* ───────── Right: result panel ───────── */}
-        <aside id="fps-result" className="lg:sticky lg:top-24 scroll-mt-24">
+        <aside id="fps-result" className="min-w-0 lg:sticky lg:top-24 scroll-mt-24">
           <div className="relative overflow-hidden rounded-3xl bg-slate-900/80 ring-1 ring-white/10 shadow-2xl">
             {result && game?.img && (
               <>

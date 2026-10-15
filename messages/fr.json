@@ -352,55 +352,100 @@
   "bottleneck": {
     "badge": "Goulot d'étranglement",
     "title": "Calculateur de Goulot d'Étranglement PC",
-    "subtitle": "Vérifiez si votre CPU et votre GPU sont équilibrés. Recommandations de mise à niveau adaptées à votre configuration.",
-    "cpuLabel": "Processeur (CPU)",
-    "cpuPlaceholder": "ex: Ryzen 7 5800X3D",
-    "gpuLabel": "Carte graphique (GPU)",
-    "gpuPlaceholder": "ex: RTX 4070 SUPER",
-    "resolution": "Résolution",
-    "task": "Usage",
-    "tasks": { "gaming": "Gaming", "streaming": "Streaming", "content": "Création" },
-    "ramLabel": "RAM (GB) — optionnel",
-    "ramPlaceholder": "ex: 16",
-    "psuLabel": "Alimentation (W) — optionnel",
-    "psuPlaceholder": "ex: 650",
-    "calculate": "Calculer",
-    "calculating": "Calcul en cours...",
-    "needCpuGpu": "Veuillez choisir un CPU et un GPU.",
-    "invalidHardware": "Composants non reconnus. Essayez de les choisir dans la liste.",
-    "error": "Une erreur est survenue.",
-    "componentLabels": { "cpu": "Goulot d'étranglement CPU", "gpu": "Goulot d'étranglement GPU", "balanced": "Configuration équilibrée" },
-    "verdicts": {
-      "cpu": "Votre CPU limite votre GPU de {percent}% à cette résolution.",
-      "gpu": "Votre GPU limite votre CPU de {percent}% à cette résolution.",
-      "balanced": "Votre configuration est bien équilibrée."
-    },
-    "explanations": {
-      "cpu": "Le CPU n'arrive pas à alimenter le GPU avec assez de données par seconde. Vous perdez des FPS potentiels que le GPU pourrait produire.",
-      "gpu": "Le GPU est le maillon faible. Le CPU pourrait soutenir plus d'images par seconde si vous aviez une carte plus puissante.",
-      "balanced": "CPU et GPU sont bien appariés pour cette résolution et cet usage."
-    },
-    "confidence": "Confiance",
-    "confidenceLabels": { "high": "élevée", "medium": "moyenne", "low": "faible" },
-    "sourceLabels": { "catalog": "Données catalogue", "ai": "Estimation IA" },
-    "warnings": {
-      "ram": {
-        "below16": "Vous avez {ramGb} GB de RAM. 16 GB est le minimum recommandé pour le gaming moderne.",
-        "contentNeeds32": "Vous avez {ramGb} GB de RAM. La création de contenu nécessite plutôt 32 GB."
-      },
-      "psu": { "under": "Alimentation {current}W trop juste. Recommandé : {recommended}W minimum." }
-    },
-    "upgrades": {
-      "heading": "Mises à niveau recommandées",
-      "socketMismatch": "Ces mises à niveau nécessitent une nouvelle carte mère (socket différent)."
-    },
-    "balancedCta": "Vous voulez plus de performances ? Visez une résolution supérieure.",
-    "balancedCtaLink": "Voir les cartes graphiques",
     "meta": {
       "title": "Calculateur de Goulot d'Étranglement PC — CPU GPU",
       "description": "Calculez le goulot d'étranglement entre votre CPU et GPU. Gratuit, rapide, avec recommandations de mise à niveau. Algérie."
     },
-    "crossPromo": { "badge": "Outil complémentaire", "title": "Estimez les FPS de votre configuration", "subtitle": "Sélectionnez un jeu et obtenez une estimation FPS pour votre setup." }
+    "crossPromo": {
+      "badge": "Outil complémentaire",
+      "title": "Estimez les FPS de votre configuration",
+      "subtitle": "Sélectionnez un jeu et obtenez une estimation FPS pour votre setup."
+    },
+    "subtitle": "Votre processeur freine-t-il votre carte graphique ? Réponse instantanée, jeu par jeu, avec l'alimentation conseillée et des mises à niveau disponibles chez nous.",
+    "stepPc": "Votre PC",
+    "stepUse": "Votre usage",
+    "stepResult": "Le verdict",
+    "step1Title": "Votre processeur et votre carte graphique",
+    "step1Hint": "Cherchez vos modèles, ou essayez un exemple.",
+    "step2Title": "Comment vous utilisez votre PC",
+    "step2Hint": "Le résultat se met à jour à chaque changement.",
+    "cpuLabel": "Processeur",
+    "gpuLabel": "Carte graphique",
+    "cpuPlaceholder": "Cherchez : 12400F, Ryzen 5 5600...",
+    "gpuPlaceholder": "Cherchez : RTX 3060, RX 6600...",
+    "noMatch": "Modèle introuvable. Essayez un nom plus court, ex. « 3060 ».",
+    "popularLabel": "Les plus courants",
+    "examplesLabel": "Exemples",
+    "seeResult": "Voir le verdict",
+    "resolution": "Résolution",
+    "task": "Usage",
+    "tasks": {
+      "gaming": "Gaming",
+      "streaming": "Gaming + stream",
+      "content": "Création"
+    },
+    "ramLabel": "RAM",
+    "ramValue": "{gb} Go",
+    "psuLabel": "Alimentation",
+    "psuUnknown": "Je ne sais pas",
+    "emptyTitle": "Le verdict s'affichera ici",
+    "emptyText": "Choisissez votre processeur et votre carte graphique.",
+    "empty": {
+      "what1": "Qui freine qui, en pourcentage",
+      "what2": "Le détail sur 16 jeux populaires",
+      "what3": "L'alimentation conseillée et les mises à niveau utiles"
+    },
+    "meter": {
+      "cpu": "Processeur limite",
+      "balanced": "Équilibré",
+      "gpu": "Carte limite"
+    },
+    "verdictTitle": {
+      "balanced": "Configuration équilibrée",
+      "cpu": "Le processeur freine la carte",
+      "gpu": "La carte graphique est le point faible"
+    },
+    "verdictText": {
+      "balanced": "Votre {cpu} et votre {gpu} vont bien ensemble à cette résolution. Aucun composant ne gaspille l'autre.",
+      "cpu": "Votre {cpu} ne suit pas : environ {percent} % de la puissance de votre {gpu} est perdue. Une résolution plus haute ou un processeur plus rapide corrigerait cela.",
+      "gpu": "Votre {cpu} pourrait faire bien mieux : c'est votre {gpu} qui limite les FPS. Changer de carte graphique est la mise à niveau la plus rentable."
+    },
+    "verdictShort": {
+      "balanced": "Équilibré",
+      "cpu": "Processeur −{percent} %",
+      "gpu": "Carte −{percent} %"
+    },
+    "gamesTitle": "Jeu par jeu (réglages Élevé)",
+    "gamesSummary": "Le processeur limite dans {count} jeux sur {total}.",
+    "limiter": {
+      "cpu": "Processeur",
+      "gpu": "Carte",
+      "engine": "Limite du jeu"
+    },
+    "showAll": "Voir les {total} jeux",
+    "showLess": "Voir moins",
+    "gamesNote": "Être limité par la carte graphique est normal et sain : c'est elle qui doit travailler.",
+    "psu": {
+      "unknown": "Alimentation conseillée : {recommended} W minimum (de bonne qualité, 80+ Bronze ou mieux).",
+      "ok": "Votre alimentation de {current} W suffit (minimum conseillé : {recommended} W).",
+      "low": "Votre alimentation de {current} W est trop juste : prévoyez au moins {recommended} W.",
+      "shop": "Voir les alimentations"
+    },
+    "warn": {
+      "ram8": "8 Go de RAM est trop peu en 2026 : saccades dans les jeux récents. Passez à 16 Go.",
+      "ram16content": "Pour la création (montage, 3D), 32 Go de RAM est recommandé."
+    },
+    "upgrades": {
+      "cpuHeading": "Processeurs qui suivront votre carte, en stock",
+      "gpuHeading": "Cartes plus rapides que votre processeur peut suivre, en stock",
+      "newBoard": "Nécessite une nouvelle carte mère",
+      "browseCpu": "Voir nos processeurs",
+      "browseGpu": "Voir nos cartes graphiques"
+    },
+    "ctaFps": "Voir mes FPS",
+    "share": "Partager",
+    "shareText": "Mon PC ({cpu} + {gpu}) : {verdict}. Teste le tien :",
+    "disclaimer": "Basé sur des benchmarks publics. Indicatif : les résultats réels varient selon les jeux et les réglages."
   },
   "notFound": {
     "eyebrow": "Erreur 404",

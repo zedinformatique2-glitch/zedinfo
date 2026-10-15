@@ -19,7 +19,11 @@ export type Gpu = {
   /** Supports DLSS (NVIDIA RTX). Others get FSR / XeSS tips. */
   dlss?: boolean;
   popular?: boolean;
+  /** Typical board power under gaming load (W). Filled from GPU_WATTS. */
+  watts: number;
 };
+
+export type Socket = "LGA1151" | "LGA1200" | "LGA1700" | "LGA1851" | "AM4" | "AM5";
 
 export type Cpu = {
   id: string;
@@ -27,6 +31,9 @@ export type Cpu = {
   vendor: "intel" | "amd";
   score: number;
   popular?: boolean;
+  /** Peak package power (W). Filled from CPU_WATTS. */
+  watts: number;
+  socket: Socket;
 };
 
 export type Preset = "low" | "medium" | "high" | "ultra";
@@ -52,17 +59,20 @@ export type FpsGame = {
   competitive?: boolean;
 };
 
-const nv = (id: string, name: string, score: number, vram: number, extra: Partial<Gpu> = {}): Gpu => ({
+type RawGpu = Omit<Gpu, "watts">;
+type RawCpu = Omit<Cpu, "watts" | "socket">;
+
+const nv = (id: string, name: string, score: number, vram: number, extra: Partial<Gpu> = {}): RawGpu => ({
   id, name, vendor: "nvidia", score, vram, dlss: name.startsWith("RTX"), ...extra,
 });
-const amd = (id: string, name: string, score: number, vram: number, extra: Partial<Gpu> = {}): Gpu => ({
+const amd = (id: string, name: string, score: number, vram: number, extra: Partial<Gpu> = {}): RawGpu => ({
   id, name, vendor: "amd", score, vram, ...extra,
 });
-const arc = (id: string, name: string, score: number, vram: number, extra: Partial<Gpu> = {}): Gpu => ({
+const arc = (id: string, name: string, score: number, vram: number, extra: Partial<Gpu> = {}): RawGpu => ({
   id, name, vendor: "intel", score, vram, ...extra,
 });
 
-export const GPUS: Gpu[] = [
+const RAW_GPUS: RawGpu[] = [
   // NVIDIA GTX
   nv("gtx-1050-ti", "GTX 1050 Ti", 33, 4),
   nv("gtx-1060-6gb", "GTX 1060 6GB", 50, 6),
@@ -144,14 +154,14 @@ export const GPUS: Gpu[] = [
   arc("arc-b580", "Arc B580", 125, 12),
 ];
 
-const intel = (id: string, name: string, score: number, popular?: boolean): Cpu => ({
+const intel = (id: string, name: string, score: number, popular?: boolean): RawCpu => ({
   id, name, vendor: "intel", score, popular,
 });
-const ryzen = (id: string, name: string, score: number, popular?: boolean): Cpu => ({
+const ryzen = (id: string, name: string, score: number, popular?: boolean): RawCpu => ({
   id, name, vendor: "amd", score, popular,
 });
 
-export const CPUS: Cpu[] = [
+const RAW_CPUS: RawCpu[] = [
   // Intel 6th–9th gen
   intel("i5-6600k", "Intel Core i5-6600K", 58),
   intel("i7-6700k", "Intel Core i7-6700K", 66),
@@ -226,7 +236,56 @@ export const CPUS: Cpu[] = [
   ryzen("r9-9950x3d", "AMD Ryzen 9 9950X3D", 182),
 ];
 
-const AAA_PRESETS = { low: 1.7, medium: 1.3, high: 1, ultra: 0.8 };
+/** Typical gaming board power (W), from manufacturer specs. */
+const GPU_WATTS: Record<string, number> = {
+  "gtx-1050-ti": 75, "gtx-1060-6gb": 120, "gtx-1070": 150, "gtx-1070-ti": 180, "gtx-1080": 180,
+  "gtx-1080-ti": 250, "gtx-1650": 75, "gtx-1650-super": 100, "gtx-1660": 120, "gtx-1660-super": 125,
+  "gtx-1660-ti": 120, "rtx-2060": 160, "rtx-2060-super": 175, "rtx-2070": 175, "rtx-2070-super": 215,
+  "rtx-2080": 215, "rtx-2080-super": 250, "rtx-2080-ti": 250, "rtx-3050": 130, "rtx-3060": 170,
+  "rtx-3060-ti": 200, "rtx-3070": 220, "rtx-3070-ti": 290, "rtx-3080": 320, "rtx-3080-ti": 350,
+  "rtx-3090": 350, "rtx-3090-ti": 450, "rtx-4060": 115, "rtx-4060-ti": 160, "rtx-4070": 200,
+  "rtx-4070-super": 220, "rtx-4070-ti": 285, "rtx-4070-ti-super": 285, "rtx-4080": 320,
+  "rtx-4080-super": 320, "rtx-4090": 450, "rtx-5060": 145, "rtx-5060-ti": 180, "rtx-5070": 250,
+  "rtx-5070-ti": 300, "rtx-5080": 360, "rtx-5090": 575,
+  "rx-570": 150, "rx-580": 185, "rx-5500-xt": 130, "rx-5600-xt": 150, "rx-5700": 180, "rx-5700-xt": 225,
+  "rx-6500-xt": 107, "rx-6600": 132, "rx-6600-xt": 160, "rx-6650-xt": 180, "rx-6700-xt": 230,
+  "rx-6750-xt": 250, "rx-6800": 250, "rx-6800-xt": 300, "rx-6900-xt": 300, "rx-6950-xt": 335,
+  "rx-7600": 165, "rx-7600-xt": 190, "rx-7700-xt": 245, "rx-7800-xt": 263, "rx-7900-gre": 260,
+  "rx-7900-xt": 315, "rx-7900-xtx": 355, "rx-9060-xt": 160, "rx-9070": 220, "rx-9070-xt": 304,
+  "arc-a380": 75, "arc-a750": 225, "arc-a770": 225, "arc-b580": 190,
+};
+
+/** Peak package power (W) — turbo limits, not the box TDP, so PSU advice stays safe. */
+const CPU_WATTS: Record<string, number> = {
+  "i5-6600k": 91, "i7-6700k": 91, "i5-7400": 65, "i7-7700k": 91, "i5-8400": 65, "i7-8700k": 130,
+  "i5-9400f": 65, "i7-9700k": 130, "i9-9900k": 150, "i3-10100f": 65, "i5-10400f": 65, "i7-10700k": 200,
+  "i5-11400f": 65, "i3-12100f": 60, "i5-12400f": 65, "i5-12600k": 150, "i7-12700k": 190,
+  "i9-12900k": 240, "i5-13400f": 65, "i5-13600k": 180, "i7-13700k": 250, "i9-13900k": 250,
+  "i5-14400f": 65, "i5-14600k": 180, "i7-14700k": 250, "i9-14900k": 250, "ultra-5-245k": 160,
+  "ultra-7-265k": 250, "ultra-9-285k": 250,
+  "r5-1600": 65, "r5-2600": 65, "r7-2700x": 105, "r5-3400g": 65, "r5-3600": 65, "r7-3700x": 88,
+  "r9-3900x": 142, "r5-5500": 65, "r5-5600g": 65, "r5-5600": 76, "r5-5600x": 76, "r7-5700g": 65,
+  "r7-5700x": 76, "r7-5800x": 142, "r7-5800x3d": 142, "r9-5900x": 142, "r9-5950x": 142,
+  "r5-7500f": 88, "r5-7600": 88, "r5-7600x": 142, "r7-7700": 88, "r7-7700x": 142, "r7-7800x3d": 120,
+  "r9-7900x": 230, "r9-7950x": 230, "r9-7950x3d": 162, "r5-8400f": 65, "r5-8600g": 88, "r7-8700g": 88,
+  "r5-9600x": 88, "r7-9700x": 88, "r7-9800x3d": 162, "r9-9900x": 162, "r9-9950x": 230, "r9-9950x3d": 230,
+};
+
+function cpuSocket(id: string): Socket {
+  if (id.startsWith("ultra-")) return "LGA1851";
+  const intelGen = id.match(/^i\d-(\d+)/);
+  if (intelGen) {
+    const gen = Math.floor(Number(intelGen[1]) / 1000); // 6600 → 6, 12400 → 12
+    return gen >= 12 ? "LGA1700" : gen >= 10 ? "LGA1200" : "LGA1151";
+  }
+  const series = Number(id.match(/^r\d-(\d)/)?.[1] ?? 0);
+  return series >= 7 ? "AM5" : "AM4";
+}
+
+export const GPUS: Gpu[] = RAW_GPUS.map((g) => ({ ...g, watts: GPU_WATTS[g.id] ?? 200 }));
+export const CPUS: Cpu[] = RAW_CPUS.map((c) => ({ ...c, watts: CPU_WATTS[c.id] ?? 125, socket: cpuSocket(c.id) }));
+
+const AAA_PRESETS ={ low: 1.7, medium: 1.3, high: 1, ultra: 0.8 };
 
 export const FPS_GAMES: FpsGame[] = [
   {
