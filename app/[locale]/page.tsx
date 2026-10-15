@@ -20,8 +20,11 @@ import {
 } from "@/lib/seo";
 import type { Locale } from "@/lib/i18n/config";
 
-const HERO_VIDEO = "/heroclip2.mp4";
-const HERO_POSTER = "/hero1.webp";
+// Portrait screens (phones) get a centre crop at full sharpness (~290 KB);
+// everything else gets a 1280px cut (~575 KB). Both are silent, 6 s loops.
+const HERO_VIDEO_PORTRAIT = "/hero-portrait.mp4";
+const HERO_VIDEO = "/hero-1280.mp4";
+const HERO_POSTER = "/hero-poster.webp";
 
 export const revalidate = 300;
 
@@ -118,7 +121,6 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
       <section className="relative min-h-screen flex items-center overflow-hidden -mt-20">
         <div className="absolute inset-0 z-0">
           <video
-            src={HERO_VIDEO}
             poster={HERO_POSTER}
             autoPlay
             muted
@@ -129,7 +131,10 @@ export default async function HomePage({ params }: { params: Promise<Params> }) 
             width={1920}
             height={1080}
             className="absolute inset-0 h-full w-full object-cover"
-          />
+          >
+            <source src={HERO_VIDEO_PORTRAIT} type="video/mp4" media="(max-aspect-ratio: 1/1)" />
+            <source src={HERO_VIDEO} type="video/mp4" />
+          </video>
           {/* Light overlay for text legibility only */}
           <div className="absolute inset-0 bg-black/30" />
         </div>

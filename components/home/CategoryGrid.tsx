@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Link } from "@/lib/i18n/routing";
 import { useLocale } from "next-intl";
 import { Icon } from "@/components/ui/Icon";
+import { safeIcon } from "@/lib/icons";
 import type { Locale } from "@/lib/i18n/config";
 
 /* Map parent-category slugs to the static images in /public/categories/categories/ */
@@ -60,7 +61,7 @@ export function CategoryGrid() {
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
-                  <Icon name={cat.icon} className="text-[48px] text-primary/60" />
+                  <Icon name={safeIcon(cat.icon)} className="text-[48px] text-primary/60" />
                 </div>
               )}
             </div>
