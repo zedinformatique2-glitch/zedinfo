@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useQuery, useMutation } from "convex/react";
 import { useTranslations, useLocale } from "next-intl";
@@ -35,6 +35,35 @@ const SLOT_ICONS: Record<string, string> = {
   cooler: "desktop_windows",
 };
 
+/** A few short, readable spec chips (socket, RAM type, wattage…) for a chosen part. */
+function specChips(specs: any): string[] {
+  if (!specs) return [];
+  const out: string[] = [];
+  const push = (v: unknown, suffix = "") => {
+    if (Array.isArray(v)) v = v.filter(Boolean).join(" / ");
+    if (typeof v === "string" && v.trim()) out.push(`${v.trim()}${suffix}`);
+    else if (typeof v === "number" && v > 0) out.push(`${v}${suffix}`);
+  };
+  // Coolers list a dozen sockets — keep the chip short.
+  const sockets = Array.isArray(specs.socket)
+    ? specs.socket
+    : typeof specs.socket === "string" ? specs.socket.split(/\s*[/,;]\s*/) : [];
+  if (sockets.length > 3) push(`${sockets.slice(0, 3).join(" / ")} +${sockets.length - 3}`);
+  else push(specs.socket);
+  push(specs.cores, "C");
+  push(specs.ramType);
+  push(specs.sizeGb, " GB");
+  push(specs.speed, " MHz");
+  push(specs.capacity);
+  push(specs.interface);
+  push(specs.wattage, " W");
+  push(specs.rating);
+  push(specs.formFactor);
+  push(specs.lengthMm, " mm");
+  push(specs.tdp, " W TDP");
+  return [...new Set(out)].slice(0, 4);
+}
+
 export default function ConfiguratorPage() {
   const locale = useLocale() as Locale;
   const t = useTranslations("configurator");
@@ -44,6 +73,9 @@ export default function ConfiguratorPage() {
   const [openSlot, setOpenSlot] = useState<SlotKey | null>(null);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [zoom, setZoom] = useState<{ src: string; name: string } | null>(null);
+  const [justAdded, setJustAdded] = useState(false);
 
   const allProducts = useQuery(api.products.list, {});
   const saveBuild = useMutation(api.configurator.saveBuild);
@@ -61,9 +93,42 @@ export default function ConfiguratorPage() {
 
   const result = useMemo(() => checkCompatibility(selection), [selection]);
 
+  // Chosen parts only carry name/price/specs, so photos and brands are looked up
+  // from the catalog. This also covers builds applied by the AI assistant.
+  const productById = useMemo(() => {
+    const m = new Map<string, any>();
+    for (const p of [...(allProducts ?? []), ...(slotProducts ?? [])] as any[]) {
+      m.set(p._id, p);
+      m.set(p.slug, p);
+    }
+    return m;
+  }, [allProducts, slotProducts]);
+  const docOf = (c?: ConfigComponent) =>
+    c ? productById.get(c._id ?? "") ?? productById.get(c.slug) : undefined;
+  const imageOf = (c?: ConfigComponent): string | undefined => docOf(c)?.images?.[0];
+
+  useEffect(() => {
+    if (!zoom) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setZoom(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoom]);
+
+  useEffect(() => {
+    if (!justAdded) return;
+    const id = setTimeout(() => setJustAdded(false), 2500);
+    return () => clearTimeout(id);
+  }, [justAdded]);
+
   const filteredSlotProducts = useMemo(() => {
     if (!slotProducts || !openSlot) return [];
-    const filtered = filterCompatibleProducts(slotProducts as any[], selection, openSlot).map((f) => {
+    const q = search.trim().toLowerCase();
+    const matching = q
+      ? (slotProducts as any[]).filter((p) =>
+          [p.nameFr, p.nameAr, p.brand].some((s) => typeof s === "string" && s.toLowerCase().includes(q))
+        )
+      : (slotProducts as any[]);
+    const filtered = filterCompatibleProducts(matching, selection, openSlot).map((f) => {
       // Availability is separate from compatibility: an out-of-stock part can't be
       // picked even if it's technically compatible. Mirrors the rest of the site
       // (ProductCard / AddToCartBar / shop filter / AI chat all gate on stock > 0).
@@ -74,7 +139,12 @@ export default function ConfiguratorPage() {
       if (a.selectable === b.selectable) return 0;
       return a.selectable ? -1 : 1;
     });
-  }, [slotProducts, openSlot, selection]);
+  }, [slotProducts, openSlot, selection, search]);
+
+  function toggleSlot(key: SlotKey) {
+    setSearch("");
+    setOpenSlot((cur) => (cur === key ? null : key));
+  }
 
   function setSingle(key: SlotKey, comp: ConfigComponent) {
     setSelection((s) => ({ ...s, [key]: comp }));
@@ -197,7 +267,7 @@ export default function ConfiguratorPage() {
           nameFr: c.nameFr,
           nameAr: c.nameAr,
           priceDzd: c.priceDzd,
-          image: "",
+          image: imageOf(c) ?? "",
           fromBuild: true,
         },
         1,
@@ -214,6 +284,7 @@ export default function ConfiguratorPage() {
         value: comps.reduce((sum, c) => sum + c.priceDzd, 0),
         currency: FB_CURRENCY,
       });
+      setJustAdded(true);
     }
   }
 
@@ -225,91 +296,429 @@ export default function ConfiguratorPage() {
   };
 
   const selectedCount = CONFIG_SLOTS.filter((s) => slotFilled(s.key)).length;
+  const progressPct = Math.round((selectedCount / CONFIG_SLOTS.length) * 100);
+  const stepName = (key: SlotKey) => t(`steps.${key}` as any);
+
+  /** Big photo tile + details for one chosen part. `qty` is set for multi slots. */
+  function renderChosen(slotKey: SlotKey, comp: ConfigComponent, qty?: number) {
+    const img = imageOf(comp);
+    const doc = docOf(comp);
+    const name = localizedName(comp, locale);
+    const chips = specChips(comp.specs);
+    const k = itemKey(comp);
+    return (
+      <div key={k} className="flex items-center gap-4 sm:gap-6 border-t border-slate-100 p-4 sm:p-5">
+        <button
+          type="button"
+          onClick={() => img && setZoom({ src: img, name })}
+          disabled={!img}
+          aria-label={t("zoom")}
+          className="group relative h-28 w-28 sm:h-36 sm:w-36 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 ring-1 ring-slate-200 disabled:cursor-default"
+        >
+          {img ? (
+            <>
+              <Image
+                src={img}
+                alt={name}
+                fill
+                sizes="144px"
+                className="object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+              />
+              <span className="absolute bottom-2 end-2 flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-600 shadow-sm ring-1 ring-slate-200 opacity-80 transition-opacity group-hover:opacity-100">
+                <Icon name="zoom_in" className="text-[18px]" />
+              </span>
+            </>
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-slate-300">
+              <Icon name={SLOT_ICONS[slotKey]} className="text-[40px]" />
+            </span>
+          )}
+        </button>
+
+        <div className="flex-1 min-w-0">
+          {doc?.brand && (
+            <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{doc.brand}</div>
+          )}
+          <div className="mt-0.5 font-bold text-slate-900 leading-snug line-clamp-2 sm:text-lg">{name}</div>
+          {chips.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {chips.map((c) => (
+                <span key={c} className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="text-lg font-black text-primary whitespace-nowrap">
+              {formatDzd(comp.priceDzd * (qty ?? 1), locale)}
+            </span>
+            {qty !== undefined && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => decMultiItem(slotKey as MultiKey, k)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100"
+                  aria-label="-"
+                >
+                  <Icon name="remove" className="text-[16px]" />
+                </button>
+                <span className="w-7 text-center text-sm font-bold tabular-nums">{qty}</span>
+                <button
+                  onClick={() => incMultiItem(slotKey as MultiKey, k)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100"
+                  aria-label="+"
+                >
+                  <Icon name="add" className="text-[16px]" />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={() =>
+                qty !== undefined ? removeMultiGroup(slotKey as MultiKey, k) : clearSlot(slotKey)
+              }
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition-colors hover:text-red-500"
+            >
+              <Icon name="delete" className="text-[16px]" />
+              {t("remove")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white min-h-screen pb-16">
+    <div className="bg-slate-50 min-h-screen pb-16">
       <div className="container-zed py-10 lg:py-14">
         {/* Page header */}
-        <div className="mb-10">
-          <h1 className="text-3xl lg:text-5xl font-black tracking-tight">
-            <span className="text-primary">{t("title").split(" ")[0]}</span>{" "}
-            {t("title").split(" ").slice(1).join(" ")}
-          </h1>
-          <p className="text-slate-500 mt-2 text-sm sm:text-base">
-            {t("subtitle")}
-          </p>
+        <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-3xl lg:text-5xl font-black tracking-tight">
+              <span className="text-primary">{t("title").split(" ")[0]}</span>{" "}
+              {t("title").split(" ").slice(1).join(" ")}
+            </h1>
+            <p className="text-slate-500 mt-2 text-sm sm:text-base">{t("subtitle")}</p>
+          </div>
+
+          {/* Mobile/tablet progress — on desktop the sticky summary shows it */}
+          <div className="lg:hidden rounded-2xl bg-white p-4 shadow-card ring-1 ring-slate-200 md:min-w-[280px]">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-slate-600">
+                {t("progress", { count: selectedCount, total: CONFIG_SLOTS.length })}
+              </span>
+              <span className="font-black text-primary">{formatDzd(result.totalPrice, locale)}</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progressPct}%` }} />
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left sidebar — Build Summary */}
-          <div className="lg:w-72 shrink-0 order-2 lg:order-1">
-            <div className="lg:sticky lg:top-20 bg-slate-50 rounded-2xl p-6">
-              <h2 className="font-bold text-lg mb-5">{t("buildSummary")}</h2>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_340px] items-start">
+          {/* Slot cards + FPS estimator */}
+          <div className="space-y-4 min-w-0">
+            {CONFIG_SLOTS.map((slot, i) => {
+              const multi = isMultiSlot(slot.key);
+              const current = multi ? undefined : slotComponent(slot.key);
+              const groups = multi ? groupItems((selection as any)[slot.key]) : [];
+              const filled = slotFilled(slot.key);
+              const isOpen = openSlot === slot.key;
+              const chosenIds = new Set(
+                multi ? groups.map((g) => itemKey(g.comp)) : current ? [itemKey(current)] : []
+              );
+              return (
+                <section
+                  key={slot.key}
+                  className={`rounded-2xl bg-white shadow-card transition-shadow ${
+                    isOpen ? "ring-2 ring-primary/40" : filled ? "ring-1 ring-primary/25" : "ring-1 ring-slate-200"
+                  }`}
+                >
+                  {/* Slot header row */}
+                  <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5">
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
+                        filled ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      <Icon name={filled ? "check_circle" : SLOT_ICONS[slot.key]} className="text-[22px]" />
+                    </div>
 
-              <div className="space-y-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2">
+                        <span className="text-[11px] font-bold text-slate-300 tabular-nums">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <h2 className="font-bold text-slate-900 sm:text-lg">{stepName(slot.key)}</h2>
+                        {!slot.required && (
+                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                            {t("optional")}
+                          </span>
+                        )}
+                      </div>
+                      {!filled && <p className="text-xs text-slate-400 mt-0.5">{t("notSelected")}</p>}
+                      {filled && multi && (
+                        <p className="text-xs font-semibold text-primary mt-0.5">
+                          {formatDzd(slotTotal(slot.key), locale)}
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => toggleSlot(slot.key)}
+                      aria-expanded={isOpen}
+                      className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                        filled
+                          ? "bg-white text-primary ring-1 ring-primary/30 hover:bg-primary/5"
+                          : "bg-primary text-white shadow-[0_8px_20px_-8px_rgba(0,53,208,0.55)] hover:-translate-y-0.5 hover:brightness-110"
+                      }`}
+                    >
+                      <Icon
+                        name={isOpen ? "expand_less" : multi && filled ? "add" : filled ? "swap_horiz" : "add"}
+                        className="text-[18px]"
+                      />
+                      <span>
+                        {multi
+                          ? filled ? t("addAnother") : t("select")
+                          : current ? t("change") : t("select")}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Chosen part(s) with big photos */}
+                  {!multi && current && renderChosen(slot.key, current)}
+                  {multi && groups.map(({ comp, qty }) => renderChosen(slot.key, comp, qty))}
+
+                  {/* Product picker */}
+                  {isOpen && (
+                    <div className="rounded-b-2xl border-t border-slate-100 bg-slate-50/70 p-4 sm:p-5">
+                      <div className="mb-4 flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <Icon
+                            name="search"
+                            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-[20px] text-slate-400"
+                          />
+                          <input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder={t("searchPlaceholder")}
+                            className="w-full rounded-xl bg-white py-2.5 pe-3 ps-10 text-sm ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-primary/40"
+                          />
+                        </div>
+                        <button
+                          onClick={() => setOpenSlot(null)}
+                          aria-label={t("close")}
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200 hover:text-slate-900"
+                        >
+                          <Icon name="close" className="text-[20px]" />
+                        </button>
+                      </div>
+
+                      {slotProducts === undefined && (
+                        <div className="py-10 text-center text-sm text-slate-400">{tc("loading")}</div>
+                      )}
+                      {slotProducts !== undefined && filteredSlotProducts.length === 0 && (
+                        <div className="py-10 text-center text-sm text-slate-400">{t("noResults")}</div>
+                      )}
+
+                      <div className="-m-1 max-h-[34rem] overflow-y-auto p-1">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                          {filteredSlotProducts.map(({ product: p, inStock, selectable, incompatibilityReason }) => {
+                            const pa = p as any;
+                            const thumb = pa.images?.[0] as string | undefined;
+                            // Out of stock is a hard block and takes priority over a compatibility note.
+                            const reason = !inStock ? tc("outOfStock") : incompatibilityReason;
+                            const isChosen = chosenIds.has(pa._id) || chosenIds.has(pa.slug);
+                            return (
+                              <button
+                                key={pa._id}
+                                onClick={() => {
+                                  if (!selectable) return;
+                                  const comp: ConfigComponent = {
+                                    _id: pa._id,
+                                    slug: pa.slug,
+                                    nameFr: pa.nameFr,
+                                    nameAr: pa.nameAr,
+                                    priceDzd: pa.priceDzd,
+                                    specs: pa.specs,
+                                  };
+                                  if (isMultiSlot(slot.key)) addMultiItem(slot.key, comp);
+                                  else setSingle(slot.key, comp);
+                                }}
+                                disabled={!selectable}
+                                className={`group flex flex-col overflow-hidden rounded-2xl bg-white text-start ring-1 transition-all ${
+                                  selectable
+                                    ? `cursor-pointer shadow-card hover:-translate-y-0.5 hover:shadow-card-hover hover:ring-primary/40 ${
+                                        isChosen ? "ring-2 ring-primary" : "ring-slate-200"
+                                      }`
+                                    : "cursor-not-allowed ring-slate-100 opacity-60"
+                                }`}
+                              >
+                                <div className="relative aspect-square w-full bg-gradient-to-br from-slate-50 to-slate-100">
+                                  {thumb ? (
+                                    <Image
+                                      src={thumb}
+                                      alt=""
+                                      fill
+                                      sizes="(min-width: 1280px) 200px, (min-width: 640px) 30vw, 45vw"
+                                      className={`object-contain p-4 transition-transform duration-300 ${
+                                        selectable ? "group-hover:scale-105" : "grayscale"
+                                      }`}
+                                    />
+                                  ) : (
+                                    <span className="flex h-full items-center justify-center text-slate-300">
+                                      <Icon name={SLOT_ICONS[slot.key]} className="text-[40px]" />
+                                    </span>
+                                  )}
+                                  {isChosen && (
+                                    <span className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white shadow">
+                                      <Icon name="check" className="text-[18px]" />
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-1 flex-col p-3">
+                                  {pa.brand && (
+                                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                      {pa.brand}
+                                    </div>
+                                  )}
+                                  <div
+                                    className={`text-[13px] font-semibold leading-snug line-clamp-2 ${
+                                      selectable ? "text-slate-900" : "text-slate-400"
+                                    }`}
+                                  >
+                                    {localizedName(pa, locale)}
+                                  </div>
+                                  {reason && (
+                                    <div className="mt-1 flex items-start gap-1 text-[11px] text-red-500">
+                                      <Icon
+                                        name={!inStock ? "inventory_2" : "error"}
+                                        className="mt-px shrink-0 text-[12px]"
+                                      />
+                                      <span className="line-clamp-2">{reason}</span>
+                                    </div>
+                                  )}
+                                  <div
+                                    className={`mt-auto pt-2 font-black whitespace-nowrap ${
+                                      selectable ? "text-primary" : "text-slate-300"
+                                    }`}
+                                  >
+                                    {formatDzd(pa.priceDzd, locale)}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+
+            {/* FPS Estimator */}
+            <FpsEstimator
+              cpuName={selection.cpu?.nameFr}
+              gpuName={selection.gpu?.nameFr}
+              ramInfo={selection.ram?.[0]?.nameFr}
+            />
+          </div>
+
+          {/* Build summary */}
+          <aside className="min-w-0 lg:sticky lg:top-24">
+            <div className="rounded-3xl bg-white p-5 sm:p-6 shadow-card ring-1 ring-slate-200 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-lg">{t("buildSummary")}</h2>
+                <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-bold text-primary tabular-nums">
+                  {selectedCount}/{CONFIG_SLOTS.length}
+                </span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progressPct}%` }} />
+              </div>
+
+              <ul className="mt-4 space-y-1">
                 {CONFIG_SLOTS.map((slot) => {
                   const filled = slotFilled(slot.key);
+                  const first = slotComponent(slot.key);
+                  const count = isMultiSlot(slot.key) ? (selection[slot.key]?.length ?? 0) : filled ? 1 : 0;
+                  const img = imageOf(first);
                   return (
-                    <div key={slot.key} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">{t(`steps.${slot.key}` as any)}</span>
-                      <span className={filled ? "font-semibold text-slate-900" : "text-slate-300"}>
-                        {filled ? formatDzd(slotTotal(slot.key), locale) : "---"}
-                      </span>
-                    </div>
+                    <li key={slot.key}>
+                      <button
+                        onClick={() => toggleSlot(slot.key)}
+                        className="flex w-full items-center gap-3 rounded-lg p-1 text-start transition-colors hover:bg-slate-50"
+                      >
+                        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-50 ring-1 ring-slate-200 text-slate-300">
+                          {img ? (
+                            <Image src={img} alt="" fill sizes="40px" className="object-contain p-1" />
+                          ) : (
+                            <Icon name={SLOT_ICONS[slot.key]} className="text-[20px]" />
+                          )}
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-[11px] text-slate-400">{stepName(slot.key)}</span>
+                          <span
+                            className={`block truncate text-[13px] ${
+                              filled ? "font-semibold text-slate-900" : "text-slate-300"
+                            }`}
+                          >
+                            {first ? localizedName(first, locale) : "—"}
+                            {count > 1 && <span className="text-slate-400"> ×{count}</span>}
+                          </span>
+                        </span>
+                        {filled && (
+                          <span className="text-[13px] font-bold text-slate-700 whitespace-nowrap">
+                            {formatDzd(slotTotal(slot.key), locale)}
+                          </span>
+                        )}
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
 
-              <div className="border-t border-slate-200 mt-5 pt-5">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold">{t("totalPrice")}</span>
-                  <span className="font-black text-xl text-primary">
-                    {formatDzd(result.totalPrice, locale)}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">
-                  {selectedCount} / {CONFIG_SLOTS.length} {t("selected")}
-                </p>
-              </div>
-
-              {/* Errors / warnings */}
+              {/* Compatibility status */}
               {result.errors.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2 rounded-2xl bg-red-50 p-3">
                   {result.errors.map((e, i) => (
-                    <div key={i} className="text-xs text-red-600 flex gap-1.5 items-start">
-                      <Icon name="error" className="text-red-500 text-[16px] shrink-0 mt-px" />
+                    <div key={i} className="flex items-start gap-1.5 text-xs text-red-700">
+                      <Icon name="error" className="mt-px shrink-0 text-[16px] text-red-500" />
                       {e}
                     </div>
                   ))}
                 </div>
               )}
               {result.warnings.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="mt-3 space-y-2 rounded-2xl bg-amber-50 p-3">
                   {result.warnings.map((w, i) => (
-                    <div key={i} className="text-xs text-amber-700 flex gap-1.5 items-start">
-                      <Icon name="warning" className="text-amber-500 text-[16px] shrink-0 mt-px" />
+                    <div key={i} className="flex items-start gap-1.5 text-xs text-amber-800">
+                      <Icon name="warning" className="mt-px shrink-0 text-[16px] text-amber-500" />
                       {w}
                     </div>
                   ))}
                 </div>
               )}
+              {selectedCount > 1 && result.errors.length === 0 && (
+                <div className="mt-4 flex items-center gap-2 rounded-2xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700">
+                  <Icon name="verified" className="text-[18px] text-emerald-600" />
+                  {t("compatibleBuild")}
+                </div>
+              )}
+
+              <div className="mt-5 border-t border-slate-100 pt-5">
+                <div className="flex items-end justify-between">
+                  <span className="font-bold text-slate-600">{t("totalPrice")}</span>
+                  <span className="text-2xl font-black text-primary">{formatDzd(result.totalPrice, locale)}</span>
+                </div>
+              </div>
 
               <div className="mt-5 space-y-2">
-                <Button
-                  className="w-full"
-                  size="sm"
-                  onClick={() => addAllToCart()}
-                  disabled={selectedCount === 0}
-                >
-                  {tc("addToCart")}
+                <Button className="w-full" size="sm" onClick={() => addAllToCart()} disabled={selectedCount === 0}>
+                  <Icon name={justAdded ? "check" : "shopping_cart"} className="text-[18px]" />
+                  {justAdded ? t("added") : tc("addToCart")}
                 </Button>
-                <Button
-                  className="w-full"
-                  size="sm"
-                  variant="outline"
-                  onClick={onSave}
-                  disabled={selectedCount === 0}
-                >
+                <Button className="w-full" size="sm" variant="outline" onClick={onSave} disabled={selectedCount === 0}>
                   {t("saveBuild")}
                 </Button>
                 <button
@@ -328,198 +737,37 @@ export default function ConfiguratorPage() {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Right — Slot cards + FPS estimator */}
-          <div className="flex-1 order-1 lg:order-2 space-y-4">
-            {CONFIG_SLOTS.map((slot) => {
-              const multi = isMultiSlot(slot.key);
-              const current = multi ? undefined : slotComponent(slot.key);
-              const groups = multi ? groupItems((selection as any)[slot.key]) : [];
-              const filled = slotFilled(slot.key);
-              const isOpen = openSlot === slot.key;
-              return (
-                <div key={slot.key} className="rounded-2xl ring-1 ring-slate-200 overflow-hidden">
-                  {/* Slot header row */}
-                  <div className="flex items-center gap-4 bg-white p-4 sm:p-5">
-                    {/* Select button */}
-                    <button
-                      onClick={() => setOpenSlot(isOpen ? null : slot.key)}
-                      className="shrink-0 bg-primary text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-primary/90 transition-colors"
-                    >
-                      {multi
-                        ? filled ? t("addAnother") : t("select")
-                        : current ? t("change") : t("select")}
-                    </button>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-slate-900 text-sm sm:text-base">
-                        {t(`steps.${slot.key}` as any)}
-                      </div>
-                      {!multi && current ? (
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-sm text-slate-600 truncate">
-                            {localizedName(current, locale)}
-                          </span>
-                          <span className="text-primary font-bold text-sm whitespace-nowrap">
-                            {formatDzd(current.priceDzd, locale)}
-                          </span>
-                          <button
-                            onClick={() => clearSlot(slot.key)}
-                            className="text-slate-400 hover:text-red-500 transition-colors ms-1"
-                            aria-label={tc("delete")}
-                          >
-                            <Icon name="close" className="text-[16px]" />
-                          </button>
-                        </div>
-                      ) : !filled ? (
-                        <p className="text-xs text-slate-400 mt-0.5">{t("notSelected")}</p>
-                      ) : null}
-                    </div>
-
-                    {/* Icon */}
-                    <div className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                      <Icon name={SLOT_ICONS[slot.key]} className="text-[22px]" />
-                    </div>
-                  </div>
-
-                  {/* Selected items list with quantity steppers (multi slots) */}
-                  {multi && groups.length > 0 && (
-                    <div className="border-t border-slate-200 bg-white p-3 sm:p-4 space-y-2">
-                      {groups.map(({ comp, qty }) => {
-                        const k = itemKey(comp);
-                        return (
-                          <div key={k} className="flex items-center gap-2 sm:gap-3 rounded-xl ring-1 ring-slate-200 p-2.5 sm:p-3">
-                            <div className="h-10 w-10 shrink-0 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
-                              <Icon name={SLOT_ICONS[slot.key]} className="text-[20px]" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-sm text-slate-900 truncate">
-                                {localizedName(comp, locale)}
-                              </div>
-                              <div className="text-xs text-slate-400">
-                                {formatDzd(comp.priceDzd, locale)}
-                              </div>
-                            </div>
-                            {/* Quantity stepper */}
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                onClick={() => decMultiItem(slot.key as MultiKey, k)}
-                                className="h-7 w-7 rounded-lg ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
-                                aria-label="-"
-                              >
-                                <Icon name="remove" className="text-[16px]" />
-                              </button>
-                              <span className="w-6 text-center text-sm font-bold tabular-nums">{qty}</span>
-                              <button
-                                onClick={() => incMultiItem(slot.key as MultiKey, k)}
-                                className="h-7 w-7 rounded-lg ring-1 ring-slate-200 text-slate-600 hover:bg-slate-100 flex items-center justify-center"
-                                aria-label="+"
-                              >
-                                <Icon name="add" className="text-[16px]" />
-                              </button>
-                            </div>
-                            <div className="hidden sm:block w-24 text-end font-bold text-sm text-primary whitespace-nowrap">
-                              {formatDzd(comp.priceDzd * qty, locale)}
-                            </div>
-                            <button
-                              onClick={() => removeMultiGroup(slot.key as MultiKey, k)}
-                              className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
-                              aria-label={tc("delete")}
-                            >
-                              <Icon name="close" className="text-[16px]" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Inline dropdown product list */}
-                  {isOpen && (
-                    <div className="border-t border-slate-200 bg-slate-50 p-4 space-y-2 max-h-72 overflow-y-auto">
-                      {slotProducts === undefined && (
-                        <div className="text-center py-6 text-slate-400 text-sm">
-                          {tc("loading")}
-                        </div>
-                      )}
-                      {filteredSlotProducts.map(({ product: p, inStock, selectable, incompatibilityReason }) => {
-                        const thumb = (p as any).images?.[0] as string | undefined;
-                        // Out of stock is a hard block and takes priority over a compatibility note.
-                        const reason = !inStock ? tc("outOfStock") : incompatibilityReason;
-                        return (
-                        <button
-                          key={(p as any)._id}
-                          onClick={() => {
-                            if (!selectable) return;
-                            const comp: ConfigComponent = {
-                              _id: (p as any)._id,
-                              slug: (p as any).slug,
-                              nameFr: (p as any).nameFr,
-                              nameAr: (p as any).nameAr,
-                              priceDzd: (p as any).priceDzd,
-                              specs: (p as any).specs,
-                            };
-                            if (isMultiSlot(slot.key))
-                              addMultiItem(slot.key, comp);
-                            else setSingle(slot.key, comp);
-                          }}
-                          disabled={!selectable}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl ring-1 transition-all text-start ${
-                            selectable
-                              ? "bg-white ring-slate-200 hover:ring-primary/40 hover:bg-primary/5 cursor-pointer"
-                              : "bg-slate-50 ring-slate-100 opacity-50 cursor-not-allowed"
-                          }`}
-                        >
-                          <div className={`relative h-11 w-11 shrink-0 rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-100 flex items-center justify-center ${selectable ? "" : "opacity-60"}`}>
-                            {thumb ? (
-                              <Image
-                                src={thumb}
-                                alt=""
-                                fill
-                                sizes="44px"
-                                className="object-contain p-1"
-                              />
-                            ) : (
-                              <Icon name={SLOT_ICONS[slot.key]} className="text-slate-400 text-[20px]" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-semibold text-sm truncate ${selectable ? "text-slate-900" : "text-slate-400"}`}>
-                              {localizedName(p as any, locale)}
-                            </div>
-                            {(p as any).brand && (
-                              <div className="text-xs text-slate-400">{(p as any).brand}</div>
-                            )}
-                            {reason && (
-                              <div className="text-xs text-red-500 mt-0.5 flex items-center gap-1">
-                                <Icon name={!inStock ? "inventory_2" : "error"} className="text-[12px] shrink-0" />
-                                {reason}
-                              </div>
-                            )}
-                          </div>
-                          <div className={`font-bold text-sm whitespace-nowrap ${selectable ? "text-primary" : "text-slate-300"}`}>
-                            {formatDzd((p as any).priceDzd, locale)}
-                          </div>
-                        </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* FPS Estimator */}
-            <FpsEstimator
-              cpuName={selection.cpu?.nameFr}
-              gpuName={selection.gpu?.nameFr}
-              ramInfo={selection.ram?.[0]?.nameFr}
-            />
-          </div>
+          </aside>
         </div>
       </div>
+
+      {/* Full-size photo of a chosen part */}
+      {zoom && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={zoom.name}
+          onClick={() => setZoom(null)}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-2xl rounded-3xl bg-white p-5 sm:p-8 shadow-2xl"
+          >
+            <button
+              onClick={() => setZoom(null)}
+              aria-label={t("close")}
+              className="absolute end-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
+            >
+              <Icon name="close" className="text-[22px]" />
+            </button>
+            <div className="relative mx-auto aspect-square w-full max-h-[70vh]">
+              <Image src={zoom.src} alt={zoom.name} fill sizes="672px" className="object-contain" />
+            </div>
+            <p className="mt-4 text-center font-bold text-slate-900">{zoom.name}</p>
+          </div>
+        </div>
+      )}
 
       <AiChat
         allProducts={allProducts ?? []}
