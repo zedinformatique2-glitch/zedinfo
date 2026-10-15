@@ -210,6 +210,9 @@ A site-speed pass landed in commits `1390301` (safer-scope wins) and `6b81b21` (
 - `public/build-pc.gif` (8.9 MB) replaced by `public/pc-buildgif.webp` (31 KB) via `next/image` on the home page. The GIF was removed from the repo in Oct 2026 (a copy is in `D:\zedinfo\zedinfo-archive\public\`).
 - Category JPGs in `public/categories/categories/` compressed in place (3.0 MB → 280 KB). Filenames and paths unchanged on purpose.
 - Material Symbols stylesheet uses `display=swap` (not `block`) in all three layouts.
+- **Icon font subset (Oct 2026):** the public and `/lp` layouts load only the icons in `lib/icons.ts` (`ICON_FONT_HREF`, ~20 KB instead of 452 KB); the admin layout still loads the full font. Using a new icon in public code means adding it to `CODE_ICONS` — `tests/icons.test.ts` scans the source and fails if one is missing. Category icons come from data (typed in the admin), so they go through `safeIcon()`, which shows `category` for any name not in the list; to allow a new category icon, add it to `CATEGORY_ICONS`.
+- **Hero video (Oct 2026):** `heroclip2.mp4` (3.8 MB, with an unused audio track) was replaced by two silent cuts — `hero-portrait.mp4` (608×768 centre crop, ~290 KB, picked by `<source media="(max-aspect-ratio: 1/1)">`) and `hero-1280.mp4` (~575 KB) — plus a 23 KB `hero-poster.webp` (first frame). `hero1.webp` stays as the OG image. Original is in `D:\zedinfo\zedinfo-archive\public\`. Lighthouse home page: payload 6.6 MB → 1.8 MB mobile, desktop score 57 → 78, mobile 39 → 43.
+- **Trackers after load (Oct 2026):** `lib/third-party.ts` builds the Meta Pixel / GA4 / GTM snippets. The queues (`fbq`, `dataLayer`, `gtag`) are created at once, so events fired early (PageView, ViewContent on mount) are queued; fbevents.js, gtag.js and gtm.js download only after `load` + idle. Verified in Chrome: PageView + ViewContent still reach facebook.com/tr. Headless Chrome is flagged as a bot by the pixel and sends nothing — test with `--disable-blink-features=AutomationControlled` and a normal user agent. Mobile LCP 12.8 s → ~4.3 s, mobile score 39 → 50–61, desktop 57 → 80.
 - `.material-symbols-outlined` in `app/globals.css` has `width: 1em; overflow: hidden` — required to clip the ligature-text fallback so the icon swap doesn't cause CLS. Don't remove this.
 - Hero `<video>` has explicit `width={1920} height={1080}` for CLS but still uses `preload="auto"` — the video is the LCP element, must stay full-priority.
 - `loading="lazy"` on `components/home/PromoCarousel.tsx` only.
@@ -223,6 +226,7 @@ A site-speed pass landed in commits `1390301` (safer-scope wins) and `6b81b21` (
 - `loading="lazy"` on `components/shop/ProductCard.tsx` — likely lazy-loaded above-the-fold featured products on the home page, regressing LCP.
 
 **Still open if you want more wins on mobile:**
+- Remaining: ~215 KB of unused JS and ~700 ms TBT on mobile; desktop home has CLS 0.25 from something above the fold resizing.
 - The Cairo font is no longer loaded by the public layout (only by `app/admin/layout.tsx` and the `/lp` landing pages, which load 6 Cairo weights + Plus Jakarta Sans + Outfit — trimming those weights would help ad-traffic pages).
 - ~14 KiB of CSS is render-blocking (Tailwind output + a small chunk). Inlining critical CSS or splitting per-route would shave ~350-500ms.
 - Done (Oct 2026): the unused `lh3.googleusercontent.com` preconnect was replaced by a preconnect to the Convex deployment (product images).
