@@ -379,5 +379,25 @@
       "description": "Calculez le goulot d'étranglement entre votre CPU et GPU. Gratuit, rapide, avec recommandations de mise à niveau. Algérie."
     },
     "crossPromo": { "badge": "Outil complémentaire", "title": "Estimez les FPS de votre configuration", "subtitle": "Sélectionnez un jeu et obtenez une estimation FPS pour votre setup." }
+  },
+  "notFound": {
+    "eyebrow": "Erreur 404",
+    "title": "Composant introuvable",
+    "subtitle": "Cette page n'existe pas ou a été déplacée. Pas de panique : tout le reste de la boutique est bien en stock.",
+    "searchPlaceholder": "Rechercher un produit...",
+    "searchButton": "Rechercher",
+    "backHome": "Retour à l'accueil",
+    "diagTitle": "Diagnostic système",
+    "diagPage": "PAGE",
+    "diagResult": "Introuvable",
+    "quickLinks": "Où voulez-vous aller ?",
+    "shopDesc": "Tous nos produits",
+    "configuratorDesc": "Montez un PC 100 % compatible",
+    "trackDesc": "Suivez votre commande",
+    "supportDesc": "SAV, garantie et contact",
+    "helpTitle": "Vous cherchez un produit précis ?",
+    "helpText": "Écrivez-nous sur WhatsApp, on vous répond rapidement.",
+    "whatsapp": "Écrire sur WhatsApp",
+    "whatsappMessage": "Bonjour Zed Informatique, je cherche un produit sur votre site."
   }
 }
