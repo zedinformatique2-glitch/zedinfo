@@ -5,6 +5,8 @@ const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Lint runs separately (`npm run lint`) so a lint warning can never block a production deploy.
+  eslint: { ignoreDuringBuilds: true },
   async headers() {
     return [
       {
