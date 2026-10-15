@@ -9,6 +9,7 @@ import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost, getWilayaNumb
 import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
 import { fbTrack, FB_CURRENCY } from "@/lib/fb-pixel";
 import { formatCountdown } from "@/lib/countdown";
+import { hasSeparateLanguages } from "@/lib/landing-stats";
 
 type Lang = "ar" | "fr" | "en";
 
@@ -62,6 +63,7 @@ function formatPrice(n: number, lang: Lang) {
 export function LandingPageClient({ page, preview = false }: { page: any; preview?: boolean }) {
   const defaultLang = (page.defaultLang as Lang) || "ar";
   const [lang, setLang] = useState<Lang>(defaultLang);
+  const showLangSwitcher = hasSeparateLanguages(page);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
@@ -417,14 +419,16 @@ export function LandingPageClient({ page, preview = false }: { page: any; previe
               ZED INFORMATIQUE
             </div>
           </div>
-          <LangSwitcher
-            lang={lang}
-            setLang={setLang}
-            mutedText={mutedText}
-            borderColor={borderColor}
-            activeBg={textColor}
-            activeText={backgroundColor}
-          />
+          {showLangSwitcher && (
+            <LangSwitcher
+              lang={lang}
+              setLang={setLang}
+              mutedText={mutedText}
+              borderColor={borderColor}
+              activeBg={textColor}
+              activeText={backgroundColor}
+            />
+          )}
         </div>
       </header>
 

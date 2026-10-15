@@ -205,6 +205,7 @@ Admin UI at `/admin/landing-pages` creates conversion-style pages at `/lp/[slug]
 - The form has one input per text (Arabic); `lib/landing-page-payload.ts` (tested) mirrors it into the FR and AR fields. Saving and the preview both use it.
 - Live preview: the form shows `/lp-preview` in an iframe (phone 390px / desktop 1280px, scaled to fit) and sends it the unsaved page by `postMessage` (same origin only). `/lp-preview` has its own root layout without the Meta pixel and renders `LandingPageClient` with `preview`: no view counting, no pixel, no carrier calls, and the order form never submits. `next.config.ts` sends `X-Frame-Options: SAMEORIGIN` for `/lp-preview` only; every other path keeps `DENY`.
 - Admin list: table on tablets and up, one card per page on phones, with a conversion column (orders ÷ views, `lib/landing-stats.ts`, tested). The form's product picker (`ProductPicker.tsx`) shows picture, price and stock, and flags out-of-stock and build-only products (a landing page can't sell those).
+- The AR/FR/EN switcher on `/lp` shows only when a page has different French and Arabic text (`hasSeparateLanguages` in `lib/landing-stats.ts`). Pages made with the current editor are one language, so the switcher is hidden and the "default language" setting picks the language of the page's small labels.
 - Countdown formatting is in `lib/countdown.ts` (tested): days above 24h, hidden once expired. The order confirmation has a WhatsApp button pre-filled with the order number.
 
 ## Performance — what's already been done (May 2026)
