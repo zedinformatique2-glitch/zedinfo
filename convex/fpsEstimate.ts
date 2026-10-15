@@ -16,8 +16,7 @@ export const estimateFps = action({
     resolution: v.string(),
     locale: v.optional(v.string()),
   },
-  handler: async (_ctx, { cpuName, gpuName, ramInfo, game, resolution, locale }) => {
-    const lang = locale === "ar" ? "Arabic" : locale === "en" ? "English" : "French";
+  handler: async (_ctx, { cpuName, gpuName, ramInfo, game, resolution }) => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("The FPS estimator is not configured (ANTHROPIC_API_KEY is not set).");
 
@@ -30,13 +29,12 @@ CPU: ${clip(cpuName)}
 GPU: ${clip(gpuName)}${ramInfo ? `\nRAM: ${clip(ramInfo)}` : ""}
 
 Reply with ONLY valid JSON, no extra text:
-{"fps": <number>, "quality": "<Low|Medium|High|Ultra>", "confidence": "<low|medium|high>", "tip": "<one short sentence recommendation in ${lang}>"}
+{"fps": <number>, "quality": "<Low|Medium|High|Ultra>", "confidence": "<low|medium|high>"}
 
 Rules:
 - fps = estimated average FPS at the quality preset you recommend
 - quality = the preset that gives a good balance of visuals and performance for this hardware
 - confidence = how confident you are based on known benchmarks
-- tip = a short practical recommendation (in ${lang})
 - Be realistic based on real-world benchmarks you know`;
 
     const client = new Anthropic({ apiKey });
@@ -63,10 +61,13 @@ Rules:
         fps: Number(parsed.fps) || 60,
         quality: String(parsed.quality || "Medium"),
         confidence: String(parsed.confidence || "medium"),
-        tip: String(parsed.tip || ""),
+        // The configurator shows the number only — no advice that could talk a
+        // customer out of the build they are configuring. `tip` stays in the
+        // shape because the UI reuses that line for error messages.
+        tip: "",
       };
     } catch {
-      return { fps: 60, quality: "Medium", confidence: "low", tip: "Estimation approximative." };
+      return { fps: 60, quality: "Medium", confidence: "low", tip: "" };
     }
   },
 });
