@@ -18,6 +18,34 @@ import {
   type ConfigComponent,
   type SlotKey,
 } from "@/lib/configurator-engine";
+import {
+  selectionToItems,
+  itemsToSelection,
+  isValidShareCode,
+  type BuildItem,
+  type CatalogProduct,
+} from "@/lib/saved-build";
+
+// Order the steps are shown in: motherboard first, then the processor (owner's
+// choice). CONFIG_SLOTS keeps its own order for the engine and the AI assistant.
+const DISPLAY_ORDER: SlotKey[] = ["motherboard", "cpu", "ram", "gpu", "storage", "psu", "case", "cooler"];
+const DISPLAY_SLOTS = [...CONFIG_SLOTS].sort(
+  (a, b) => DISPLAY_ORDER.indexOf(a.key) - DISPLAY_ORDER.indexOf(b.key)
+);
+
+// The build in progress is remembered in the browser (like the cart) so a visitor
+// who leaves and comes back finds their parts still selected.
+const STORAGE_KEY = "zed-configurator-build-v1";
+
+function readStoredItems(): BuildItem[] | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 import { AiChat } from "@/components/configurator/AiChat";
 import { FpsEstimator } from "@/components/configurator/FpsEstimator";
 import type { Locale } from "@/lib/i18n/config";
@@ -71,13 +99,92 @@ export default function ConfiguratorPage() {
 
   const [selection, setSelection] = useState<ConfigSelection>({});
   const [openSlot, setOpenSlot] = useState<SlotKey | null>(null);
-  const [shareCode, setShareCode] = useState<string | null>(null);
+  // The saved link only stays on screen while the build matches what was saved.
+  const [saved, setSaved] = useState<{ code: string; itemsKey: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // `?build=CODE` from a saved link, read once on the client.
+  const [urlCode, setUrlCode] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
+  const [notice, setNotice] = useState<
+    { kind: "loaded" | "restored" | "notFound"; skipped: number } | null
+  >(null);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [zoom, setZoom] = useState<{ src: string; name: string } | null>(null);
   const [justAdded, setJustAdded] = useState(false);
 
   const allProducts = useQuery(api.products.list, {});
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("build");
+    if (code && isValidShareCode(code)) setUrlCode(code.toUpperCase());
+    else setUrlCode("");
+  }, []);
+
+  const sharedBuild = useQuery(api.configurator.byCode, urlCode ? { code: urlCode } : "skip");
+
+  // Restore once: a saved link wins over the build remembered in this browser.
+  useEffect(() => {
+    if (restored || urlCode === null || !allProducts) return;
+    if (urlCode && sharedBuild === undefined) return;
+    const catalog = new Map(
+      (allProducts as unknown as CatalogProduct[]).map((p) => [p._id, p])
+    );
+    const fromLink = urlCode ? sharedBuild?.items ?? null : null;
+    const items = fromLink ?? readStoredItems();
+    if (items && items.length > 0) {
+      const { selection: sel, skipped } = itemsToSelection(items, catalog);
+      setSelection(sel);
+      setNotice({ kind: fromLink ? "loaded" : "restored", skipped });
+    }
+    if (urlCode && !sharedBuild) setNotice({ kind: "notFound", skipped: 0 });
+    setRestored(true);
+  }, [restored, urlCode, sharedBuild, allProducts]);
+
+  const currentItems = useMemo(() => selectionToItems(selection), [selection]);
+  const currentItemsKey = JSON.stringify(currentItems);
+
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      if (currentItems.length) window.localStorage.setItem(STORAGE_KEY, currentItemsKey);
+      else window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Private mode / storage blocked: the build just isn't remembered.
+    }
+  }, [restored, currentItems.length, currentItemsKey]);
+
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(id);
+  }, [copied]);
+
+  const savedLink =
+    saved && saved.itemsKey === currentItemsKey && typeof window !== "undefined"
+      ? `${window.location.origin}/${locale}/configurator?build=${saved.code}`
+      : null;
+
+  function clearBuild() {
+    setSelection({});
+    setSaved(null);
+    setNotice(null);
+    setOpenSlot(null);
+    if (window.location.search.includes("build=")) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }
+
+  async function copyLink() {
+    if (!savedLink) return;
+    try {
+      await navigator.clipboard.writeText(savedLink);
+      setCopied(true);
+    } catch {
+      // Clipboard blocked — the link is still visible and selectable.
+    }
+  }
   const saveBuild = useMutation(api.configurator.saveBuild);
   const addToCart = useCart((s) => s.add);
   const router = useRouter();
@@ -231,21 +338,18 @@ export default function ConfiguratorPage() {
     key === "ram" || key === "storage" || key === "cooler";
 
   async function onSave() {
-    const ids: string[] = [];
-    if (selection.cpu?._id) ids.push(selection.cpu._id);
-    if (selection.motherboard?._id) ids.push(selection.motherboard._id);
-    selection.ram?.forEach((r) => r._id && ids.push(r._id));
-    if (selection.gpu?._id) ids.push(selection.gpu._id);
-    selection.storage?.forEach((s) => s._id && ids.push(s._id));
-    if (selection.psu?._id) ids.push(selection.psu._id);
-    if (selection.case?._id) ids.push(selection.case._id);
-    selection.cooler?.forEach((c) => c._id && ids.push(c._id));
-    if (ids.length === 0) return;
-    const res = await saveBuild({
-      componentIds: ids as any,
-      totalDzd: result.totalPrice,
-    });
-    setShareCode(res.shareCode);
+    if (currentItems.length === 0 || saving) return;
+    setSaving(true);
+    try {
+      const res = await saveBuild({
+        componentIds: currentItems.map((i) => i.productId) as any,
+        totalDzd: result.totalPrice,
+        items: currentItems as any,
+      });
+      setSaved({ code: res.shareCode, itemsKey: currentItemsKey });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function addAllToCart(sel: ConfigSelection = selection) {
@@ -319,7 +423,7 @@ export default function ConfiguratorPage() {
             <>
               <Image
                 src={img}
-                alt={name}
+                alt=""
                 fill
                 sizes="144px"
                 className="object-contain p-3 transition-transform duration-300 group-hover:scale-105"
@@ -417,7 +521,49 @@ export default function ConfiguratorPage() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_340px] items-start">
           {/* Slot cards + FPS estimator */}
           <div className="space-y-4 min-w-0">
-            {CONFIG_SLOTS.map((slot, i) => {
+            {notice && (
+              <div
+                className={`flex items-start gap-3 rounded-2xl p-4 ring-1 ${
+                  notice.kind === "notFound"
+                    ? "bg-amber-50 ring-amber-200 text-amber-800"
+                    : "bg-primary/5 ring-primary/15 text-slate-700"
+                }`}
+              >
+                <Icon
+                  name={notice.kind === "notFound" ? "link_off" : notice.kind === "loaded" ? "link" : "history"}
+                  className={`mt-px shrink-0 text-[20px] ${notice.kind === "notFound" ? "text-amber-500" : "text-primary"}`}
+                />
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold">
+                    {notice.kind === "notFound"
+                      ? t("buildNotFound")
+                      : notice.kind === "loaded"
+                        ? t("buildLoaded")
+                        : t("buildRestored")}
+                  </p>
+                  {notice.skipped > 0 && (
+                    <p className="mt-0.5 text-xs text-slate-500">{t("partsSkipped", { count: notice.skipped })}</p>
+                  )}
+                </div>
+                {notice.kind === "restored" && (
+                  <button
+                    onClick={clearBuild}
+                    className="shrink-0 text-xs font-bold text-primary hover:underline"
+                  >
+                    {t("startOver")}
+                  </button>
+                )}
+                <button
+                  onClick={() => setNotice(null)}
+                  aria-label={t("close")}
+                  className="shrink-0 text-slate-400 hover:text-slate-700"
+                >
+                  <Icon name="close" className="text-[18px]" />
+                </button>
+              </div>
+            )}
+
+            {DISPLAY_SLOTS.map((slot, i) => {
               const multi = isMultiSlot(slot.key);
               const current = multi ? undefined : slotComponent(slot.key);
               const groups = multi ? groupItems((selection as any)[slot.key]) : [];
@@ -638,7 +784,7 @@ export default function ConfiguratorPage() {
               </div>
 
               <ul className="mt-4 space-y-1">
-                {CONFIG_SLOTS.map((slot) => {
+                {DISPLAY_SLOTS.map((slot) => {
                   const filled = slotFilled(slot.key);
                   const first = slotComponent(slot.key);
                   const count = isMultiSlot(slot.key) ? (selection[slot.key]?.length ?? 0) : filled ? 1 : 0;
@@ -718,8 +864,15 @@ export default function ConfiguratorPage() {
                   <Icon name={justAdded ? "check" : "shopping_cart"} className="text-[18px]" />
                   {justAdded ? t("added") : tc("addToCart")}
                 </Button>
-                <Button className="w-full" size="sm" variant="outline" onClick={onSave} disabled={selectedCount === 0}>
-                  {t("saveBuild")}
+                <Button
+                  className="w-full"
+                  size="sm"
+                  variant="outline"
+                  onClick={onSave}
+                  disabled={selectedCount === 0 || saving || !!savedLink}
+                >
+                  <Icon name={savedLink ? "check" : "bookmark"} className="text-[18px]" />
+                  {savedLink ? t("savedTitle") : t("saveBuild")}
                 </Button>
                 <button
                   onClick={() => setAiChatOpen(true)}
@@ -730,11 +883,49 @@ export default function ConfiguratorPage() {
                 </button>
               </div>
 
-              {shareCode && (
-                <div className="mt-4 bg-primary/5 rounded-xl p-3 text-center">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-500">Share code</div>
-                  <div className="font-mono font-black text-primary text-lg">{shareCode}</div>
+              {savedLink && (
+                <div className="mt-4 rounded-2xl bg-primary/5 p-4 ring-1 ring-primary/15">
+                  <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <Icon name="bookmark_added" className="text-[20px] text-primary" />
+                    {t("savedTitle")}
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">{t("savedHint")}</p>
+                  <input
+                    readOnly
+                    value={savedLink}
+                    onFocus={(e) => e.currentTarget.select()}
+                    dir="ltr"
+                    className="mt-3 w-full rounded-xl bg-white px-3 py-2 font-mono text-xs text-slate-700 ring-1 ring-slate-200 outline-none"
+                  />
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={copyLink}
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-bold text-primary ring-1 ring-primary/30 hover:bg-primary/5"
+                    >
+                      <Icon name={copied ? "check" : "content_copy"} className="text-[16px]" />
+                      {copied ? t("copied") : t("copyLink")}
+                    </button>
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(`${t("whatsappText")} ${savedLink}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-2 text-xs font-bold text-white hover:brightness-105"
+                    >
+                      <Icon name="send" className="text-[16px]" />
+                      WhatsApp
+                    </a>
+                  </div>
                 </div>
+              )}
+
+              {selectedCount > 0 && (
+                <button
+                  onClick={clearBuild}
+                  className="mt-4 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-slate-400 transition-colors hover:text-red-500"
+                >
+                  <Icon name="restart_alt" className="text-[16px]" />
+                  {t("clearBuild")}
+                </button>
               )}
             </div>
           </aside>
