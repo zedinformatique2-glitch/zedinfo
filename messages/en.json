@@ -379,5 +379,25 @@
       "description": "Calculate CPU/GPU bottleneck. Free, fast, with tailored upgrade picks. Algeria."
     },
     "crossPromo": { "badge": "Companion tool", "title": "Estimate FPS for your build", "subtitle": "Pick a game and get an FPS estimate for your setup." }
+  },
+  "notFound": {
+    "eyebrow": "Error 404",
+    "title": "Component not found",
+    "subtitle": "This page doesn't exist or has moved. Don't worry: the rest of the shop is fully in stock.",
+    "searchPlaceholder": "Search for a product...",
+    "searchButton": "Search",
+    "backHome": "Back to home",
+    "diagTitle": "System check",
+    "diagPage": "PAGE",
+    "diagResult": "Not found",
+    "quickLinks": "Where would you like to go?",
+    "shopDesc": "All our products",
+    "configuratorDesc": "Build a 100% compatible PC",
+    "trackDesc": "Follow your order",
+    "supportDesc": "After-sales, warranty and contact",
+    "helpTitle": "Looking for a specific product?",
+    "helpText": "Message us on WhatsApp and we'll get back to you quickly.",
+    "whatsapp": "Message us on WhatsApp",
+    "whatsappMessage": "Hello Zed Informatique, I'm looking for a product on your website."
   }
 }
