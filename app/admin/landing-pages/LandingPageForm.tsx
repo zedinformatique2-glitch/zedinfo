@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { buildLandingPayload, type LandingFormState } from "@/lib/landing-page-payload";
+import { LivePreview } from "./LivePreview";
+import { ProductPicker } from "./ProductPicker";
 
 type Mode = { kind: "new" } | { kind: "edit"; id: Id<"landingPages">; initial: any };
 
@@ -12,8 +15,6 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const products = useQuery(api.products.list, {});
   const categories = useQuery(api.categories.list, {});
-  const [productSearch, setProductSearch] = useState("");
-  const [filterCategoryId, setFilterCategoryId] = useState<string>("");
   const create = useMutation(api.landingPages.create);
   const update = useMutation(api.landingPages.update);
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
@@ -66,9 +67,6 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const splitLines = (s: string) => s.split("\n").map((v) => v.trim()).filter(Boolean);
-  const optStr = (s: string) => (s.trim() ? s : undefined);
-
   const selected = products?.find((p: any) => p._id === productId);
 
   // Auto-derive slug from product name if admin hasn't typed one
@@ -92,6 +90,31 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       : "skip"
   );
   const slugTaken = slugCheck === false;
+
+  const formState: LandingFormState = {
+    productId,
+    headline,
+    subheadline,
+    bullets,
+    cta,
+    priceOverrideDzd,
+    comparePriceDzd,
+    enabled,
+    heroImage,
+    description,
+    urgency,
+    guarantee,
+    scarcity,
+    defaultLang,
+    showCountdown,
+    countdownEndsAt,
+    showStockUrgency,
+    primaryColor,
+    accentColor,
+  };
+  const previewPage = selected
+    ? { ...buildLandingPayload(formState, finalSlug), _id: "preview", product: selected }
+    : null;
 
   async function onPickFile(file: File) {
     if (!file) return;
@@ -135,40 +158,11 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       setError(`الرابط "${finalSlug}" مستخدم بالفعل — اختر رابطًا آخر`);
       return;
     }
-    const bulletsList = splitLines(bullets);
-
     setSaving(true);
     try {
-      // Mirror single-language input to both AR + FR backend fields
       const payload = {
-        slug: finalSlug,
+        ...buildLandingPayload(formState, finalSlug),
         productId: productId as Id<"products">,
-        headlineFr: headline,
-        headlineAr: headline,
-        subheadlineFr: subheadline,
-        subheadlineAr: subheadline,
-        bulletsFr: bulletsList,
-        bulletsAr: bulletsList,
-        descriptionFr: optStr(description),
-        descriptionAr: optStr(description),
-        heroImage: heroImage.trim() || undefined,
-        priceOverrideDzd: priceOverrideDzd ? Number(priceOverrideDzd) : undefined,
-        comparePriceDzd: comparePriceDzd ? Number(comparePriceDzd) : undefined,
-        ctaFr: cta,
-        ctaAr: cta,
-        urgencyTextFr: optStr(urgency),
-        urgencyTextAr: optStr(urgency),
-        guaranteeTextFr: optStr(guarantee),
-        guaranteeTextAr: optStr(guarantee),
-        scarcityTextFr: optStr(scarcity),
-        scarcityTextAr: optStr(scarcity),
-        primaryColor: optStr(primaryColor),
-        accentColor: optStr(accentColor),
-        defaultLang: optStr(defaultLang),
-        showCountdown,
-        countdownEndsAt: showCountdown && countdownEndsAt ? new Date(countdownEndsAt).getTime() : undefined,
-        showStockUrgency,
-        enabled,
       };
       if (mode.kind === "new") {
         await create(payload);
@@ -188,71 +182,23 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6 max-w-3xl">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,44rem)_minmax(0,1fr)] items-start">
+    <form onSubmit={onSubmit} className="space-y-6 min-w-0">
       {error && (
         <div className="bg-red-50 ring-1 ring-red-200 text-red-700 p-3 rounded-xl text-sm font-bold">{error}</div>
       )}
 
       <Section title="الأساسيات">
-        <Field label="المنتج">
-          <div className="grid sm:grid-cols-2 gap-2 mb-2">
-            <select
-              value={filterCategoryId}
-              onChange={(e) => setFilterCategoryId(e.target.value)}
-              className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            >
-              <option value="">كل الفئات</option>
-              {categories?.map((c: any) => (
-                <option key={c._id} value={c._id}>
-                  {c.nameFr}
-                </option>
-              ))}
-            </select>
-            <input
-              type="search"
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
-              placeholder="بحث عن منتج..."
-              className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            />
-          </div>
-          <select
+        {/* Not a <label>: the picker holds several buttons. */}
+        <div>
+          <div className="text-xs font-bold mb-1.5">المنتج</div>
+          <ProductPicker
+            products={products as any[] | undefined}
+            categories={categories as any[] | undefined}
             value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            className="w-full rounded-xl border border-outline-variant px-3 py-2 text-sm"
-            size={6}
-            required
-          >
-            <option value="">— اختر منتجًا —</option>
-            {(() => {
-              if (!products || !categories) return null;
-              const search = productSearch.trim().toLowerCase();
-              const catMap = new Map(categories.map((c: any) => [c._id, c.nameFr]));
-              const filtered = (products as any[]).filter((p) => {
-                if (filterCategoryId && p.categoryId !== filterCategoryId) return false;
-                if (search && !p.nameFr.toLowerCase().includes(search) && !(p.nameAr || "").toLowerCase().includes(search)) return false;
-                return true;
-              });
-              const groups = new Map<string, any[]>();
-              filtered.forEach((p) => {
-                const label = (catMap.get(p.categoryId) as string) || "—";
-                if (!groups.has(label)) groups.set(label, []);
-                groups.get(label)!.push(p);
-              });
-              return Array.from(groups.entries())
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([label, items]) => (
-                  <optgroup key={label} label={label}>
-                    {items.map((p: any) => (
-                      <option key={p._id} value={p._id}>
-                        {p.nameFr}
-                      </option>
-                    ))}
-                  </optgroup>
-                ));
-            })()}
-          </select>
-        </Field>
+            onChange={setProductId}
+          />
+        </div>
 
         <Field label="رابط الصفحة">
           <input
@@ -480,6 +426,8 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
         </button>
       </div>
     </form>
+    <LivePreview page={previewPage} />
+    </div>
   );
 }
 
