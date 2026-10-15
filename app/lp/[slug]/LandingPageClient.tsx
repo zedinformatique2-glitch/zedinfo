@@ -8,8 +8,11 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { WILAYAS_BILINGUAL, getCommunesForWilaya, getShippingCost, getWilayaNumber } from "@/lib/wilayas";
 import { isValidDzMobile, normalizeDzPhone, DZ_PHONE_ERROR } from "@/lib/phone";
 import { fbTrack, FB_CURRENCY } from "@/lib/fb-pixel";
+import { formatCountdown } from "@/lib/countdown";
 
 type Lang = "ar" | "fr" | "en";
+
+const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "213663287772";
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace("#", "");
@@ -165,6 +168,9 @@ export function LandingPageClient({ page }: { page: any }) {
       "We will call you shortly to confirm delivery."
     ),
     orderNo: tr("رقم الطلب", "Numéro de commande", "Order number"),
+    whatsappBtn: tr("تواصل معنا عبر واتساب", "Nous contacter sur WhatsApp", "Contact us on WhatsApp"),
+    whatsappMsg: tr("مرحبًا، لقد قدمت الطلب رقم", "Bonjour, je viens de passer la commande", "Hello, I just placed order"),
+    backToShop: tr("تصفح المتجر", "Voir la boutique", "Browse the shop"),
     secured: tr("طلب آمن", "Commande sécurisée", "Secure order"),
     required: tr("يرجى ملء الحقول المطلوبة.", "Veuillez remplir les champs requis.", "Please fill in the required fields."),
     errGeneric: tr("حدث خطأ", "Erreur lors de la commande", "An error occurred"),
@@ -250,21 +256,19 @@ export function LandingPageClient({ page }: { page: any }) {
   const [remaining, setRemaining] = useState<string>("");
   useEffect(() => {
     if (!page.showCountdown || !page.countdownEndsAt) return;
+    const dayLabel = lang === "ar" ? "ي" : lang === "fr" ? "j" : "d";
+    // Hide the timer once it expires rather than freezing on 00:00:00.
     const tick = () => {
-      const diff = page.countdownEndsAt - Date.now();
-      if (diff <= 0) {
-        setRemaining("00:00:00");
-        return;
-      }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setRemaining(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+      const left = formatCountdown(page.countdownEndsAt - Date.now(), dayLabel);
+      setRemaining(left ?? "");
+      return left;
     };
-    tick();
-    const i = setInterval(tick, 1000);
+    if (!tick()) return;
+    const i = setInterval(() => {
+      if (!tick()) clearInterval(i);
+    }, 1000);
     return () => clearInterval(i);
-  }, [page.showCountdown, page.countdownEndsAt]);
+  }, [page.showCountdown, page.countdownEndsAt, lang]);
 
   useEffect(() => {
     setCommune("");
@@ -405,12 +409,27 @@ export function LandingPageClient({ page }: { page: any }) {
               ZED INFORMATIQUE
             </div>
           </div>
-          <LangSwitcher lang={lang} setLang={setLang} mutedText={mutedText} borderColor={borderColor} />
+          <LangSwitcher
+            lang={lang}
+            setLang={setLang}
+            mutedText={mutedText}
+            borderColor={borderColor}
+            activeBg={textColor}
+            activeText={backgroundColor}
+          />
         </div>
       </header>
 
       {submitted ? (
-        <SuccessCard orderNumber={orderNumber} mc={mc} cardBg={cardBg} borderColor={borderColor} primaryColor={primaryColor} mutedText={mutedText} />
+        <SuccessCard
+          orderNumber={orderNumber}
+          mc={mc}
+          lang={lang}
+          cardBg={cardBg}
+          borderColor={borderColor}
+          primaryColor={primaryColor}
+          mutedText={mutedText}
+        />
       ) : (
         <>
           {/* Hero */}
@@ -1043,11 +1062,15 @@ function LangSwitcher({
   setLang,
   mutedText,
   borderColor,
+  activeBg,
+  activeText,
 }: {
   lang: Lang;
   setLang: (l: Lang) => void;
   mutedText: string;
   borderColor: string;
+  activeBg: string;
+  activeText: string;
 }) {
   const langs: { code: Lang; label: string }[] = [
     { code: "ar", label: "AR" },
@@ -1064,7 +1087,7 @@ function LangSwitcher({
           className="px-2.5 py-1 rounded-full transition-colors"
           style={
             lang === l.code
-              ? { backgroundColor: "currentColor", color: "#ffffff" }
+              ? { backgroundColor: activeBg, color: activeText }
               : { color: mutedText }
           }
         >
@@ -1217,6 +1240,7 @@ function Row({
 function SuccessCard({
   orderNumber,
   mc,
+  lang,
   cardBg,
   borderColor,
   primaryColor,
@@ -1224,6 +1248,7 @@ function SuccessCard({
 }: {
   orderNumber: string;
   mc: any;
+  lang: Lang;
   cardBg: string;
   borderColor: string;
   primaryColor: string;
@@ -1255,6 +1280,23 @@ function SuccessCard({
             {orderNumber}
           </div>
         </div>
+        <a
+          href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`${mc.whatsappMsg} ${orderNumber}`)}`}
+          target="_blank"
+          rel="noopener"
+          className="mt-6 w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-base text-white transition-all hover:-translate-y-0.5"
+          style={{ backgroundColor: "#25D366", boxShadow: "0 10px 30px -10px rgba(37, 211, 102, 0.55)" }}
+        >
+          <span className="material-symbols-outlined">chat</span>
+          {mc.whatsappBtn}
+        </a>
+        <a
+          href={`/${lang}`}
+          className="mt-3 inline-block text-sm font-bold hover:underline"
+          style={{ color: primaryColor }}
+        >
+          {mc.backToShop}
+        </a>
       </div>
     </div>
   );
