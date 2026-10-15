@@ -40,14 +40,14 @@ npx convex env set KEY VALUE     # Set Convex deployment env vars
 npx convex deploy        # Deploy Convex functions to production
 ```
 
-Tests cover `lib/configurator-engine.ts`, `lib/fps-engine.ts`, `lib/balance-engine.ts`, `lib/phone.ts` and `lib/format.ts` only — no backend tests yet. `next.config.ts` sets `eslint.ignoreDuringBuilds: true` so lint can never block a Vercel deploy; run `npm run lint` yourself. Dev requires **both** `npm run dev` and `npx convex dev` running. Admin login uses `ADMIN_USERNAME` / `ADMIN_PASSWORD` from `.env.local`.
+Tests cover `lib/configurator-engine.ts`, `lib/fps-engine.ts`, `lib/balance-engine.ts`, `lib/phone.ts` and `lib/format.ts` only — no backend tests yet. `next.config.ts` sets `eslint.ignoreDuringBuilds: true` so lint can never block a Vercel deploy; run `npm run lint` yourself. Dev requires **both** `npm run dev` and `npx convex dev` running. Admin login uses `ADMIN_USERNAME` / `ADMIN_PASSWORD` (Next.js env; not in `.env.local` as of Oct 2026 — for a local test, set them on the command that starts the server).
 
 ## Architecture
 
 ### Two independent root layouts, no shared `app/layout.tsx`
 
 - `app/[locale]/layout.tsx` — public site. Emits its own `<html lang={locale} dir={rtl ? "rtl" : "ltr"}>`, loads Inter + Material Symbols, wraps in `NextIntlClientProvider` (messages must be passed explicitly via `getMessages({ locale })`) and `ConvexClientProvider`.
-- `app/admin/layout.tsx` — admin. Emits its own `<html>`, always LTR French, cookie-gated via middleware.
+- `app/admin/layout.tsx` — admin. Emits its own `<html lang="ar" dir="rtl">` (Arabic UI, Cairo font, labels in `lib/admin-i18n.ts`), cookie-gated via middleware.
 
 Do **not** add `app/layout.tsx` — it will conflict with the two locale/admin roots.
 
@@ -104,7 +104,7 @@ Product `specs` must match the shape the engine expects (`type: "cpu" | "motherb
 
 - `app/admin/login/page.tsx` is a server-action form that checks `ADMIN_USERNAME` + `ADMIN_PASSWORD` from `process.env` and sets an `admin_session` httpOnly cookie. This is **Next.js** env, not Convex env — even though the vars may also exist on Convex, the gate reads from `.env.local`.
 - `app/api/admin/logout/route.ts` clears the cookie.
-- Admin is intentionally outside `[locale]` and French-only. Do not add locale routing to `/admin/*`.
+- Admin is intentionally outside `[locale]` and Arabic-only (RTL). Do not add locale routing to `/admin/*`.
 
 ## Design system
 
@@ -201,6 +201,10 @@ Landing pages at `/lp/[slug]` additionally fire `ViewContent`, `InitiateCheckout
 ### Landing page generator
 
 Admin UI at `/admin/landing-pages` creates conversion-style pages at `/lp/[slug]`. Each landing page references one product and overrides price, headline, bullets, CTA, countdown, stock urgency. Pages are `noindex`. Backend functions in `convex/landingPages.ts`; schema table `landingPages` with `views` / `orders` counters. The public route bypasses next-intl (see `middleware.ts`) and has its own `app/lp/layout.tsx` root.
+
+- The form has one input per text (Arabic); `lib/landing-page-payload.ts` (tested) mirrors it into the FR and AR fields. Saving and the preview both use it.
+- Live preview: the form shows `/lp-preview` in an iframe (phone 390px / desktop 1280px, scaled to fit) and sends it the unsaved page by `postMessage` (same origin only). `/lp-preview` has its own root layout without the Meta pixel and renders `LandingPageClient` with `preview`: no view counting, no pixel, no carrier calls, and the order form never submits. `next.config.ts` sends `X-Frame-Options: SAMEORIGIN` for `/lp-preview` only; every other path keeps `DENY`.
+- Countdown formatting is in `lib/countdown.ts` (tested): days above 24h, hidden once expired. The order confirmation has a WhatsApp button pre-filled with the order number.
 
 ## Performance — what's already been done (May 2026)
 

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { buildLandingPayload, type LandingFormState } from "@/lib/landing-page-payload";
+import { LivePreview } from "./LivePreview";
 
 type Mode = { kind: "new" } | { kind: "edit"; id: Id<"landingPages">; initial: any };
 
@@ -66,9 +68,6 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const splitLines = (s: string) => s.split("\n").map((v) => v.trim()).filter(Boolean);
-  const optStr = (s: string) => (s.trim() ? s : undefined);
-
   const selected = products?.find((p: any) => p._id === productId);
 
   // Auto-derive slug from product name if admin hasn't typed one
@@ -92,6 +91,31 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       : "skip"
   );
   const slugTaken = slugCheck === false;
+
+  const formState: LandingFormState = {
+    productId,
+    headline,
+    subheadline,
+    bullets,
+    cta,
+    priceOverrideDzd,
+    comparePriceDzd,
+    enabled,
+    heroImage,
+    description,
+    urgency,
+    guarantee,
+    scarcity,
+    defaultLang,
+    showCountdown,
+    countdownEndsAt,
+    showStockUrgency,
+    primaryColor,
+    accentColor,
+  };
+  const previewPage = selected
+    ? { ...buildLandingPayload(formState, finalSlug), _id: "preview", product: selected }
+    : null;
 
   async function onPickFile(file: File) {
     if (!file) return;
@@ -135,40 +159,11 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
       setError(`الرابط "${finalSlug}" مستخدم بالفعل — اختر رابطًا آخر`);
       return;
     }
-    const bulletsList = splitLines(bullets);
-
     setSaving(true);
     try {
-      // Mirror single-language input to both AR + FR backend fields
       const payload = {
-        slug: finalSlug,
+        ...buildLandingPayload(formState, finalSlug),
         productId: productId as Id<"products">,
-        headlineFr: headline,
-        headlineAr: headline,
-        subheadlineFr: subheadline,
-        subheadlineAr: subheadline,
-        bulletsFr: bulletsList,
-        bulletsAr: bulletsList,
-        descriptionFr: optStr(description),
-        descriptionAr: optStr(description),
-        heroImage: heroImage.trim() || undefined,
-        priceOverrideDzd: priceOverrideDzd ? Number(priceOverrideDzd) : undefined,
-        comparePriceDzd: comparePriceDzd ? Number(comparePriceDzd) : undefined,
-        ctaFr: cta,
-        ctaAr: cta,
-        urgencyTextFr: optStr(urgency),
-        urgencyTextAr: optStr(urgency),
-        guaranteeTextFr: optStr(guarantee),
-        guaranteeTextAr: optStr(guarantee),
-        scarcityTextFr: optStr(scarcity),
-        scarcityTextAr: optStr(scarcity),
-        primaryColor: optStr(primaryColor),
-        accentColor: optStr(accentColor),
-        defaultLang: optStr(defaultLang),
-        showCountdown,
-        countdownEndsAt: showCountdown && countdownEndsAt ? new Date(countdownEndsAt).getTime() : undefined,
-        showStockUrgency,
-        enabled,
       };
       if (mode.kind === "new") {
         await create(payload);
@@ -188,7 +183,8 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6 max-w-3xl">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,44rem)_minmax(0,1fr)] items-start">
+    <form onSubmit={onSubmit} className="space-y-6 min-w-0">
       {error && (
         <div className="bg-red-50 ring-1 ring-red-200 text-red-700 p-3 rounded-xl text-sm font-bold">{error}</div>
       )}
@@ -480,6 +476,8 @@ export function LandingPageForm({ mode }: { mode: Mode }) {
         </button>
       </div>
     </form>
+    <LivePreview page={previewPage} />
+    </div>
   );
 }
 

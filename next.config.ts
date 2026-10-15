@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // The admin's live landing-page preview frames this page; other sites still can't.
+        source: "/lp-preview",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
     ];
   },
   images: {

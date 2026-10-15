@@ -57,7 +57,9 @@ function formatPrice(n: number, lang: Lang) {
   return `${n.toLocaleString(locale)} DZD`;
 }
 
-export function LandingPageClient({ page }: { page: any }) {
+// `preview` is the admin live preview: no view counting, no pixel, no carrier
+// lookups, and the order form never submits.
+export function LandingPageClient({ page, preview = false }: { page: any; preview?: boolean }) {
   const defaultLang = (page.defaultLang as Lang) || "ar";
   const [lang, setLang] = useState<Lang>(defaultLang);
   const [submitted, setSubmitted] = useState(false);
@@ -80,7 +82,7 @@ export function LandingPageClient({ page }: { page: any }) {
   const createOrder = useMutation(api.orders.create);
   const incView = useMutation(api.landingPages.incrementView);
   const incOrder = useMutation(api.landingPages.incrementOrder);
-  const enabledCarriers = useQuery(api.delivery.getEnabledCarriers);
+  const enabledCarriers = useQuery(api.delivery.getEnabledCarriers, preview ? "skip" : {});
   const getCarrierFees = useAction(api.delivery.getFees);
   const getCarrierDesks = useAction(api.delivery.getDesks);
 
@@ -170,6 +172,7 @@ export function LandingPageClient({ page }: { page: any }) {
     orderNo: tr("رقم الطلب", "Numéro de commande", "Order number"),
     whatsappBtn: tr("تواصل معنا عبر واتساب", "Nous contacter sur WhatsApp", "Contact us on WhatsApp"),
     whatsappMsg: tr("مرحبًا، لقد قدمت الطلب رقم", "Bonjour, je viens de passer la commande", "Hello, I just placed order"),
+    previewNoOrder: tr("معاينة فقط — لا يتم إرسال الطلب", "Aperçu uniquement — la commande n'est pas envoyée", "Preview only — the order is not sent"),
     backToShop: tr("تصفح المتجر", "Voir la boutique", "Browse the shop"),
     secured: tr("طلب آمن", "Commande sécurisée", "Secure order"),
     required: tr("يرجى ملء الحقول المطلوبة.", "Veuillez remplir les champs requis.", "Please fill in the required fields."),
@@ -242,6 +245,7 @@ export function LandingPageClient({ page }: { page: any }) {
   }, [stopDeskAvailable, deliveryType]);
 
   useEffect(() => {
+    if (preview) return;
     incView({ id: page._id as Id<"landingPages"> });
     fbTrack("ViewContent", {
       content_ids: [product.slug],
@@ -281,6 +285,10 @@ export function LandingPageClient({ page }: { page: any }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (preview) {
+      setError(mc.previewNoOrder);
+      return;
+    }
     // Build-only products can't be ordered on their own — `orders.create`
     // rejects them too, this just gives the buyer a readable reason.
     if (product.requiresBuild) {
