@@ -88,7 +88,10 @@ export default async function LocaleLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link rel="preconnect" href="https://lh3.googleusercontent.com" />
+        {/* Product images are served from Convex file storage */}
+        {process.env.NEXT_PUBLIC_CONVEX_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_CONVEX_URL} />
+        )}
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
           rel="stylesheet"
