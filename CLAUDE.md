@@ -10,6 +10,17 @@ When working on Convex code, **always read `convex/_generated/ai/guidelines.md` 
 Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
 <!-- convex-ai-end -->
 
+## Ground rules — read before every change
+
+This is the client's **live production shop**. Real products, orders and customer details live in the production Convex deployment (`first-rabbit-857`).
+
+1. **Never lose data.** Do not delete, overwrite, re-seed or bulk-edit existing products, categories, orders or customer records. Never run `seed:default`, `seedReal:default`, `orders.clearByStatuses`, migrations or any data-changing script against production unless the owner explicitly asks for that exact action.
+2. **Schema changes must be additive.** Only add optional fields or new tables; never remove or rename a field or table that holds data. A deploy that fails schema validation must be fixed in code, never by deleting documents.
+3. **Look before you touch.** Read the target (file, record, env var) before changing or deleting it. Prefer moving files to `D:\zedinfo\zedinfo-archive` over deleting them.
+4. **Work on a branch, check, then ship.** Type checks, `npm test`, `npm run lint` and a production build must pass before merging to `main`. Deploy only when the owner says so, note the current Vercel deployment as the rollback point, and check the live site afterwards.
+5. **Commit messages and anything pushed to GitHub never mention AI or the assistant** — no attribution trailers, no "generated with" lines. Plain descriptive messages only. The repo is public.
+6. **Never commit secrets.** `.env.local` stays local; live secrets live only in the Convex and Vercel env stores.
+
 ## Project
 
 **Zed Informatique** — e-commerce + configurator site for an Algeria-based PC/IT business. Bilingual FR/AR (RTL), guest checkout, WhatsApp order flow, password-gated admin panel, Convex backend.
@@ -183,7 +194,7 @@ Admin UI at `/admin/landing-pages` creates conversion-style pages at `/lp/[slug]
 A site-speed pass landed in commits `1390301` (safer-scope wins) and `6b81b21` (icon-CLS fix). Results were partial: mobile LCP 33.5s → **8.3s** and total payload 15 MB → 6 MB are real wins, but the overall PageSpeed score is still in the **40s on both mobile and desktop** as of last measurement. The remaining drag is render-blocking CSS + the 444 KB Cairo woff2 — see "Still open" below. Before re-attempting performance work, know what was tried and what regressed:
 
 **Currently in production (do NOT undo):**
-- `public/build-pc.gif` (8.9 MB) replaced by `public/pc-buildgif.webp` (31 KB) via `next/image` on the home page. The GIF file still sits in the repo for now but is unreferenced.
+- `public/build-pc.gif` (8.9 MB) replaced by `public/pc-buildgif.webp` (31 KB) via `next/image` on the home page. The GIF was removed from the repo in Oct 2026 (a copy is in `D:\zedinfo\zedinfo-archive\public\`).
 - Category JPGs in `public/categories/categories/` compressed in place (3.0 MB → 280 KB). Filenames and paths unchanged on purpose.
 - Material Symbols stylesheet uses `display=swap` (not `block`) in all three layouts.
 - `.material-symbols-outlined` in `app/globals.css` has `width: 1em; overflow: hidden` — required to clip the ligature-text fallback so the icon swap doesn't cause CLS. Don't remove this.
