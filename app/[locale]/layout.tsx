@@ -7,6 +7,7 @@ import { setRequestLocale, getMessages } from "next-intl/server";
 import { routing } from "@/lib/i18n/routing";
 import { isRtl, type Locale } from "@/lib/i18n/config";
 import { siteUrl, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/seo";
+import { ICON_FONT_HREF } from "@/lib/icons";
 import Script from "next/script";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
 import { Header } from "@/components/layout/Header";
@@ -92,10 +93,7 @@ export default async function LocaleLayout({
         {process.env.NEXT_PUBLIC_CONVEX_URL && (
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_CONVEX_URL} />
         )}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
-          rel="stylesheet"
-        />
+        <link href={ICON_FONT_HREF} rel="stylesheet" />
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
           strategy="afterInteractive"

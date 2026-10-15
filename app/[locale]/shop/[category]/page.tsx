@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { localizedName } from "@/lib/format";
+import { safeIcon } from "@/lib/icons";
 import { buildRequiresBuildLabels } from "@/lib/requires-build-labels";
 import {
   buildAlternates,
@@ -206,7 +207,7 @@ export default async function CategoryPage({
                   className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-on-surface shadow-sm ring-1 ring-outline-variant/40 hover:bg-primary hover:text-white hover:ring-primary transition-all"
                 >
                   <span className="material-symbols-outlined text-[14px]">
-                    {child.icon}
+                    {safeIcon(child.icon)}
                   </span>
                   {localizedName(child, loc)}
                 </a>

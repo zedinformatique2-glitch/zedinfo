@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { useTranslations, useLocale } from "next-intl";
 import { Icon } from "@/components/ui/Icon";
+import { safeIcon } from "@/lib/icons";
 import type { Locale } from "@/lib/i18n/config";
 
 export function MobileNav() {
@@ -144,7 +145,7 @@ export function MobileNav() {
                   className="group flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-sm font-bold uppercase tracking-tight text-on-surface hover:bg-primary/5 hover:text-primary transition-colors"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                    <Icon name={parent.icon} className="text-[20px]" />
+                    <Icon name={safeIcon(parent.icon)} className="text-[20px]" />
                   </span>
                   <span className="flex-1 text-start">{getName(parent)}</span>
                   <Icon
@@ -183,7 +184,7 @@ export function MobileNav() {
                         className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-on-surface-variant hover:bg-primary/5 hover:text-primary transition-colors"
                       >
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/5 text-primary/70 group-hover:bg-primary group-hover:text-white transition-colors">
-                          <Icon name={child.icon} className="text-[16px]" />
+                          <Icon name={safeIcon(child.icon)} className="text-[16px]" />
                         </span>
                         <span className="flex-1">{getName(child)}</span>
                         <Icon

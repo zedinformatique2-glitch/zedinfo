@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Inter } from "next/font/google";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
+import { ICON_FONT_HREF } from "@/lib/icons";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -21,10 +22,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
   return (
     <html className={inter.variable}>
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
-          rel="stylesheet"
-        />
+        <link href={ICON_FONT_HREF} rel="stylesheet" />
       </head>
       <body className="min-h-screen">
         <Script id="fb-pixel-lp" strategy="afterInteractive">
