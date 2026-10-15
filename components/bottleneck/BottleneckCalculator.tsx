@@ -340,7 +340,7 @@ function BalanceMeter({
       </div>
       <div className="relative h-0">
         <span
-          className={`absolute -top-[22px] -translate-x-1/2 rtl:translate-x-1/2 flex flex-col items-center transition-[inset-inline-start] duration-700 ease-out ${muted ? "opacity-0" : ""}`}
+          className={`absolute -top-[22px] -ms-[3px] flex flex-col items-center transition-[inset-inline-start] duration-700 ease-out ${muted ? "opacity-0" : ""}`}
           style={{ insetInlineStart: `${pct}%` }}
         >
           <span className="h-[30px] w-1.5 rounded-full bg-white shadow-[0_0_0_3px_rgba(15,23,42,1)]" />
