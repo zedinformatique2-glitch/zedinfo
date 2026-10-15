@@ -2,6 +2,7 @@ import "../globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ConvexClientProvider } from "@/components/providers/ConvexClientProvider";
+import { ICON_FONT_HREF } from "@/lib/icons";
 
 // Root for the admin live preview of landing pages (shown in an iframe).
 // Same look as app/lp/layout.tsx but without the Meta pixel.
@@ -20,10 +21,7 @@ export default function LandingPreviewLayout({ children }: { children: React.Rea
   return (
     <html className={inter.variable}>
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
-          rel="stylesheet"
-        />
+        <link href={ICON_FONT_HREF} rel="stylesheet" />
       </head>
       <body className="min-h-screen">
         <ConvexClientProvider>{children}</ConvexClientProvider>
