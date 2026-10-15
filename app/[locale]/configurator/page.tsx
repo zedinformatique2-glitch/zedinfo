@@ -26,6 +26,13 @@ import {
   type CatalogProduct,
 } from "@/lib/saved-build";
 
+// Order the steps are shown in: motherboard first, then the processor (owner's
+// choice). CONFIG_SLOTS keeps its own order for the engine and the AI assistant.
+const DISPLAY_ORDER: SlotKey[] = ["motherboard", "cpu", "ram", "gpu", "storage", "psu", "case", "cooler"];
+const DISPLAY_SLOTS = [...CONFIG_SLOTS].sort(
+  (a, b) => DISPLAY_ORDER.indexOf(a.key) - DISPLAY_ORDER.indexOf(b.key)
+);
+
 // The build in progress is remembered in the browser (like the cart) so a visitor
 // who leaves and comes back finds their parts still selected.
 const STORAGE_KEY = "zed-configurator-build-v1";
@@ -556,7 +563,7 @@ export default function ConfiguratorPage() {
               </div>
             )}
 
-            {CONFIG_SLOTS.map((slot, i) => {
+            {DISPLAY_SLOTS.map((slot, i) => {
               const multi = isMultiSlot(slot.key);
               const current = multi ? undefined : slotComponent(slot.key);
               const groups = multi ? groupItems((selection as any)[slot.key]) : [];
@@ -777,7 +784,7 @@ export default function ConfiguratorPage() {
               </div>
 
               <ul className="mt-4 space-y-1">
-                {CONFIG_SLOTS.map((slot) => {
+                {DISPLAY_SLOTS.map((slot) => {
                   const filled = slotFilled(slot.key);
                   const first = slotComponent(slot.key);
                   const count = isMultiSlot(slot.key) ? (selection[slot.key]?.length ?? 0) : filled ? 1 : 0;
