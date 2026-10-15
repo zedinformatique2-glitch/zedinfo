@@ -20,6 +20,7 @@ export function HardwareInput<T extends Item>({
   invalid,
   noMatch,
   popularLabel,
+  meta,
 }: {
   items: T[];
   icon: string;
@@ -30,6 +31,8 @@ export function HardwareInput<T extends Item>({
   invalid?: boolean;
   noMatch: string;
   popularLabel: string;
+  /** Small grey detail shown on the right of each option (VRAM, socket…). */
+  meta?: (item: T) => string;
 }) {
   const [text, setText] = useState(selected?.name ?? "");
   const [open, setOpen] = useState(false);
@@ -160,7 +163,10 @@ export function HardwareInput<T extends Item>({
                   }`}
                 >
                   <span className="truncate">{item.name}</span>
-                  {selected?.id === item.id && <Icon name="check" className="text-[16px] text-emerald-400" />}
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    {meta && <span className="text-[11px] font-semibold text-slate-500">{meta(item)}</span>}
+                    {selected?.id === item.id && <Icon name="check" className="text-[16px] text-emerald-400" />}
+                  </span>
                 </button>
               ))}
             </div>

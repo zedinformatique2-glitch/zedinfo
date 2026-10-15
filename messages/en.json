@@ -297,6 +297,8 @@
     "error": "Sorry, an error occurred. Please try again."
   },
   "fpsEstimator": {
+    "barFps": "{fps} FPS",
+    "barView": "View",
     "meta": {
       "title": "FPS Estimator — Calculate Your FPS Per Game",
       "description": "Estimate your FPS from your CPU and graphics card, game by game and per resolution. Free and instant. Algeria."
@@ -307,8 +309,8 @@
     "cpuLabel": "Processor",
     "gpuLabel": "Graphics card",
     "ramLabel": "RAM",
-    "cpuPlaceholder": "Search: 12400F, Ryzen 5 5600...",
-    "gpuPlaceholder": "Search: RTX 3060, RX 6600...",
+    "cpuPlaceholder": "e.g. i5-12400F",
+    "gpuPlaceholder": "e.g. RTX 3060",
     "needCpuGpu": "Please enter a CPU and GPU",
     "fpsLabel": "Estimated FPS",
     "titleLead": "How many FPS",
@@ -350,6 +352,7 @@
     "rights": "© 2025–2026 ZED INFORMATIQUE. ENGINEERING PRECISION."
   },
   "bottleneck": {
+    "barView": "View",
     "badge": "Bottleneck",
     "title": "PC Bottleneck Calculator",
     "meta": {
@@ -371,8 +374,8 @@
     "step2Hint": "The result updates with every change.",
     "cpuLabel": "Processor",
     "gpuLabel": "Graphics card",
-    "cpuPlaceholder": "Search: 12400F, Ryzen 5 5600...",
-    "gpuPlaceholder": "Search: RTX 3060, RX 6600...",
+    "cpuPlaceholder": "e.g. i5-12400F",
+    "gpuPlaceholder": "e.g. RTX 3060",
     "noMatch": "Model not found. Try a shorter name, e.g. \"3060\".",
     "popularLabel": "Most common",
     "examplesLabel": "Examples",

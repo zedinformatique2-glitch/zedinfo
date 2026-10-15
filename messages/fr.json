@@ -297,6 +297,8 @@
     "error": "Désolé, une erreur est survenue. Réessayez."
   },
   "fpsEstimator": {
+    "barFps": "{fps} FPS",
+    "barView": "Voir",
     "meta": {
       "title": "Estimateur de FPS — Calculez vos FPS par jeu",
       "description": "Estimez vos FPS selon votre processeur et carte graphique, jeu par jeu et par résolution. Gratuit et instantané. Algérie."
@@ -307,8 +309,8 @@
     "cpuLabel": "Processeur",
     "gpuLabel": "Carte graphique",
     "ramLabel": "RAM",
-    "cpuPlaceholder": "Cherchez : 12400F, Ryzen 5 5600...",
-    "gpuPlaceholder": "Cherchez : RTX 3060, RX 6600...",
+    "cpuPlaceholder": "Ex. i5-12400F",
+    "gpuPlaceholder": "Ex. RTX 3060",
     "needCpuGpu": "Veuillez renseigner un processeur et une carte graphique",
     "fpsLabel": "FPS estimés",
     "titleLead": "Combien de FPS",
@@ -350,6 +352,7 @@
     "rights": "© 2025–2026 ZED INFORMATIQUE. PRÉCISION D'INGÉNIERIE."
   },
   "bottleneck": {
+    "barView": "Voir",
     "badge": "Goulot d'étranglement",
     "title": "Calculateur de Goulot d'Étranglement PC",
     "meta": {
@@ -371,8 +374,8 @@
     "step2Hint": "Le résultat se met à jour à chaque changement.",
     "cpuLabel": "Processeur",
     "gpuLabel": "Carte graphique",
-    "cpuPlaceholder": "Cherchez : 12400F, Ryzen 5 5600...",
-    "gpuPlaceholder": "Cherchez : RTX 3060, RX 6600...",
+    "cpuPlaceholder": "Ex. i5-12400F",
+    "gpuPlaceholder": "Ex. RTX 3060",
     "noMatch": "Modèle introuvable. Essayez un nom plus court, ex. « 3060 ».",
     "popularLabel": "Les plus courants",
     "examplesLabel": "Exemples",

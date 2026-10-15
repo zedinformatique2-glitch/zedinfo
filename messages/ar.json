@@ -297,6 +297,8 @@
     "error": "عذراً، حدث خطأ. حاول مرة أخرى."
   },
   "fpsEstimator": {
+    "barFps": "{fps} إطار",
+    "barView": "اعرض",
     "meta": {
       "title": "حاسبة الإطارات FPS — احسب أداء جهازك لكل لعبة",
       "description": "قدّر عدد الإطارات في الثانية حسب معالجك وكرت الشاشة، لكل لعبة ودقة عرض. مجاني وفوري. الجزائر."
@@ -307,8 +309,8 @@
     "cpuLabel": "المعالج",
     "gpuLabel": "بطاقة الرسوميات",
     "ramLabel": "الذاكرة RAM",
-    "cpuPlaceholder": "ابحث: 12400F، Ryzen 5 5600...",
-    "gpuPlaceholder": "ابحث: RTX 3060، RX 6600...",
+    "cpuPlaceholder": "مثال: i5-12400F",
+    "gpuPlaceholder": "مثال: RTX 3060",
     "needCpuGpu": "يرجى إدخال المعالج وبطاقة الرسوميات",
     "fpsLabel": "إطار/ثانية تقديري",
     "titleLead": "كم FPS",
@@ -350,6 +352,7 @@
     "rights": "© 2025–2026 ZED INFORMATIQUE. هندسة الدقة."
   },
   "bottleneck": {
+    "barView": "اعرض",
     "badge": "تضييق الأداء",
     "title": "حاسبة تضييق الأداء بين المعالج وكرت الشاشة",
     "meta": {
@@ -371,8 +374,8 @@
     "step2Hint": "تتحدث النتيجة مع كل تغيير.",
     "cpuLabel": "المعالج",
     "gpuLabel": "بطاقة الرسومات",
-    "cpuPlaceholder": "ابحث: 12400F، Ryzen 5 5600...",
-    "gpuPlaceholder": "ابحث: RTX 3060، RX 6600...",
+    "cpuPlaceholder": "مثال: i5-12400F",
+    "gpuPlaceholder": "مثال: RTX 3060",
     "noMatch": "لم يتم العثور على الطراز. جرّب اسمًا أقصر، مثل «3060».",
     "popularLabel": "الأكثر شيوعًا",
     "examplesLabel": "أمثلة",

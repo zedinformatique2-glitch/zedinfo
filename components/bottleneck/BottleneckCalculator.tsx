@@ -7,6 +7,7 @@ import { Link } from "@/lib/i18n/routing";
 import { api } from "@/convex/_generated/api";
 import { Icon } from "@/components/ui/Icon";
 import { HardwareInput } from "@/components/fps-estimator/HardwareInput";
+import { StickyResultBar } from "@/components/fps-estimator/StickyResultBar";
 import { ToolCrossPromo } from "./ToolCrossPromo";
 import { CPUS, GPUS, type Cpu, type Gpu, type FpsResolution } from "@/lib/fps-data";
 import { findCpu, findGpu } from "@/lib/fps-engine";
@@ -55,20 +56,23 @@ export function BottleneckCalculator() {
   const stepDone = [!!cpu && !!gpu, true, !!result];
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
+    // -mt-20 pulls the dark page up under the layout's top padding (no white band below the header).
+    <div className="-mt-20 min-h-screen bg-slate-950 relative overflow-hidden">
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[520px] w-[900px] max-w-[160vw] rounded-full bg-primary/30 blur-[120px]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
 
       {/* Hero */}
-      <section className="relative pt-16 sm:pt-20 pb-8 sm:pb-10 text-center px-4">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/5 ring-1 ring-white/10 px-4 py-1.5 text-xs font-bold text-primary-fixed-dim mb-5">
+      <section className="relative pt-8 sm:pt-12 pb-6 sm:pb-8 text-center px-4">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/5 ring-1 ring-white/10 px-3.5 py-1 text-[11px] sm:text-xs font-bold text-primary-fixed-dim mb-4">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           {t("badge")}
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight mb-4 max-w-4xl mx-auto">{t("title")}</h1>
-        <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">{t("subtitle")}</p>
+        <h1 className="text-[30px] leading-[1.1] sm:text-5xl font-black text-white tracking-tight mb-3 max-w-3xl mx-auto [text-wrap:balance]">
+          {t("title")}
+        </h1>
+        <p className="text-slate-400 text-sm sm:text-lg max-w-2xl mx-auto [text-wrap:pretty]">{t("subtitle")}</p>
 
-        <ol className="mt-8 flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
+        <ol className="mt-6 flex items-center justify-center gap-1.5 sm:gap-3 text-[11px] sm:text-sm">
           {(["stepPc", "stepUse", "stepResult"] as const).map((k, i) => (
             <li key={k} className="flex items-center gap-2 sm:gap-3">
               <span
@@ -106,9 +110,11 @@ export function BottleneckCalculator() {
                 onSelect={setCpu}
                 noMatch={t("noMatch")}
                 popularLabel={t("popularLabel")}
+                meta={(c) => c.socket}
               />
               <HardwareInput
                 items={GPUS}
+                meta={(g) => t("ramValue", { gb: g.vram })}
                 icon="developer_board"
                 label={t("gpuLabel")}
                 placeholder={t("gpuPlaceholder")}
@@ -120,14 +126,14 @@ export function BottleneckCalculator() {
             </div>
             <div className="mt-5 pt-4 border-t border-white/10">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("examplesLabel")}</div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto snap-x -mx-5 px-5 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none]">
                 {BUILDS.map((b) => (
                   <button
                     key={b.cpu + b.gpu}
                     type="button"
                     onClick={() => applyBuild(b)}
                     aria-pressed={buildActive(b)}
-                    className={`rounded-xl px-3 py-2 text-start ring-1 transition-all ${
+                    className={`shrink-0 snap-start rounded-xl px-3 py-2 text-start ring-1 transition-all ${
                       buildActive(b) ? "bg-primary/30 ring-primary-fixed-dim" : "bg-white/[0.04] ring-white/10 hover:ring-primary-container/60 hover:bg-white/[0.08]"
                     }`}
                   >
@@ -215,6 +221,17 @@ export function BottleneckCalculator() {
       <div className="relative px-4 pb-16">
         <ToolCrossPromo target="fps" />
       </div>
+
+      {result && cpu && gpu && (
+        <StickyResultBar targetId="bn-result" cta={t("barView")}>
+          <span className="block text-[11px] text-slate-400 truncate">
+            {shortCpu(cpu.name)} · {gpu.name}
+          </span>
+          <span className="block text-sm font-black truncate" style={{ color: VERDICT_COLOR[result.verdict] }}>
+            {t(`verdictShort.${result.verdict}`, { percent: result.percent })}
+          </span>
+        </StickyResultBar>
+      )}
     </div>
   );
 }
@@ -258,6 +275,27 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     >
       {children}
     </button>
+  );
+}
+
+function ProductThumb({ src, icon }: { src?: string; icon: string }) {
+  const [broken, setBroken] = useState(false);
+  if (!src || broken) {
+    return (
+      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] ring-1 ring-white/10">
+        <Icon name={icon} className="text-[24px] text-slate-400" />
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      className="h-14 w-14 shrink-0 rounded-lg bg-white object-contain p-1"
+      loading="lazy"
+      onError={() => setBroken(true)}
+    />
   );
 }
 
@@ -308,7 +346,7 @@ function BalanceMeter({
           <span className="h-[30px] w-1.5 rounded-full bg-white shadow-[0_0_0_3px_rgba(15,23,42,1)]" />
         </span>
       </div>
-      <div className="mt-3 grid grid-cols-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+      <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] leading-tight font-bold uppercase tracking-wider text-slate-500">
         <span className="text-start">{labels.cpu}</span>
         <span className="text-center">{labels.balanced}</span>
         <span className="text-end">{labels.gpu}</span>
@@ -508,15 +546,21 @@ function ResultView({
                   href={`/product/${u.product.slug}`}
                   className="flex items-center gap-3 rounded-xl bg-white/[0.05] ring-1 ring-white/10 p-2.5 hover:ring-primary-container/60 hover:bg-white/[0.08] transition-all"
                 >
-                  {u.product.images?.[0] && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={u.product.images[0]} alt="" className="h-12 w-12 rounded-lg bg-white object-contain p-1 shrink-0" loading="lazy" onError={(e) => (e.currentTarget.style.visibility = "hidden")} />
-                  )}
+                  <ProductThumb src={u.product.images?.[0]} icon={side === "cpu" ? "memory" : "developer_board"} />
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-semibold text-white truncate">{localizedName(u.product, locale)}</span>
-                    {!u.sameSocket && <span className="block text-[11px] text-amber-300">{t("upgrades.newBoard")}</span>}
+                    <span className="block text-[13px] font-semibold text-white leading-snug line-clamp-2">
+                      {localizedName(u.product, locale)}
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="text-sm font-black text-primary-fixed-dim">{formatDzd(u.product.priceDzd, locale)}</span>
+                      {!u.sameSocket && (
+                        <span className="rounded-md bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+                          {t("upgrades.newBoard")}
+                        </span>
+                      )}
+                    </span>
                   </span>
-                  <span className="text-sm font-black text-primary-fixed-dim shrink-0">{formatDzd(u.product.priceDzd, locale)}</span>
+                  <Icon name="chevron_right" flip className="text-[20px] text-slate-500 shrink-0" />
                 </Link>
               ))}
             </div>

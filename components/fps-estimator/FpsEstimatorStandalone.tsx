@@ -10,6 +10,7 @@ import { CPUS, GPUS, FPS_GAMES, type Cpu, type Gpu, type FpsGame, type FpsResolu
 import { estimateFps, findCpu, findGpu, type FpsEstimate } from "@/lib/fps-engine";
 import { HardwareInput } from "./HardwareInput";
 import { FpsGauge, fpsTier } from "./FpsGauge";
+import { StickyResultBar } from "./StickyResultBar";
 
 const RESOLUTIONS: FpsResolution[] = ["1080p", "1440p", "4K"];
 const RAM_OPTIONS = [8, 16, 32, 64] as const;
@@ -83,26 +84,27 @@ export function FpsEstimatorStandalone() {
   const buildActive = (b: (typeof BUILDS)[number]) => cpu?.id === b.cpu && gpu?.id === b.gpu;
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
+    // -mt-20 pulls the dark page up under the layout's top padding (no white band below the header).
+    <div className="-mt-20 min-h-screen bg-slate-950 relative overflow-hidden">
       {/* Backdrop glow (static) */}
       <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[520px] w-[900px] max-w-[160vw] rounded-full bg-primary/30 blur-[120px]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
 
       {/* Hero */}
-      <section className="relative pt-16 sm:pt-20 pb-8 sm:pb-10 text-center px-4">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/5 ring-1 ring-white/10 px-4 py-1.5 text-xs font-bold text-primary-fixed-dim mb-5">
+      <section className="relative pt-8 sm:pt-12 pb-6 sm:pb-8 text-center px-4">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/5 ring-1 ring-white/10 px-3.5 py-1 text-[11px] sm:text-xs font-bold text-primary-fixed-dim mb-4">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           {t("badge")}
         </div>
-        <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight mb-4">
+        <h1 className="text-[34px] leading-[1.08] sm:text-6xl font-black text-white tracking-tight mb-3 [text-wrap:balance]">
           {t("titleLead")}{" "}
           <span className="bg-gradient-to-r from-primary-fixed-dim via-sky-300 to-violet-300 bg-clip-text text-transparent">
             {t("titleAccent")}
           </span>
         </h1>
-        <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">{t("subtitle")}</p>
+        <p className="text-slate-400 text-sm sm:text-lg max-w-2xl mx-auto [text-wrap:pretty]">{t("subtitle")}</p>
 
-        <ol className="mt-8 flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
+        <ol className="mt-6 flex items-center justify-center gap-1.5 sm:gap-3 text-[11px] sm:text-sm">
           {(["stepPc", "stepGame", "stepResult"] as const).map((k, i) => (
             <li key={k} className="flex items-center gap-2 sm:gap-3">
               <span
@@ -148,9 +150,11 @@ export function FpsEstimatorStandalone() {
                 invalid={nudge}
                 noMatch={t("noMatch")}
                 popularLabel={t("popularLabel")}
+                meta={(c) => c.socket}
               />
               <HardwareInput
                 items={GPUS}
+                meta={(g) => t("ramValue", { gb: g.vram })}
                 icon="developer_board"
                 label={t("gpuLabel")}
                 placeholder={t("gpuPlaceholder")}
@@ -182,14 +186,14 @@ export function FpsEstimatorStandalone() {
 
             <div className="mt-5 pt-4 border-t border-white/10">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">{t("presetsLabel")}</div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto snap-x -mx-5 px-5 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible [scrollbar-width:none]">
                 {BUILDS.map((b) => (
                   <button
                     key={b.gpu}
                     type="button"
                     onClick={() => applyBuild(b)}
                     aria-pressed={buildActive(b)}
-                    className={`rounded-xl px-3 py-2 text-start ring-1 transition-all ${
+                    className={`shrink-0 snap-start rounded-xl px-3 py-2 text-start ring-1 transition-all ${
                       buildActive(b)
                         ? "bg-primary/30 ring-primary-fixed-dim"
                         : "bg-white/[0.04] ring-white/10 hover:ring-primary-container/60 hover:bg-white/[0.08]"
@@ -304,6 +308,17 @@ export function FpsEstimatorStandalone() {
       <div className="relative px-4 pb-16">
         <ToolCrossPromo target="bottleneck" />
       </div>
+
+      {result && game && (
+        <StickyResultBar targetId="fps-result" cta={t("barView")}>
+          <span className="block text-[11px] text-slate-400 truncate">
+            {game.name} · {resolution}
+          </span>
+          <span className="block text-base font-black tabular-nums" style={{ color: fpsTier(result.fps).color }}>
+            {t("barFps", { fps: result.fps })}
+          </span>
+        </StickyResultBar>
+      )}
     </div>
   );
 }
@@ -405,7 +420,9 @@ function ResultView({
         </span>
       </div>
 
-      <FpsGauge fps={result.fps} label={t("fpsLabel")} />
+      <div className="px-3">
+        <FpsGauge fps={result.fps} label={t("fpsLabel")} />
+      </div>
 
       <div className="mt-5 flex justify-center">
         <span
@@ -420,11 +437,11 @@ function ResultView({
 
       {/* FPS per preset */}
       <div className="mt-5 rounded-2xl bg-white/[0.04] ring-1 ring-white/10 p-3.5">
-        <div className="flex items-center justify-between mb-2.5">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("byPresetTitle")}</span>
-          <span className="text-[10px] font-semibold text-slate-500">
-            {t("limitedByLabel")}: <span className="text-slate-300">{t(`limitedBy.${result.limitedBy}`)}</span>
-          </span>
+        <div className="mb-2.5">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t("byPresetTitle")}</div>
+          <div className="mt-0.5 text-[11px] text-slate-400">
+            {t("limitedByLabel")} <span className="font-bold text-slate-200">{t(`limitedBy.${result.limitedBy}`)}</span>
+          </div>
         </div>
         <ul className="space-y-1.5">
           {PRESET_ORDER.map((p) => {
